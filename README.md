@@ -9,7 +9,7 @@ project qScope
 │   └───CityScoPy LEGO Decoder
 └───data
 │       contains LINKS to GIS data from Seafile and api.json for SOFTWARE COMMUNICATION
-└───GAMA
+└───q100_abm
 │   │   GAMA workspace folder
 │   └───Project_RuesdorferKamp_Network
 │   │   │   Project 1: Social Agents Communication Network
