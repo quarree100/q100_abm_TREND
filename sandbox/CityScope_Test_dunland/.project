@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>CityScope_Test</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.xtext.ui.shared.xtextBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.xtext.ui.shared.xtextNature</nature>
+		<nature>msi.gama.application.gamaNature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>external/api.json</name>
+			<type>1</type>
+			<location>/home/dunland/github/Q100-CityScope/software_files/cspy/settings/api.json</location>
+		</link>
+		<link>
+			<name>external/cityscopy.json</name>
+			<type>1</type>
+			<location>/home/dunland/github/Q100-CityScope/software_files/cspy/settings/cityscopy.json</location>
+		</link>
+		<link>
+			<name>external/copy of api.json</name>
+			<type>1</type>
+			<location>/home/dunland/github/qScope/cspy/settings/api.json</location>
+		</link>
+		<link>
+			<name>external/export.json</name>
+			<type>1</type>
+			<location>/home/dunland/github/q100_viz/q100viz/data/export.json</location>
+		</link>
+	</linkedResources>
+</projectDescription>
