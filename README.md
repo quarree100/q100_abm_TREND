@@ -1,4 +1,4 @@
-# q100abm
+# q100_abm
 Agent-Based-Modeled Behavior Transformation in QUARREE100
 
 ## Recommended folder structure
