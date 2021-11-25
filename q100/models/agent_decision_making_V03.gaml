@@ -37,8 +37,6 @@ global {
 	
 
 	int nb_units <- 377; // derzeit: anzahl Wohnungen-Bestand; eigentlich: zähle anzahl der freien wohneinheiten -> Wert -> Berechne anschließend Anzahl der inits anhand share-of Einkommensgruppe an Gesamthaushalten
-	int a <- 26; //?
-	int david <- 5;
 	
 	
 // ICH WEISS NICHT WIESO ABER DER DATENIMPORT FUNKTIONIERT NICHT MEHR (2021-11-24_12:00)
