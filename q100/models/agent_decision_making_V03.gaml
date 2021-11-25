@@ -11,8 +11,9 @@ model agent_decision_making
 
 global {
 	//shape_file example_shapefile <- shape_file("../includes/shapefiles/example.shp");
-	
-	matrix decision_500_1000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv",true); //bzgl Anwaehlen der Matrix -> [zeilen, spalten]
+
+// for choosing specific value -> [rows, columns]		
+	matrix decision_500_1000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv",true);
 	matrix decision_1000_1500 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1000-1500_V1.csv",true);
 	matrix decision_1500_2000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1500-2000_V1.csv",true);
 	matrix decision_2000_3000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_2000-3000_V1.csv",true);
