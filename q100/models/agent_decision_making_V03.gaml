@@ -1102,8 +1102,8 @@ experiment agent_decision_making type: gui{
   	// parameter "example" var: example (muss global sein) min: 1 max: 1000 category: "example";
 	
 	output {
-		// layout #split; -> ansich super, crasht aber bei lwinkeler :(
-		display neighborhood type:opengl {
+		layout #split;
+		display neighborhood {
 			
 			species households_500_1000 aspect: base;
 			species households_1000_1500 aspect: base;
