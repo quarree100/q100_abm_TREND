@@ -998,9 +998,9 @@ global {
 				
 	}	/////////////////////////////////////TO-DO//////////////////////////////////////
 	//////////	-
-	//////////	- Anpassen der Struktur - fertig?
-	//////////  - Einpflegen der restlichen csv-Dateien
-	//////////  - Beginn der Erstellung des Decision-Algorithmus	
+	//////////	- Ueberpruefung einzelner Werte in Datei "socio-data_export_final" -> bspw "families"
+	//////////  - Integration der Netzwerk-Daten
+	//////////  - Beginn der Erstellung des Entscheidungs-Algorithmus	
 		////////////////////////////////////////////////////////////////////////////////
 		
 		
