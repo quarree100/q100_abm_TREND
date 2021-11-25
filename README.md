@@ -31,3 +31,10 @@ where:
 - q100_info: https://github.com/cqx931/q100_info
 - q100_viz: https://github.com/dunland/q100_viz
 - settings: t.b.a (currently from cspy/settings)
+
+
+## using GAMA with GitHub
+
+- keep your GAMA workspace folder local, outside of this repository!
+- a new project only needs a `.project` file indicating the name of the model, next to the folders `models` and `includes`
+- a project's`includes` folder should be stored elsewhere **locally**, contain the same data as stored in Seafile. **Create a symlink to point to a local copy of the `includes` folder**!
