@@ -39,7 +39,7 @@ global {
 	int nb_units <- 377; // derzeit: anzahl Wohnungen-Bestand; eigentlich: zähle anzahl der freien wohneinheiten -> Wert -> Berechne anschließend Anzahl der inits anhand share-of Einkommensgruppe an Gesamthaushalten
 	
 	
-// ICH WEISS NICHT WIESO ABER DER DATENIMPORT FUNKTIONIERT NICHT MEHR (2021-11-24_12:00)
+// share of age in neighborhood
 	float share_age_21_40 <- share_age_buildings_existing[0];
 	float share_age_41_60 <- share_age_buildings_existing[1];
 	float share_age_61_80 <- share_age_buildings_existing[2];
@@ -106,6 +106,12 @@ global {
 	float share_selfemployed_4000etc <- share_employment_income[5,2];
 	float share_unemployed_4000etc <- share_employment_income[5,3];
 	float share_pensioner_4000etc <- share_employment_income[5,4];
+
+
+//network
+
+
+	
 
 
 	init { //erste Integration der Zahl der Haushalte; Schritt 2 -> Ausrichten an Anzahl der im GIS-Datensatz hinterlegten Wohnungen
