@@ -110,7 +110,16 @@ global {
 
 //network
 
-
+	int network_spatial_direct_employed <- network_employed[1,1];
+	int network_spatial_street_employed <- network_employed[1,1];
+	int network_spatial_neighborhood_employed <- network_employed[1,1];
+	int network_spatial_beyond_employed <- network_employed[1,1];
+	int network_temporal_daily_employed <-  network_employed[1,1];
+	int network_temporal_weekly_employed <- network_employed[1,1];
+	int network_temporal_occasional_employed <- network_employed[1,1];
+	float network_socialgroup_employed <- network_employed[1,1];
+	
+	// usw! -> achtung: es sind noch die bereiche zu ergänzen sowie unte im bereich init den agenten zuzuordnen
 	
 
 
