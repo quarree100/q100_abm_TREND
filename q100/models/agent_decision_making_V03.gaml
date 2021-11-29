@@ -108,16 +108,7 @@ global {
 	float share_pensioner_4000etc <- share_employment_income[5,4];
 
 
-//network
 
-	int network_spatial_direct_employed <- network_employed[1,1];
-	int network_spatial_street_employed <- network_employed[1,1];
-	int network_spatial_neighborhood_employed <- network_employed[1,1];
-	int network_spatial_beyond_employed <- network_employed[1,1];
-	int network_temporal_daily_employed <-  network_employed[1,1];
-	int network_temporal_weekly_employed <- network_employed[1,1];
-	int network_temporal_occasional_employed <- network_employed[1,1];
-	float network_socialgroup_employed <- network_employed[1,1];
 	
 	
 	
@@ -1010,12 +1001,34 @@ global {
 		}
 		
 		
-		
-		ask households {
-			if employment = "student" {
-				network_contacts_direct <- network_spatial_direct_employed;
+//Network
+
+	int network_spatial_direct_employed <- network_employed[1,1];
+	int network_spatial_street_employed <- network_employed[1,1];
+	int network_spatial_neighborhood_employed <- network_employed[1,1];
+	int network_spatial_beyond_employed <- network_employed[1,1];
+	int network_temporal_daily_employed <-  network_employed[1,1];
+	int network_temporal_weekly_employed <- network_employed[1,1];
+	int network_temporal_occasional_employed <- network_employed[1,1];
+	float network_socialgroup_employed <- network_employed[1,1];
+	
+// muss weiter validiert werden...	
+	 	ask households {
+			let test <- (0.25 * households count (employment = "student")) ; 
+			if employment = "student" and network = nil{
+				ask test among households {
+					network_contacts_direct <- rnd(network_spatial_direct_employed, network_spatial_street_employed);
+					
+				}
 			}
 		}
+		
+		ask households {
+			if employment = "employed" {
+				network_contacts_direct <- network_employed[1,1];
+			}
+		}
+		
 				
 	}	/////////////////////////////////////TO-DO//////////////////////////////////////
 	//////////	-
@@ -1116,6 +1129,7 @@ species households_4000etc parent: households {
 	
 	
 }
+
 
 	// grid vegetation_cell width: 50 height: 50 neighbors: 4 {} -> Bei derzeitiger Vorstellung wird kein grid benötigt; ggf mit qScope-Tisch-dev abgleichen
 
