@@ -23,18 +23,20 @@ global{
 		
 		
 		
-		ask 50 among households {
-			employment <- "employed";
+		ask households {
+			if test1 >= 1 {
+				ask 50 among households {
+				employment <- "employed";
+		
+				}
+			}	
 		}
 		
 		
 		
-		ask test among households {
+		ask 50 among households {
 			 
-			test1 <- 5000;
-			test <- 25;
-					
-				
+			test1 <- 5000;					
 			
 		} 
 		 
@@ -45,7 +47,7 @@ global{
 
 species households{
 	string employment <- "student";
-	int test1;
+	int test1 <- 1;
 	
 	aspect base {
 		if test1 = 5000 {

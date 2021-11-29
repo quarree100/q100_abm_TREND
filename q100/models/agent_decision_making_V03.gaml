@@ -1012,22 +1012,21 @@ global {
 	int network_temporal_occasional_employed <- network_employed[1,1];
 	float network_socialgroup_employed <- network_employed[1,1];
 	
-// muss weiter validiert werden...	
+// muss weiter validiert werden...	Zusatz: Es scheint noch einen Fehler zu geben in der Auslesung von Employment
 	 	ask households {
-			let test <- (0.25 * households count (employment = "student")) ; 
-			if employment = "student" and network = nil{
+			let test <- 200;//0.25 * households count (employment = "student")) ; 
+			if employment = "employed" and network = nil{
 				ask test among households {
-					network_contacts_direct <- rnd(network_spatial_direct_employed, network_spatial_street_employed);
-					
+					network_contacts_direct <- 999;//rnd(network_spatial_direct_employed, network_spatial_street_employed);
+					megatest <- "bedingung";
 				}
 			}
 		}
 		
-		ask households {
-			if employment = "employed" {
-				network_contacts_direct <- network_employed[1,1];
-			}
-		}
+		
+				
+			
+		
 		
 				
 	}	/////////////////////////////////////TO-DO//////////////////////////////////////
@@ -1061,8 +1060,11 @@ species households {
 	int age; //random mean-age of households
 	string id_group; // identification which quartile within the income group agent belongs to
 	int network_contacts_direct;
+	string megatest;
 	
+				
 } 
+
 
 species households_500_1000 parent: households {
 	
