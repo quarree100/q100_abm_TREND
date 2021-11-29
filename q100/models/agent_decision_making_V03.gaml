@@ -119,7 +119,9 @@ global {
 	int network_temporal_occasional_employed <- network_employed[1,1];
 	float network_socialgroup_employed <- network_employed[1,1];
 	
-	// usw! -> achtung: es sind noch die bereiche zu ergänzen sowie unte im bereich init den agenten zuzuordnen
+	
+	
+	// usw! -> achtung: es sind noch die bereiche zu ergänzen sowie unte im bereich "init" den agenten zuzuordnen
 	
 
 
@@ -915,7 +917,7 @@ global {
 			employment <- "student";
 		}
 		ask (share_employed_500_1000 * length(households_500_1000)) among households_500_1000 {
-			employment <- "tenant";
+			employment <- "employed";
 		}
 		ask (share_selfemployed_500_1000 * length(households_500_1000)) among households_500_1000 {
 			employment <- "self-employed";
@@ -931,7 +933,7 @@ global {
 			employment <- "student";
 		}
 		ask (share_employed_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
-			employment <- "tenant";
+			employment <- "employed";
 		}
 		ask (share_selfemployed_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
 			employment <- "self-employed";
@@ -947,7 +949,7 @@ global {
 			employment <- "student";
 		}
 		ask (share_employed_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
-			employment <- "tenant";
+			employment <- "employed";
 		}
 		ask (share_selfemployed_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
 			employment <- "self-employed";
@@ -963,7 +965,7 @@ global {
 			employment <- "student";
 		}
 		ask (share_employed_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
-			employment <- "tenant";
+			employment <- "employed";
 		}
 		ask (share_selfemployed_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
 			employment <- "self-employed";
@@ -979,7 +981,7 @@ global {
 			employment <- "student";
 		}
 		ask (share_employed_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
-			employment <- "tenant";
+			employment <- "employed";
 		}
 		ask (share_selfemployed_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
 			employment <- "self-employed";
@@ -995,7 +997,7 @@ global {
 			employment <- "student";
 		}
 		ask (share_employed_4000etc * length(households_4000etc)) among households_4000etc {
-			employment <- "tenant";
+			employment <- "employed";
 		}
 		ask (share_selfemployed_4000etc * length(households_4000etc)) among households_4000etc {
 			employment <- "self-employed";
@@ -1008,6 +1010,12 @@ global {
 		}
 		
 		
+		
+		ask households {
+			if employment = "student" {
+				network_contacts_direct <- network_spatial_direct_employed;
+			}
+		}
 				
 	}	/////////////////////////////////////TO-DO//////////////////////////////////////
 	//////////	-
@@ -1039,6 +1047,7 @@ species households {
 	string ownership; 
 	int age; //random mean-age of households
 	string id_group; // identification which quartile within the income group agent belongs to
+	int network_contacts_direct;
 	
 } 
 
