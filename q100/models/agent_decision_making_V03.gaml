@@ -68,6 +68,21 @@ global {
 	float share_tenants_3000_4000 <- share_ownership_income[5,1];
 	float share_owner_4000etc <- share_ownership_income[6,0];
 	float share_tenants_4000etc <- share_ownership_income[6,1];
+	
+	list income_groups <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
+	list shares_owner <- [share_owner_500_1000, share_owner_1000_1500, share_owner_1500_2000, share_owner_2000_3000, share_owner_3000_4000, share_owner_4000etc];
+	map share_owner <- create_map(income_groups, shares_owner); 
+		
+	
+	map share_tenants <- create_map(income_groups, 
+		[share_tenants_500_1000,
+			share_tenants_1000_1500,
+			share_tenants_1500_2000,
+			share_tenants_2000_3000,
+			share_tenants_3000_4000,
+			share_tenants_4000etc
+		]
+	); 
 
 
 //share of employment sorted by income	
@@ -850,57 +865,31 @@ global {
 		
 		
 // Age -> distributes the share of age-groups among the parent-species household
-		ask (share_age_21_40 * nb_units) among households {//da Ansprache der parent species im Chart nicht funktioniert: prüfen!
+		ask (int(share_age_21_40 * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {//!bool(each.age) ist TRUE, wenn age noch nicht existiert
 			age <- rnd (21, 40);	
 		}
-		ask (share_age_41_60 * nb_units) among households {
+		ask (int(share_age_41_60 * nb_units)) among (agents of_generic_species households where (!bool(each.age))){
 			age <- rnd (41, 60);	
 		}
-		ask (share_age_61_80 * nb_units) among households {
+		ask (int(share_age_61_80 * nb_units)) among (agents of_generic_species households where (!bool(each.age))){
 			age <- rnd (61, 80);	
 		}
-		ask (share_age_80etc * nb_units) among households {
+		ask (int(share_age_80etc * nb_units)) among (agents of_generic_species households where (!bool(each.age))){
 			age <- rnd (81, 100); //max age = 100	
 		}
 		
 		
-// Ownership -> distributes the share of ownership-status among household-groups
-		ask (share_owner_500_1000 * length(households_500_1000)) among households_500_1000 {
-			ownership <- "owner";
+// Ownership -> distributes the share of ownership-status among household-groups 
+		
+		loop income_group over: income_groups {
+			ask income_group {
+				ownership <- "tenant";
+			}
+			ask (share_owner[income_group] * length(income_group)) among income_group {
+				ownership <- "owner";
+			}
 		}
-		ask (share_tenants_500_1000 * length(households_500_1000)) among households_500_1000 {
-			ownership <- "tenant";
-		}
-		ask (share_owner_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
-			ownership <- "owner";
-		}
-		ask (share_tenants_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
-			ownership <- "tenant";
-		}
-		ask (share_owner_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
-			ownership <- "owner";
-		}
-		ask (share_tenants_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
-			ownership <- "tenant";
-		}
-		ask (share_owner_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
-			ownership <- "owner";
-		}
-		ask (share_tenants_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
-			ownership <- "tenant";
-		}
-		ask (share_owner_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
-			ownership <- "owner";
-		}
-		ask (share_tenants_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
-			ownership <- "tenant";
-		}
-		ask (share_owner_4000etc * length(households_4000etc)) among households_4000etc {
-			ownership <- "owner";
-		}
-		ask (share_tenants_4000etc * length(households_4000etc)) among households_4000etc {
-			ownership <- "tenant";
-		}
+		
 	
 	
 // Employment -> distributes the share of employment-groups among household-groups
