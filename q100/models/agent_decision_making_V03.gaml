@@ -70,18 +70,24 @@ global {
 	float share_tenants_4000etc <- share_ownership_income[6,1];
 	
 	//to discuss: sinnvoll die zeilen code zu sparen und matritzen direkt in liste überführen? also keine extra globals anlegen? oder werden diese ggf an anderer stelle nochmal benötigt bzw sorgen für bessere übersichtlichkeit?
-	list income_groups <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
-	list shares_owner <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
-	list shares_tenants <- [share_tenants_500_1000, share_tenants_1000_1500, share_tenants_1500_2000, share_tenants_2000_3000, share_tenants_3000_4000, share_tenants_4000etc];
-	map share_owner <- create_map(income_groups, shares_owner); 
-	map share_tenants <- create_map(income_groups, shares_tenants);
+	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
+	list shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
+	list shares_tenants_list <- [share_tenants_500_1000, share_tenants_1000_1500, share_tenants_1500_2000, share_tenants_2000_3000, share_tenants_3000_4000, share_tenants_4000etc];
+	map share_owner_map <- create_map(income_groups_list, shares_owner_list); 
+	map share_tenants_map <- create_map(income_groups_list, shares_tenants_list);
 	
 	
-	map share_student <- create_map(income_groups, shares_students);
-	map share_employed <- create_map(income_groups, shares_employees);
-	map share_selfemployed <- create_map(income_groups, shares_selfemployees);
-	map share_unemployed <- create_map(income_groups, shares_unemployees);
-	map share_pensioner <- create_map(income_groups, shares_pensioners);
+	list shares_students_list <- [];
+	list shares_employees_list <- [];
+	list shares_selfemployees_list <- [];
+	list shares_unemployees_list <- [];
+	list shares_pensioners_list <- [];
+	
+	map share_student <- create_map(income_groups_list, shares_students_list);
+	map share_employed <- create_map(income_groups_list, shares_employees_list);
+	map share_selfemployed <- create_map(income_groups_list, shares_selfemployees_list);
+	map share_unemployed <- create_map(income_groups_list, shares_unemployees_list);
+	map share_pensioner <- create_map(income_groups_list, shares_pensioners_list);
 		
 
 
@@ -877,11 +883,11 @@ global {
 		
 // Ownership -> distributes the share of ownership-status among household-groups 
 		
-		loop income_group over: income_groups {
+		loop income_group over: income_groups_list {
 			ask income_group {
 				ownership <- "tenant";
 			}
-			ask (share_owner[income_group] * length(income_group)) among income_group {
+			ask (share_owner_map[income_group] * length(income_group)) among income_group {
 				ownership <- "owner";
 			}
 		}
