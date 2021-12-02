@@ -124,11 +124,7 @@ global {
 
 
 
-	
-	
-	
-	// usw! -> achtung: es sind noch die bereiche zu ergänzen sowie unte im bereich "init" den agenten zuzuordnen
-	
+		
 
 
 	init { //erste Integration der Zahl der Haushalte; Schritt 2 -> Ausrichten an Anzahl der im GIS-Datensatz hinterlegten Wohnungen
@@ -864,7 +860,7 @@ global {
 		}
 		
 		
-// Age -> distributes the share of age-groups among the parent-species household
+// Age -> distributes the share of age-groups among the generic-species household
 		ask (int(share_age_21_40 * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {//!bool(each.age) ist TRUE, wenn age noch nicht existiert
 			age <- rnd (21, 40);	
 		}
