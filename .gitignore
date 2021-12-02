@@ -3,6 +3,8 @@
 ./**/.cache
 ./**/.metadata
 ./**/includes
+**/includes
 
 ./q100/includes
 /q100/includes
+q100/includes
