@@ -69,20 +69,20 @@ global {
 	float share_owner_4000etc <- share_ownership_income[6,0];
 	float share_tenants_4000etc <- share_ownership_income[6,1];
 	
+	//to discuss: sinnvoll die zeilen code zu sparen und matritzen direkt in liste überführen? also keine extra globals anlegen? oder werden diese ggf an anderer stelle nochmal benötigt bzw sorgen für bessere übersichtlichkeit?
 	list income_groups <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
-	list shares_owner <- [share_owner_500_1000, share_owner_1000_1500, share_owner_1500_2000, share_owner_2000_3000, share_owner_3000_4000, share_owner_4000etc];
+	list shares_owner <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
+	list shares_tenants <- [share_tenants_500_1000, share_tenants_1000_1500, share_tenants_1500_2000, share_tenants_2000_3000, share_tenants_3000_4000, share_tenants_4000etc];
 	map share_owner <- create_map(income_groups, shares_owner); 
-		
+	map share_tenants <- create_map(income_groups, shares_tenants);
 	
-	map share_tenants <- create_map(income_groups, 
-		[share_tenants_500_1000,
-			share_tenants_1000_1500,
-			share_tenants_1500_2000,
-			share_tenants_2000_3000,
-			share_tenants_3000_4000,
-			share_tenants_4000etc
-		]
-	); 
+	
+	map share_student <- create_map(income_groups, shares_students);
+	map share_employed <- create_map(income_groups, shares_employees);
+	map share_selfemployed <- create_map(income_groups, shares_selfemployees);
+	map share_unemployed <- create_map(income_groups, shares_unemployees);
+	map share_pensioner <- create_map(income_groups, shares_pensioners);
+		
 
 
 //share of employment sorted by income	
