@@ -12,7 +12,7 @@ model agent_decision_making
 global {
 	//shape_file example_shapefile <- shape_file("../includes/shapefiles/example.shp");
 
-// for choosing specific value -> [rows, columns]		
+// for choosing specific value -> [columns, rows]		
 	matrix decision_500_1000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv",true);
 	matrix decision_1000_1500 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1000-1500_V1.csv",true);
 	matrix decision_1500_2000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1500-2000_V1.csv",true);
@@ -39,11 +39,13 @@ global {
 	int nb_units <- 377; // derzeit: anzahl Wohnungen-Bestand; eigentlich: zähle anzahl der freien wohneinheiten -> Wert -> Berechne anschließend Anzahl der inits anhand share-of Einkommensgruppe an Gesamthaushalten
 	
 	
+	
 // share of age in neighborhood
 	float share_age_21_40 <- share_age_buildings_existing[0];
 	float share_age_41_60 <- share_age_buildings_existing[1];
 	float share_age_61_80 <- share_age_buildings_existing[2];
 	float share_age_80etc <- share_age_buildings_existing[3];	
+	
 	
 	
 // share of households in neighborhood sorted by income
@@ -53,6 +55,10 @@ global {
 	float nb_households_2000_3000 <- share_income[3];
 	float nb_households_3000_4000 <- share_income[4];
 	float nb_households_4000etc <- share_income[5];
+	
+	
+	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
+	
 	
 	
 // share of ownerships sorted by income	
@@ -70,26 +76,13 @@ global {
 	float share_tenants_4000etc <- share_ownership_income[6,1];
 	
 	//to discuss: sinnvoll die zeilen code zu sparen und matritzen direkt in liste überführen? also keine extra globals anlegen? oder werden diese ggf an anderer stelle nochmal benötigt bzw sorgen für bessere übersichtlichkeit?
-	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
+	
 	list shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
 	list shares_tenants_list <- [share_tenants_500_1000, share_tenants_1000_1500, share_tenants_1500_2000, share_tenants_2000_3000, share_tenants_3000_4000, share_tenants_4000etc];
 	map share_owner_map <- create_map(income_groups_list, shares_owner_list); 
 	map share_tenants_map <- create_map(income_groups_list, shares_tenants_list);
 	
 	
-	list shares_students_list <- [];
-	list shares_employees_list <- [];
-	list shares_selfemployees_list <- [];
-	list shares_unemployees_list <- [];
-	list shares_pensioners_list <- [];
-	
-	map share_student <- create_map(income_groups_list, shares_students_list);
-	map share_employed <- create_map(income_groups_list, shares_employees_list);
-	map share_selfemployed <- create_map(income_groups_list, shares_selfemployees_list);
-	map share_unemployed <- create_map(income_groups_list, shares_unemployees_list);
-	map share_pensioner <- create_map(income_groups_list, shares_pensioners_list);
-		
-
 
 //share of employment sorted by income	
 	float share_student_500_1000 <- share_employment_income[1,0];
@@ -129,10 +122,20 @@ global {
 	float share_pensioner_4000etc <- share_employment_income[5,4];
 
 
-
+	list shares_student_list <- [share_student_500_1000, share_student_1000_1500, share_student_1500_2000, share_student_2000_3000, share_student_3000_4000, share_student_4000etc];
+	list shares_employed_list <- [share_employed_500_1000, share_employed_1000_1500, share_employed_1500_2000, share_employed_2000_3000, share_employed_3000_4000, share_employed_4000etc];
+	list shares_selfemployed_list <- [share_selfemployed_500_1000, share_selfemployed_1000_1500, share_selfemployed_1500_2000, share_selfemployed_2000_3000, share_selfemployed_3000_4000, share_selfemployed_4000etc];
+	list shares_unemployed_list <- [share_unemployed_500_1000, share_unemployed_1000_1500, share_unemployed_1500_2000, share_unemployed_2000_3000, share_unemployed_3000_4000, share_unemployed_4000etc];
+	list shares_pensioner_list <- [share_pensioner_500_1000, share_pensioner_1000_1500, share_pensioner_1500_2000, share_pensioner_2000_3000, share_pensioner_3000_4000, share_pensioner_4000etc];
+	map share_student <- create_map(income_groups_list, shares_student_list);
+	map share_employed <- create_map(income_groups_list, shares_employed_list);
+	map share_selfemployed <- create_map(income_groups_list, shares_selfemployed_list);
+	map share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
+	map share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
 		
 
 
+//verkürzen durch liste?
 	init { //erste Integration der Zahl der Haushalte; Schritt 2 -> Ausrichten an Anzahl der im GIS-Datensatz hinterlegten Wohnungen
 		
 		create households_500_1000 number: nb_households_500_1000 * nb_units * 0.25{ 
@@ -887,13 +890,13 @@ global {
 			ask income_group {
 				ownership <- "tenant";
 			}
-			ask (share_owner_map[income_group] * length(income_group)) among income_group {
+			/*ask (share_owner_map[income_group] * length(income_group)) among income_group { //existierte der fehler bereits vorher? wieso keine multiplikation von listen möglich?
 				ownership <- "owner";
-			}
+			}*/
 		}
 		
 	
-	
+//verkürzen durch liste?	
 // Employment -> distributes the share of employment-groups among household-groups
 		ask (share_student_500_1000 * length(households_500_1000)) among households_500_1000 {
 			employment <- "student";
@@ -993,8 +996,15 @@ global {
 		
 		
 //Network
+//Erweiterung: Verknüpfen der Kontakte, die nicht "direct" sind mit Ausprägung der psych-Werte/income, um preferential attachment nach Eigenschaften abzubilden
 
-	int network_spatial_direct_employed <- network_employed[1,1];
+	//entweder ebenfalls alle an dieser stelle aufführen oder über liste möglich?
+	int network_spatial_direct_employed_min <- network_employed[0,1];
+	int network_spatial_direct_employed_1st <- network_employed[2,1];
+	int network_spatial_direct_employed_median <- network_employed[3,1];
+	int network_spatial_direct_employed_3rd <- network_employed[4,1];
+	int network_spatial_direct_employed_max <- network_employed[5,1];
+	
 	int network_spatial_street_employed <- network_employed[1,1];
 	int network_spatial_neighborhood_employed <- network_employed[1,1];
 	int network_spatial_beyond_employed <- network_employed[1,1];
@@ -1003,21 +1013,23 @@ global {
 	int network_temporal_occasional_employed <- network_employed[1,1];
 	float network_socialgroup_employed <- network_employed[1,1];
 	
-// muss weiter validiert werden...	Zusatz: Es scheint noch einen Fehler zu geben in der Auslesung von Employment
-	 	ask households {
-			let test <- 200;//0.25 * households count (employment = "student")) ; 
-			if employment = "employed" and network = nil{
-				ask test among households {
-					network_contacts_direct <- 999;//rnd(network_spatial_direct_employed, network_spatial_street_employed);
-					megatest <- "bedingung";
-				}
-			}
+
+		
+		// muss weiter geführt werden - liste?
+		//noch nicht auf tatsächliche Funktion geprüft - falls "length" in dem kontext nicht funktioniert ggf "count" verwenden
+		let nb_employed <- length(agents of_generic_species households where (each.age = "employed"));// ggf nicht als temp_variable sondern als global definieren? ggf an anderer stelle ebenfalls gebraucht
+		ask (0.25 * nb_employed) among (agents of_generic_species households where (each.age = "employed")) {
+			network_contacts_direct <- rnd (network_spatial_direct_employed_min, network_spatial_direct_employed_1st);	
 		}
-		
-		
-				
-			
-		
+		ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_direct)))) {
+			network_contacts_direct <- rnd (network_spatial_direct_employed_1st, network_spatial_direct_employed_median);	
+		}		
+		ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_direct)))) {
+			network_contacts_direct <- rnd (network_spatial_direct_employed_median, network_spatial_direct_employed_3rd);	
+		}	
+		ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_direct)))) {
+			network_contacts_direct <- rnd (network_spatial_direct_employed_3rd, network_spatial_direct_employed_max);	
+		}
 		
 				
 	}	/////////////////////////////////////TO-DO//////////////////////////////////////
@@ -1051,7 +1063,6 @@ species households {
 	int age; //random mean-age of households
 	string id_group; // identification which quartile within the income group agent belongs to
 	int network_contacts_direct;
-	string megatest;
 	
 				
 } 
