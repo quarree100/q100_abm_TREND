@@ -79,12 +79,13 @@ global {
 	
 	list shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
 	list shares_tenants_list <- [share_tenants_500_1000, share_tenants_1000_1500, share_tenants_1500_2000, share_tenants_2000_3000, share_tenants_3000_4000, share_tenants_4000etc];
+	
 	map share_owner_map <- create_map(income_groups_list, shares_owner_list); 
 	map share_tenants_map <- create_map(income_groups_list, shares_tenants_list);
 	
 	
 
-//share of employment sorted by income	
+// share of employment sorted by income	
 	float share_student_500_1000 <- share_employment_income[1,0];
 	float share_employed_500_1000 <- share_employment_income[1,1];
 	float share_selfemployed_500_1000 <- share_employment_income[1,2];
@@ -127,6 +128,7 @@ global {
 	list shares_selfemployed_list <- [share_selfemployed_500_1000, share_selfemployed_1000_1500, share_selfemployed_1500_2000, share_selfemployed_2000_3000, share_selfemployed_3000_4000, share_selfemployed_4000etc];
 	list shares_unemployed_list <- [share_unemployed_500_1000, share_unemployed_1000_1500, share_unemployed_1500_2000, share_unemployed_2000_3000, share_unemployed_3000_4000, share_unemployed_4000etc];
 	list shares_pensioner_list <- [share_pensioner_500_1000, share_pensioner_1000_1500, share_pensioner_1500_2000, share_pensioner_2000_3000, share_pensioner_3000_4000, share_pensioner_4000etc];
+	
 	map share_student <- create_map(income_groups_list, shares_student_list);
 	map share_employed <- create_map(income_groups_list, shares_employed_list);
 	map share_selfemployed <- create_map(income_groups_list, shares_selfemployed_list);
@@ -873,13 +875,13 @@ global {
 		ask (int(share_age_21_40 * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {//!bool(each.age) ist TRUE, wenn age noch nicht existiert
 			age <- rnd (21, 40);	
 		}
-		ask (int(share_age_41_60 * nb_units)) among (agents of_generic_species households where (!bool(each.age))){
+		ask (int(share_age_41_60 * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
 			age <- rnd (41, 60);	
 		}
-		ask (int(share_age_61_80 * nb_units)) among (agents of_generic_species households where (!bool(each.age))){
+		ask (int(share_age_61_80 * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
 			age <- rnd (61, 80);	
 		}
-		ask (int(share_age_80etc * nb_units)) among (agents of_generic_species households where (!bool(each.age))){
+		ask (int(share_age_80etc * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
 			age <- rnd (81, 100); //max age = 100	
 		}
 		
@@ -890,107 +892,111 @@ global {
 			ask income_group {
 				ownership <- "tenant";
 			}
-			/*ask (share_owner_map[income_group] * length(income_group)) among income_group { //existierte der fehler bereits vorher? wieso keine multiplikation von listen möglich?
+			
+			/*///////////
+			ask (share_owner_map[income_group] * length(income_group)) among income_group { //existierte der fehler bereits vorher? wieso keine multiplikation von listen möglich?
 				ownership <- "owner";
-			}*/
+			}
+			////////////*/
+			
 		}
 		
 	
-//verkürzen durch liste?	
+// problem behoben, allerdings duerfte verkuerzen durch liste möglich sein..	
 // Employment -> distributes the share of employment-groups among household-groups
 		ask (share_student_500_1000 * length(households_500_1000)) among households_500_1000 {
 			employment <- "student";
 		}
-		ask (share_employed_500_1000 * length(households_500_1000)) among households_500_1000 {
+		ask (share_employed_500_1000 * length(households_500_1000)) among households_500_1000 where (!bool(each.employment)) {
 			employment <- "employed";
 		}
-		ask (share_selfemployed_500_1000 * length(households_500_1000)) among households_500_1000 {
+		ask (share_selfemployed_500_1000 * length(households_500_1000)) among households_500_1000 where (!bool(each.employment)) {
 			employment <- "self-employed";
 		}
-		ask (share_unemployed_500_1000 * length(households_500_1000)) among households_500_1000 {
+		ask (share_unemployed_500_1000 * length(households_500_1000)) among households_500_1000 where (!bool(each.employment)) {
 			employment <- "unemployed";
 		}
-		ask (share_pensioner_500_1000 * length(households_500_1000)) among households_500_1000 {
+		ask (share_pensioner_500_1000 * length(households_500_1000)) among households_500_1000 where (!bool(each.employment)) {
 			employment <- "pensioner";
 		}
 		
-		ask (share_student_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
+		ask (share_student_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
 			employment <- "student";
 		}
-		ask (share_employed_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
+		ask (share_employed_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
 			employment <- "employed";
 		}
-		ask (share_selfemployed_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
+		ask (share_selfemployed_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
 			employment <- "self-employed";
 		}
-		ask (share_unemployed_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
+		ask (share_unemployed_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
 			employment <- "unemployed";
 		}
-		ask (share_pensioner_1000_1500 * length(households_1000_1500)) among households_1000_1500 {
+		ask (share_pensioner_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
 			employment <- "pensioner";
 		}
 		
-		ask (share_student_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
+		ask (share_student_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
 			employment <- "student";
 		}
-		ask (share_employed_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
+		ask (share_employed_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
 			employment <- "employed";
 		}
-		ask (share_selfemployed_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
+		ask (share_selfemployed_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
 			employment <- "self-employed";
 		}
-		ask (share_unemployed_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
+		ask (share_unemployed_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
 			employment <- "unemployed";
 		}
-		ask (share_pensioner_1500_2000 * length(households_1500_2000)) among households_1500_2000 {
+		ask (share_pensioner_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
 			employment <- "pensioner";
 		}
 		
-		ask (share_student_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
+		ask (share_student_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
 			employment <- "student";
 		}
-		ask (share_employed_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
+		ask (share_employed_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
 			employment <- "employed";
 		}
-		ask (share_selfemployed_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
+		ask (share_selfemployed_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
 			employment <- "self-employed";
 		}
-		ask (share_unemployed_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
+		ask (share_unemployed_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
 			employment <- "unemployed";
 		}
-		ask (share_pensioner_2000_3000 * length(households_2000_3000)) among households_2000_3000 {
+		ask (share_pensioner_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
 			employment <- "pensioner";
 		}
 		
-		ask (share_student_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
+		ask (share_student_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
 			employment <- "student";
 		}
-		ask (share_employed_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
+		ask (share_employed_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
 			employment <- "employed";
 		}
-		ask (share_selfemployed_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
+		ask (share_selfemployed_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
 			employment <- "self-employed";
 		}
-		ask (share_unemployed_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
+		ask (share_unemployed_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
 			employment <- "unemployed";
 		}
-		ask (share_pensioner_3000_4000 * length(households_3000_4000)) among households_3000_4000 {
+		ask (share_pensioner_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
 			employment <- "pensioner";
 		}
 		
-		ask (share_student_4000etc * length(households_4000etc)) among households_4000etc {
+		ask (share_student_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
 			employment <- "student";
 		}
-		ask (share_employed_4000etc * length(households_4000etc)) among households_4000etc {
+		ask (share_employed_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
 			employment <- "employed";
 		}
-		ask (share_selfemployed_4000etc * length(households_4000etc)) among households_4000etc {
+		ask (share_selfemployed_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
 			employment <- "self-employed";
 		}
-		ask (share_unemployed_4000etc * length(households_4000etc)) among households_4000etc {
+		ask (share_unemployed_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
 			employment <- "unemployed";
 		}
-		ask (share_pensioner_4000etc * length(households_4000etc)) among households_4000etc {
+		ask (share_pensioner_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
 			employment <- "pensioner";
 		}
 		
@@ -1011,32 +1017,35 @@ global {
 	int network_temporal_daily_employed <-  network_employed[1,1];
 	int network_temporal_weekly_employed <- network_employed[1,1];
 	int network_temporal_occasional_employed <- network_employed[1,1];
+	
 	float network_socialgroup_employed <- network_employed[1,1];
 	
 
 		
-		// muss weiter geführt werden - liste?
-		//noch nicht auf tatsächliche Funktion geprüft - falls "length" in dem kontext nicht funktioniert ggf "count" verwenden
-		let nb_employed <- length(agents of_generic_species households where (each.age = "employed"));// ggf nicht als temp_variable sondern als global definieren? ggf an anderer stelle ebenfalls gebraucht
-		ask (0.25 * nb_employed) among (agents of_generic_species households where (each.age = "employed")) {
-			network_contacts_direct <- rnd (network_spatial_direct_employed_min, network_spatial_direct_employed_1st);	
-		}
-		ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_direct)))) {
-			network_contacts_direct <- rnd (network_spatial_direct_employed_1st, network_spatial_direct_employed_median);	
-		}		
-		ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_direct)))) {
-			network_contacts_direct <- rnd (network_spatial_direct_employed_median, network_spatial_direct_employed_3rd);	
-		}	
-		ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_direct)))) {
-			network_contacts_direct <- rnd (network_spatial_direct_employed_3rd, network_spatial_direct_employed_max);	
-		}
+	//muss weiter geführt werden - liste?
+	//noch nicht auf tatsächliche Funktion geprüft - falls "length" in dem kontext nicht funktioniert ggf "count" verwenden
+	let nb_employed <- length(agents of_generic_species households where (each.age = "employed"));// ggf nicht als temp_variable sondern als global definieren? ggf an anderer stelle ebenfalls gebraucht
+	ask (0.25 * nb_employed) among (agents of_generic_species households where (each.age = "employed")) {
+		network_contacts_spatial_direct <- rnd (network_spatial_direct_employed_min, network_spatial_direct_employed_1st);	
+	}
+	ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_spatial_direct)))) {
+		network_contacts_spatial_direct <- rnd (network_spatial_direct_employed_1st, network_spatial_direct_employed_median);	
+	}		
+	ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_spatial_direct)))) {
+		network_contacts_spatial_direct <- rnd (network_spatial_direct_employed_median, network_spatial_direct_employed_3rd);	
+	}	
+	ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_spatial_direct)))) {
+		network_contacts_spatial_direct <- rnd (network_spatial_direct_employed_3rd, network_spatial_direct_employed_max);	
+	}
 		
 				
-	}	/////////////////////////////////////TO-DO//////////////////////////////////////
-	//////////	-
+}		/////////////////////////////////////TO-DO//////////////////////////////////////
+	//////////	- Finalisieren der Datenintegration; ggf Uebertragen der struktur in Listen
 	//////////	- Ueberpruefung einzelner Werte in Datei "socio-data_export_final" -> bspw "families"
-	//////////  - Integration der Netzwerk-Daten
-	//////////  - Beginn der Erstellung des Entscheidungs-Algorithmus	
+	//////////  - 
+	//////////  - Beginn der Erstellung des Entscheidungs-Algorithmus
+	//////////  - Uebertrag in Shapefiles
+	//////////  - Technischer Layer	
 		////////////////////////////////////////////////////////////////////////////////
 		
 		
@@ -1058,12 +1067,20 @@ species households {
 	
 	
 	int income; //households income/month -> ATTENTION -> besonderer Validierungshinweis, da zufaellige Menge
-	string employment; //defines network behavior of each agent in parent species by employment status
-	string ownership; 
-	int age; //random mean-age of households
 	string id_group; // identification which quartile within the income group agent belongs to
-	int network_contacts_direct;
-	
+		
+	int age; //random mean-age of households
+	string ownership; 
+	string employment; //defines network behavior of each agent in parent species by employment status
+
+	int network_contacts_spatial_direct;
+	int network_contacts_spatial_street;
+	int network_contacts_spatial_neighborhood;
+	int network_contacts_spatial_beyond;
+	int network_contacts_temporal_daily;	
+	int network_contacts_temporal_weekly;
+	int network_contacts_temporal_occasional;
+	float network_socialgroup;
 				
 } 
 
