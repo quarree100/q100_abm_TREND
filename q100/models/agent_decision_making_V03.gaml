@@ -13,23 +13,23 @@ global {
 	//shape_file example_shapefile <- shape_file("../includes/shapefiles/example.shp");
 
 // for choosing specific value -> [columns, rows]		
-	matrix decision_500_1000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv",true);
-	matrix decision_1000_1500 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1000-1500_V1.csv",true);
-	matrix decision_1500_2000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1500-2000_V1.csv",true);
-	matrix decision_2000_3000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_2000-3000_V1.csv",true);
-	matrix decision_3000_4000 <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_3000-4000_V1.csv",true);
-	matrix decision_4000etc <- csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_4000etc_V1.csv",true);
+	matrix decision_500_1000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv", ",", float, true));
+	matrix decision_1000_1500 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1000-1500_V1.csv", ",", float, true));
+	matrix decision_1500_2000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1500-2000_V1.csv", ",", float, true));
+	matrix decision_2000_3000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_2000-3000_V1.csv", ",", float, true));
+	matrix decision_3000_4000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_3000-4000_V1.csv", ",", float, true));
+	matrix decision_4000etc <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_4000etc_V1.csv", ",", float, true));
 	
-	matrix network_employed <- csv_file("../includes/csv-data_socio/2021-11-18_V1/network_employed_V1.csv",true);
-	matrix network_pensioner <- csv_file("../includes/csv-data_socio/2021-11-18_V1/network_pensioner_V1.csv",true);
-	matrix network_selfemployed <- csv_file("../includes/csv-data_socio/2021-11-18_V1/network_self-employed_V1.csv",true);
-	matrix network_student <- csv_file("../includes/csv-data_socio/2021-11-18_V1/network_student_V1.csv",true);
-	matrix network_unemployed <- csv_file("../includes/csv-data_socio/2021-11-18_V1/network_unemployed_V1.csv",true);
+	matrix network_employed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_employed_V1.csv", ",", float, true));
+	matrix network_pensioner <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_pensioner_V1.csv", ",", float, true));
+	matrix network_selfemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_self-employed_V1.csv", ",", float, true));
+	matrix network_student <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_student_V1.csv", ",", float, true));
+	matrix network_unemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_unemployed_V1.csv", ",", float, true));
 	
-	matrix share_income <- csv_file("../includes/csv-data_socio/2021-11-18_V1/share-income_V1.csv",true); // share of households in neighborhood sorted by income
-	matrix share_employment_income <- csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv",true);
-	matrix share_ownership_income <- csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv",true);
-	matrix share_age_buildings_existing <- csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv",true);
+	matrix share_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-income_V1.csv",  ",", float, true)); // share of households in neighborhood sorted by income
+	matrix share_employment_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true));
+	matrix share_ownership_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true));
+	matrix share_age_buildings_existing <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true));
 	
 	
 	//bool show_heatingnetwork <- true;
@@ -37,9 +37,11 @@ global {
 	
 
 	int nb_units <- 377; // derzeit: anzahl Wohnungen-Bestand; eigentlich: zähle anzahl der freien wohneinheiten -> Wert -> Berechne anschließend Anzahl der inits anhand share-of Einkommensgruppe an Gesamthaushalten
-	
-	
-	
+	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
+	map decision_map <- create_map(income_groups_list, [decision_500_1000, decision_1000_1500, decision_1500_2000, decision_2000_3000, decision_3000_4000, decision_4000etc]);
+	map share_income_map <- create_map(income_groups_list, list(share_income));
+
+
 // share of age in neighborhood
 	float share_age_21_40 <- share_age_buildings_existing[0];
 	float share_age_41_60 <- share_age_buildings_existing[1];
@@ -57,7 +59,7 @@ global {
 	float nb_households_4000etc <- share_income[5];
 	
 	
-	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
+	
 	
 	
 	
@@ -77,7 +79,7 @@ global {
 	
 	//to discuss: sinnvoll die zeilen code zu sparen und matritzen direkt in liste überführen? also keine extra globals anlegen? oder werden diese ggf an anderer stelle nochmal benötigt bzw sorgen für bessere übersichtlichkeit?
 	
-	list shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
+	list<float> shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
 	list shares_tenants_list <- [share_tenants_500_1000, share_tenants_1000_1500, share_tenants_1500_2000, share_tenants_2000_3000, share_tenants_3000_4000, share_tenants_4000etc];
 	
 	map share_owner_map <- create_map(income_groups_list, shares_owner_list); 
@@ -122,7 +124,7 @@ global {
 	float share_unemployed_4000etc <- share_employment_income[5,3];
 	float share_pensioner_4000etc <- share_employment_income[5,4];
 
-
+	//list ssl <- share_employment_income row_at 0;
 	list shares_student_list <- [share_student_500_1000, share_student_1000_1500, share_student_1500_2000, share_student_2000_3000, share_student_3000_4000, share_student_4000etc];
 	list shares_employed_list <- [share_employed_500_1000, share_employed_1000_1500, share_employed_1500_2000, share_employed_2000_3000, share_employed_3000_4000, share_employed_4000etc];
 	list shares_selfemployed_list <- [share_selfemployed_500_1000, share_selfemployed_1000_1500, share_selfemployed_1500_2000, share_selfemployed_2000_3000, share_selfemployed_3000_4000, share_selfemployed_4000etc];
@@ -140,6 +142,44 @@ global {
 //verkürzen durch liste?
 	init { //erste Integration der Zahl der Haushalte; Schritt 2 -> Ausrichten an Anzahl der im GIS-Datensatz hinterlegten Wohnungen
 		
+		loop income_group over: income_groups_list {
+			let letters <- ["a", "b", "c", "d"];
+			loop i over: range(0,3) {
+				create income_group number: share_income_map[income_group] * nb_units * 0.25 {
+					float decision_500_1000_CEEK_min <- decision_500_1000[1,i];
+					float decision_500_1000_CEEK_1st <- decision_500_1000[1,i+1];
+					CEEK <- rnd (decision_500_1000_CEEK_min, decision_500_1000_CEEK_1st);
+					float decision_500_1000_CEEA_min <- decision_500_1000[2,i];
+					float decision_500_1000_CEEA_1st <- decision_500_1000[2,i+1];
+					CEEA <- rnd (decision_500_1000_CEEA_min, decision_500_1000_CEEA_1st);
+					float decision_500_1000_EDA_min <- decision_500_1000[3,i];
+					float decision_500_1000_EDA_1st <- decision_500_1000[3,i+1];
+					EDA <- rnd (decision_500_1000_EDA_min, decision_500_1000_EDA_1st);
+					float decision_500_1000_PN_min <- decision_500_1000[4,i];
+					float decision_500_1000_PN_1st <- decision_500_1000[4,i+1];
+					PN <- rnd (decision_500_1000_PN_min, decision_500_1000_PN_1st);
+					float decision_500_1000_SN_min <- decision_500_1000[5,i];
+					float decision_500_1000_SN_1st <- decision_500_1000[5,i+1];
+					SN <- rnd (decision_500_1000_SN_min, decision_500_1000_SN_1st);
+					float decision_500_1000_EEH_min <- decision_500_1000[6,i];
+					float decision_500_1000_EEH_1st <- decision_500_1000[6,i+1];
+					EEH <- rnd (decision_500_1000_EEH_min, decision_500_1000_EEH_1st);
+					float decision_500_1000_PBC_I_min <- decision_500_1000[7,i];
+					float decision_500_1000_PBC_I_1st <- decision_500_1000[7,i+1];
+					PBC_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
+					float decision_500_1000_PBC_C_min <- decision_500_1000[8,i];
+					float decision_500_1000_PBC_C_1st <- decision_500_1000[8,i+1];
+					PBC_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
+					float decision_500_1000_PBC_S_min <- decision_500_1000[9,i];
+					float decision_500_1000_PBC_S_1st <- decision_500_1000[9,i+1];
+					PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
+					id_group <- string(income_group) + "_" + letters[i]; // passt das, wenn die ID so aussieht?
+					
+					
+				}
+			}
+		}
+		/**
 		create households_500_1000 number: nb_households_500_1000 * nb_units * 0.25{ 
 			float decision_500_1000_CEEK_min <- decision_500_1000[1,0];
 			float decision_500_1000_CEEK_1st <- decision_500_1000[1,1];
@@ -869,7 +909,7 @@ global {
 			PBC_S <- rnd (decision_4000etc_PBC_S_3rd, decision_4000etc_PBC_S_max);
 			id_group <- "4000etc_d";
 		}
-		
+		*/
 		
 // Age -> distributes the share of age-groups among the generic-species household
 		ask (int(share_age_21_40 * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {//!bool(each.age) ist TRUE, wenn age noch nicht existiert
@@ -893,112 +933,34 @@ global {
 				ownership <- "tenant";
 			}
 			
-			/*///////////
-			ask (share_owner_map[income_group] * length(income_group)) among income_group { //existierte der fehler bereits vorher? wieso keine multiplikation von listen möglich?
+			ask int(share_owner_map[income_group] * length(income_group)) among income_group { //das Problem ist, dass der Parser immer wissen möchte, mit welchen Typen er arbeitet. Ich hab die jetzt schon oben als float deklariert (Zeile 80), dann funktioniert es.
 				ownership <- "owner";
 			}
-			////////////*/
+			
 			
 		}
 		
 	
 // problem behoben, allerdings duerfte verkuerzen durch liste möglich sein..	
 // Employment -> distributes the share of employment-groups among household-groups
-		ask (share_student_500_1000 * length(households_500_1000)) among households_500_1000 {
-			employment <- "student";
-		}
-		ask (share_employed_500_1000 * length(households_500_1000)) among households_500_1000 where (!bool(each.employment)) {
-			employment <- "employed";
-		}
-		ask (share_selfemployed_500_1000 * length(households_500_1000)) among households_500_1000 where (!bool(each.employment)) {
-			employment <- "self-employed";
-		}
-		ask (share_unemployed_500_1000 * length(households_500_1000)) among households_500_1000 where (!bool(each.employment)) {
-			employment <- "unemployed";
-		}
-		ask (share_pensioner_500_1000 * length(households_500_1000)) among households_500_1000 where (!bool(each.employment)) {
-			employment <- "pensioner";
-		}
-		
-		ask (share_student_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
-			employment <- "student";
-		}
-		ask (share_employed_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
-			employment <- "employed";
-		}
-		ask (share_selfemployed_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
-			employment <- "self-employed";
-		}
-		ask (share_unemployed_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
-			employment <- "unemployed";
-		}
-		ask (share_pensioner_1000_1500 * length(households_1000_1500)) among households_1000_1500 where (!bool(each.employment)) {
-			employment <- "pensioner";
+		loop income_group over: income_groups_list {
+			ask int(share_student[income_group] * length(income_group)) among income_group{
+				employment <- "student";
+			}
+			ask int(share_employed[income_group] * length(income_group)) among income_group where (!bool(each.employment)) {
+				employment <- "employed";
+			}
+			ask int(share_selfemployed[income_group] * length(income_group)) among income_group where (!bool(each.employment)) {
+				employment <- "self-employed";
+			}
+			ask int(share_unemployed[income_group] * length(income_group)) among income_group where (!bool(each.employment)) {
+				employment <- "unemployed";
+			}
+			ask int(share_pensioner[income_group] * length(income_group)) among income_group where (!bool(each.employment)) {
+				employment <- "pensioner";
+			}
 		}
 		
-		ask (share_student_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
-			employment <- "student";
-		}
-		ask (share_employed_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
-			employment <- "employed";
-		}
-		ask (share_selfemployed_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
-			employment <- "self-employed";
-		}
-		ask (share_unemployed_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
-			employment <- "unemployed";
-		}
-		ask (share_pensioner_1500_2000 * length(households_1500_2000)) among households_1500_2000 where (!bool(each.employment)) {
-			employment <- "pensioner";
-		}
-		
-		ask (share_student_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
-			employment <- "student";
-		}
-		ask (share_employed_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
-			employment <- "employed";
-		}
-		ask (share_selfemployed_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
-			employment <- "self-employed";
-		}
-		ask (share_unemployed_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
-			employment <- "unemployed";
-		}
-		ask (share_pensioner_2000_3000 * length(households_2000_3000)) among households_2000_3000 where (!bool(each.employment)) {
-			employment <- "pensioner";
-		}
-		
-		ask (share_student_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
-			employment <- "student";
-		}
-		ask (share_employed_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
-			employment <- "employed";
-		}
-		ask (share_selfemployed_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
-			employment <- "self-employed";
-		}
-		ask (share_unemployed_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
-			employment <- "unemployed";
-		}
-		ask (share_pensioner_3000_4000 * length(households_3000_4000)) among households_3000_4000 where (!bool(each.employment)) {
-			employment <- "pensioner";
-		}
-		
-		ask (share_student_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
-			employment <- "student";
-		}
-		ask (share_employed_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
-			employment <- "employed";
-		}
-		ask (share_selfemployed_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
-			employment <- "self-employed";
-		}
-		ask (share_unemployed_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
-			employment <- "unemployed";
-		}
-		ask (share_pensioner_4000etc * length(households_4000etc)) among households_4000etc where (!bool(each.employment)) {
-			employment <- "pensioner";
-		}
 		
 		
 //Network
