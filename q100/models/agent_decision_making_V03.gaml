@@ -179,21 +179,22 @@ global {
 // Employment -> distributes the share of employment-groups among household-groups
 
 		loop income_group over: income_groups_list {
-			ask int(share_student[income_group] * length(income_group)) among income_group{
+			ask round(share_student[income_group] * length(income_group)) among income_group{
 				employment <- "student";
 			}
-			ask int(share_employed[income_group] * length(income_group)) among income_group where (!bool(each.employment)) {
-				employment <- "employed";
-			}
-			ask int(share_selfemployed[income_group] * length(income_group)) among income_group where (!bool(each.employment)) {
+			ask round(share_selfemployed[income_group] * length(income_group)) among income_group where (each.employment = nil) {
 				employment <- "self-employed";
 			}
-			ask int(share_unemployed[income_group] * length(income_group)) among income_group where (!bool(each.employment)) {
+			ask round(share_unemployed[income_group] * length(income_group)) among income_group where (each.employment = nil) {
 				employment <- "unemployed";
 			}
-			ask int(share_pensioner[income_group] * length(income_group)) among income_group where (!bool(each.employment)) {
+			ask round(share_pensioner[income_group] * length(income_group)) among income_group where (each.employment = nil) {
 				employment <- "pensioner";
 			}
+			ask income_group where (each.employment = nil) {
+				employment <- "employed";
+			}
+
 		}
 		
 		
