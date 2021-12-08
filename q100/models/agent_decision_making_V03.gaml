@@ -201,39 +201,42 @@ global {
 		
 //Network
 //Erweiterung: Verknüpfen der Kontakte, die nicht "direct" sind mit Ausprägung der psych-Werte/income, um preferential attachment nach Eigenschaften abzubilden
-
-	//entweder ebenfalls alle an dieser stelle aufführen oder über liste möglich?
-	int network_spatial_direct_employed_min <- network_employed[0,1];
-	int network_spatial_direct_employed_1st <- network_employed[2,1];
-	int network_spatial_direct_employed_median <- network_employed[3,1];
-	int network_spatial_direct_employed_3rd <- network_employed[4,1];
-	int network_spatial_direct_employed_max <- network_employed[5,1];
+	write(network_employed);
 	
-	int network_spatial_street_employed <- network_employed[1,1];
-	int network_spatial_neighborhood_employed <- network_employed[1,1];
-	int network_spatial_beyond_employed <- network_employed[1,1];
-	int network_temporal_daily_employed <-  network_employed[1,1];
-	int network_temporal_weekly_employed <- network_employed[1,1];
-	int network_temporal_occasional_employed <- network_employed[1,1];
-	
-	float network_socialgroup_employed <- network_employed[1,1];
+	let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
+	let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
+	let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal");
+	let spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial");
+	loop emp_status over: employment_status_list {
+		let tmp_households <- agents of_generic_species households where (each.employment = emp_status);
+		let nb <- length(tmp_households);
+		let network_matrix <- network_map[emp_status];
+		write network_matrix;
+		loop attr over: temporal_network_attributes {
+			let index <- index_of(temporal_network_attributes, attr);
+			loop i over: range(0, 3) {
+				write i;
+				ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+					self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
+				}
+			}
+		}
+		loop attr over: spatial_network_attributes {
+			let index <- index_of(spatial_network_attributes, attr);
+			loop i over: range(0, 3) {
+				write i;
+				ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+					self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
+				}
+			}
+		}
+	} 
 	
 
 		
 	//muss weiter geführt werden - liste?
 	//noch nicht auf tatsächliche Funktion geprüft - falls "length" in dem kontext nicht funktioniert ggf "count" verwenden
-	let nb_employed <- length(agents of_generic_species households where (each.age = "employed"));// ggf nicht als temp_variable sondern als global definieren? ggf an anderer stelle ebenfalls gebraucht
-	ask (0.25 * nb_employed) among (agents of_generic_species households where (each.age = "employed")) {
-		network_contacts_spatial_direct <- rnd (network_spatial_direct_employed_min, network_spatial_direct_employed_1st);	
-	}
-	ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_spatial_direct)))) {
-		network_contacts_spatial_direct <- rnd (network_spatial_direct_employed_1st, network_spatial_direct_employed_median);	
-	}		
-	ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_spatial_direct)))) {
-		network_contacts_spatial_direct <- rnd (network_spatial_direct_employed_median, network_spatial_direct_employed_3rd);	
-	}	
-	ask (0.25 * nb_employed) among (agents of_generic_species households where ((each.age = "employed") and (!bool(each.network_contacts_spatial_direct)))) {
-		network_contacts_spatial_direct <- rnd (network_spatial_direct_employed_3rd, network_spatial_direct_employed_max);	
+	
 	}
 		
 				
@@ -247,7 +250,7 @@ global {
 		////////////////////////////////////////////////////////////////////////////////
 		
 		
-}
+
 
 species households {
 	float CEEK; // Climate-Energy-Environment Knowledge
@@ -271,13 +274,14 @@ species households {
 	string ownership; 
 	string employment; //defines network behavior of each agent in parent species by employment status
 
+	int network_contacts_temporal_daily;	
+	int network_contacts_temporal_weekly;
+	int network_contacts_temporal_occasional;
 	int network_contacts_spatial_direct;
 	int network_contacts_spatial_street;
 	int network_contacts_spatial_neighborhood;
 	int network_contacts_spatial_beyond;
-	int network_contacts_temporal_daily;	
-	int network_contacts_temporal_weekly;
-	int network_contacts_temporal_occasional;
+	
 	float network_socialgroup;
 				
 } 
