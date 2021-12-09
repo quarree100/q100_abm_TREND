@@ -50,48 +50,7 @@ global {
 	//list network_groups_list 
 	//map network_map <- create_map(	
 	
-	
-	
 
-	
-	
-
-/*/ share of employment sorted by income	
-	float share_student_500_1000 <- share_employment_income[1,0];
-	float share_employed_500_1000 <- share_employment_income[1,1];
-	float share_selfemployed_500_1000 <- share_employment_income[1,2];
-	float share_unemployed_500_1000 <- share_employment_income[1,3];
-	float share_pensioner_500_1000 <- share_employment_income[1,4];
-	
-	float share_student_1000_1500 <- share_employment_income[2,0];
-	float share_employed_1000_1500 <- share_employment_income[2,1];
-	float share_selfemployed_1000_1500 <- share_employment_income[2,2];
-	float share_unemployed_1000_1500 <- share_employment_income[2,3];
-	float share_pensioner_1000_1500 <- share_employment_income[2,4];
-	
-	float share_student_1500_2000 <- share_employment_income[3,0];
-	float share_employed_1500_2000 <- share_employment_income[3,1];
-	float share_selfemployed_1500_2000 <- share_employment_income[3,2];
-	float share_unemployed_1500_2000 <- share_employment_income[3,3];
-	float share_pensioner_1500_2000 <- share_employment_income[3,4];
-	
-	float share_student_2000_3000 <- share_employment_income[4,0];
-	float share_employed_2000_3000 <- share_employment_income[4,1];
-	float share_selfemployed_2000_3000 <- share_employment_income[4,2];
-	float share_unemployed_2000_3000 <- share_employment_income[4,3];
-	float share_pensioner_2000_3000 <- share_employment_income[4,4];
-	
-	float share_student_3000_4000 <- share_employment_income[5,0];
-	float share_employed_3000_4000 <- share_employment_income[5,1];
-	float share_selfemployed_3000_4000 <- share_employment_income[5,2];
-	float share_unemployed_3000_4000 <- share_employment_income[5,3];
-	float share_pensioner_3000_4000 <- share_employment_income[5,4];
-	
-	float share_student_4000etc <- share_employment_income[5,0];
-	float share_employed_4000etc <- share_employment_income[5,1];
-	float share_selfemployed_4000etc <- share_employment_income[5,2];
-	float share_unemployed_4000etc <- share_employment_income[5,3];
-	float share_pensioner_4000etc <- share_employment_income[5,4]; */
 
 	//list ssl <- share_employment_income row_at 0;
 	list<float> shares_student_list <- [share_employment_income[1,0], share_employment_income[2,0], share_employment_income[3,0], share_employment_income[4,0], share_employment_income[5,0], share_employment_income[6,0]];
@@ -200,7 +159,7 @@ global {
 		
 		
 //Network
-//Erweiterung: Verknüpfen der Kontakte, die nicht "direct" sind mit Ausprägung der psych-Werte/income, um preferential attachment nach Eigenschaften abzubilden
+// TODO Erweiterung: Verknüpfen der Kontakte, die nicht "direct" sind mit Ausprägung der psych-Werte/income, um preferential attachment nach Eigenschaften abzubilden
 	write(network_employed);
 	
 	let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
