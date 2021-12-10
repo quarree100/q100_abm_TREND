@@ -37,7 +37,7 @@ global {
 	
 
 
-	int nb_units <- 377; // derzeit: anzahl Wohnungen-Bestand; eigentlich: zähle anzahl der freien wohneinheiten -> Wert -> Berechne anschließend Anzahl der inits anhand share-of Einkommensgruppe an Gesamthaushalten
+	int nb_units <- 377; 
 	
 	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map share_income_map <- create_map(income_groups_list, list(share_income));
@@ -45,14 +45,8 @@ global {
 	
 	list<float> shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];	
 	map share_owner_map <- create_map(income_groups_list, shares_owner_list); 
-	
-	//map share_employment_map <- create_map(income_groups_list, share_employment_income);
-	//list network_groups_list 
-	//map network_map <- create_map(	
-	
 
 
-	//list ssl <- share_employment_income row_at 0;
 	list<float> shares_student_list <- [share_employment_income[1,0], share_employment_income[2,0], share_employment_income[3,0], share_employment_income[4,0], share_employment_income[5,0], share_employment_income[6,0]];
 	list<float> shares_employed_list <- [share_employment_income[1,1], share_employment_income[2,1], share_employment_income[3,1], share_employment_income[4,1], share_employment_income[5,1], share_employment_income[6,1]];
 	list<float> shares_selfemployed_list <- [share_employment_income[1,2], share_employment_income[2,2], share_employment_income[3,2], share_employment_income[4,2], share_employment_income[5,2], share_employment_income[6,2]];
@@ -67,7 +61,7 @@ global {
 		
 
 
-	init { //erste Integration der Zahl der Haushalte; Schritt 2 -> Ausrichten an Anzahl der im GIS-Datensatz hinterlegten Wohnungen
+	init { 
 		
 		loop income_group over: income_groups_list {
 			let letters <- ["a", "b", "c", "d"];
@@ -100,7 +94,7 @@ global {
 					float decision_500_1000_PBC_S_min <- decision_500_1000[9,i];
 					float decision_500_1000_PBC_S_1st <- decision_500_1000[9,i+1];
 					PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
-					id_group <- string(income_group) + "_" + letters[i]; // passt das, wenn die ID so aussieht? - Ja			
+					id_group <- string(income_group) + "_" + letters[i]; 			
 				}
 			}
 		}
@@ -108,7 +102,7 @@ global {
 				
 // Age -> distributes the share of age-groups among the generic-species household
 	
-		ask (int(share_age_buildings_existing[0] * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {//!bool(each.age) ist TRUE, wenn age noch nicht existiert
+		ask (int(share_age_buildings_existing[0] * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
 			age <- rnd (21, 40);	
 		}
 		ask (int(share_age_buildings_existing[1] * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
@@ -129,7 +123,7 @@ global {
 				ownership <- "tenant";
 			}
 			
-			ask int(share_owner_map[income_group] * length(income_group)) among income_group { //das Problem ist, dass der Parser immer wissen möchte, mit welchen Typen er arbeitet. Ich hab die jetzt schon oben als float deklariert (Zeile 80), dann funktioniert es.
+			ask int(share_owner_map[income_group] * length(income_group)) among income_group { 
 				ownership <- "owner";
 			}
 		}
@@ -158,56 +152,34 @@ global {
 		
 		
 		
-//Network
-// TODO Erweiterung: Verknüpfen der Kontakte, die nicht "direct" sind mit Ausprägung der psych-Werte/income, um preferential attachment nach Eigenschaften abzubilden
-	write(network_employed);
-	
-	let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
-	let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
-	let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal");
-	let spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial");
-	loop emp_status over: employment_status_list {
-		let tmp_households <- agents of_generic_species households where (each.employment = emp_status);
-		let nb <- length(tmp_households);
-		let network_matrix <- network_map[emp_status];
-		write network_matrix;
-		loop attr over: temporal_network_attributes {
-			let index <- index_of(temporal_network_attributes, attr);
-			loop i over: range(0, 3) {
-				write i;
-				ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
-					self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
+//Network	
+		let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
+		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
+		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal");
+		let spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial");
+		loop emp_status over: employment_status_list {
+			let tmp_households <- agents of_generic_species households where (each.employment = emp_status);
+			let nb <- length(tmp_households);
+			let network_matrix <- network_map[emp_status];
+			loop attr over: temporal_network_attributes {
+				let index <- index_of(temporal_network_attributes, attr);
+				loop i over: range(0, 3) {
+					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
+					}
 				}
 			}
-		}
-		loop attr over: spatial_network_attributes {
-			let index <- index_of(spatial_network_attributes, attr);
-			loop i over: range(0, 3) {
-				write i;
-				ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
-					self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
+			loop attr over: spatial_network_attributes {
+				let index <- index_of(spatial_network_attributes, attr);
+				loop i over: range(0, 3) {
+					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+						self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
+					}
 				}
 			}
-		}
-	} 
-	
-
-		
-	//muss weiter geführt werden - liste?
-	//noch nicht auf tatsächliche Funktion geprüft - falls "length" in dem kontext nicht funktioniert ggf "count" verwenden
-	
-	}
-		
-				
-}		/////////////////////////////////////TO-DO//////////////////////////////////////
-	//////////	- Finalisieren der Datenintegration; ggf Uebertragen der struktur in Listen
-	//////////	- Ueberpruefung einzelner Werte in Datei "socio-data_export_final" -> bspw "families"
-	//////////  - 
-	//////////  - Beginn der Erstellung des Entscheidungs-Algorithmus
-	//////////  - Uebertrag in Shapefiles
-	//////////  - Technischer Layer	
-		////////////////////////////////////////////////////////////////////////////////
-		
+		} 
+	}				
+}
 		
 
 
@@ -230,9 +202,17 @@ species households {
 	string id_group; // identification which quartile within the income group agent belongs to
 		
 	int age; //random mean-age of households
-	string ownership; 
-	string employment; //defines network behavior of each agent in parent species by employment status
+	string ownership; //type of ownership status of households
+	string employment; //employment status of households !!!
+	
+	
+//- SE wird eine andere Netzwerkstruktur unterstellt als E & P; sofern eine Person SE ist, wird dies daher auf den Haushalt übertragen
+//- S stehen für sich; ebenso U
+//- Haushalte in denen sowohl E & P vertreten sind, werden E zugeordnet, da mindestens eine Person erwerbstätig ist und der Einfluss auf das Netzwerkverhalten angenommen wird
+	
+	
 
+	//defines network behavior of each agent in parent species by employment status
 	int network_contacts_temporal_daily;	
 	int network_contacts_temporal_weekly;
 	int network_contacts_temporal_occasional;
