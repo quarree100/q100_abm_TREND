@@ -63,9 +63,9 @@ global {
 
 	init { 
 		
-		loop income_group over: income_groups_list {
+		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
 			let letters <- ["a", "b", "c", "d"];
-			loop i over: range(0,3) {
+			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
 				create income_group number: share_income_map[income_group] * nb_units * 0.25 {
 					float decision_500_1000_CEEK_min <- decision_500_1000[1,i];
 					float decision_500_1000_CEEK_1st <- decision_500_1000[1,i+1];
@@ -129,14 +129,13 @@ global {
 		}
 		
 	
-// Employment -> distributes the share of employment-groups among household-groups
+// Employment -> distributes the share of employment-groups among income-groups
 
 		loop income_group over: income_groups_list {
 			ask round(share_student[income_group] * length(income_group)) among income_group{
 				employment <- "student";
 			}
 			ask round(share_selfemployed[income_group] * length(income_group)) among income_group where (each.employment = nil) {
-				employment <- "self-employed";
 			}
 			ask round(share_unemployed[income_group] * length(income_group)) among income_group where (each.employment = nil) {
 				employment <- "unemployed";
@@ -144,7 +143,7 @@ global {
 			ask round(share_pensioner[income_group] * length(income_group)) among income_group where (each.employment = nil) {
 				employment <- "pensioner";
 			}
-			ask income_group where (each.employment = nil) {
+			ask income_group where (each.employment = nil) { // all remaining households are assinged to 'employed'
 				employment <- "employed";
 			}
 
@@ -152,26 +151,26 @@ global {
 		
 		
 		
-//Network	
-		let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
+//Network -> distributes the share of network-relations among the households. there are different network values for each employment status
+		let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"]; 
 		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
-		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal");
-		let spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial");
-		loop emp_status over: employment_status_list {
-			let tmp_households <- agents of_generic_species households where (each.employment = emp_status);
-			let nb <- length(tmp_households);
-			let network_matrix <- network_map[emp_status];
-			loop attr over: temporal_network_attributes {
+		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
+		let spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
+		loop emp_status over: employment_status_list { //iterate over the different employment states
+			let tmp_households <- agents of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
+			let nb <- length(tmp_households); 
+			let network_matrix <- network_map[emp_status]; //corresponding matrix of network values
+			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
 				let index <- index_of(temporal_network_attributes, attr);
-				loop i over: range(0, 3) {
+				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
 					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
 						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
 					}
 				}
 			}
-			loop attr over: spatial_network_attributes {
+			loop attr over: spatial_network_attributes { // loop over the different spatial network variables of each household
 				let index <- index_of(spatial_network_attributes, attr);
-				loop i over: range(0, 3) {
+				loop i over: range(0, 3) {// loop to split the households in 4 quarters
 					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
 						self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
 					}
