@@ -37,7 +37,8 @@ global {
 	
 
 
-	int nb_units <- 377; 
+	int nb_units <- 377; //number of households in v1
+	float share_families <- 0.17; //share of families in whole neighborhood
 	
 	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map share_income_map <- create_map(income_groups_list, list(share_income));
@@ -103,7 +104,11 @@ global {
 // Age -> distributes the share of age-groups among the generic-species household
 	
 		ask (int(share_age_buildings_existing[0] * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
-			age <- rnd (21, 40);	
+			age <- rnd (21, 40);
+			let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units))); //calculates share of families in neighborhood for households with age 21-40
+			if flip(share_families_21_40) {
+				family <- true;
+			}	
 		}
 		ask (int(share_age_buildings_existing[1] * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
 			age <- rnd (41, 60);	
@@ -152,7 +157,7 @@ global {
 		
 		
 		
-//Network	
+// Network	
 		let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
 		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
 		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal");
@@ -177,7 +182,7 @@ global {
 					}
 				}
 			}
-		} 
+		} 		
 	}				
 }
 		
@@ -221,7 +226,8 @@ species households {
 	int network_contacts_spatial_neighborhood;
 	int network_contacts_spatial_beyond;
 	
-	float network_socialgroup;
+	bool family; //households of age between 21 and 40 have a possibility of being families -> impact on socialgroup variable
+	bool network_socialgroup; //households are part of a social group - accelerates the networking behavior
 				
 } 
 
