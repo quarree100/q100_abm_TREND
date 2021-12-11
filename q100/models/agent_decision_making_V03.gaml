@@ -222,15 +222,16 @@ species households {
 	
 	float network_socialgroup;
 	
-	
-	action update_decision_thresholds {
-		/* calculate household's current knowledge (0 <= KA <= 1),
-		motivation (0 <= PSN <= 1) and
-		consideration (0 <= N_PBC <= 1) **/ 
-		KA <- mean(CEEK, CEEA, EDA) / 7
-		PSN <- mean(PN, SN) / 7
-		N_PBC <- mean(PBC_I, PBC_C, PBC_S) / 7
+	action update_decision_thresholds{
+	/* calculate household's current knowledge (0 <= KA <= 1),
+	motivation (0 <= PSN <= 1) and
+	consideration (0 <= N_PBC <= 1) **/ 
+	KA <- mean(CEEK, CEEA, EDA) / 7;
+	PSN <- mean(PN, SN) / 7;
+	N_PBC <- mean(PBC_I, PBC_C, PBC_S) / 7;
 	}
+	
+
 
 } 
 
