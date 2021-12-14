@@ -10,12 +10,14 @@ model agent_decision_making
 
 
 global {
-	//shape_file example_shapefile <- shape_file("../includes/shapefiles/example.shp");
-	//bool show_heatingnetwork <- true;
-	//bool show_roads <- true;
+	// shape_file example_shapefile <- shape_file("../includes/shapefiles/example.shp");
+	// bool show_heatingnetwork <- true;
+	// bool show_roads <- true;
 	
 	
-// for choosing specific value -> [columns, rows]		
+// for choosing specific value -> [columns, rows]
+
+	// data of survey#1 - values for decision-making distributed in six income-groups
 	matrix decision_500_1000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv", ",", float, true));
 	matrix decision_1000_1500 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1000-1500_V1.csv", ",", float, true));
 	matrix decision_1500_2000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1500-2000_V1.csv", ",", float, true));
@@ -23,22 +25,27 @@ global {
 	matrix decision_3000_4000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_3000-4000_V1.csv", ",", float, true));
 	matrix decision_4000etc <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_4000etc_V1.csv", ",", float, true));
 	
-	matrix network_employed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_employed_V1.csv", ",", float, true));
-	matrix network_pensioner <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_pensioner_V1.csv", ",", float, true));
-	matrix network_selfemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_self-employed_V1.csv", ",", float, true));
-	matrix network_student <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_student_V1.csv", ",", float, true));
-	matrix network_unemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_unemployed_V1.csv", ",", float, true));
+	// data of survey#2 - values for networking distributed in five employment-groups
+	matrix network_employed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_employed_V1.csv", ",", int, true));
+	matrix network_pensioner <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_pensioner_V1.csv", ",", int, true));
+	matrix network_selfemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_self-employed_V1.csv", ",", int, true));
+	matrix network_student <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_student_V1.csv", ",", int, true));
+	matrix network_unemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_unemployed_V1.csv", ",", int, true));
+	
 	
 	matrix share_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-income_V1.csv",  ",", float, true)); // share of households in neighborhood sorted by income
-	matrix share_employment_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true));
-	matrix share_ownership_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true));
+	matrix share_employment_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true)); // distribution of employment status of households in neighborhood sorted by income
+	matrix share_ownership_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
 	
-	matrix share_age_buildings_existing <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true));
+	matrix share_age_buildings_existing <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
 	
 
 
-	int nb_units <- 377; //number of households in v1
-	float share_families <- 0.17; //share of families in whole neighborhood
+	int nb_units <- 377; // number of households in v1
+	float share_families <- 0.17; // share of families in whole neighborhood
+	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
+	
 	
 	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map share_income_map <- create_map(income_groups_list, list(share_income));
@@ -105,7 +112,7 @@ global {
 	
 		ask (int(share_age_buildings_existing[0] * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
 			age <- rnd (21, 40);
-			let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units))); //calculates share of families in neighborhood for households with age 21-40
+			let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units))); // calculates share of families in neighborhood for households with age 21-40
 			if flip(share_families_21_40) {
 				family <- true;
 			}	
@@ -156,7 +163,6 @@ global {
 		}
 		
 		
-		
 // Network	
 		let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
 		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
@@ -182,7 +188,18 @@ global {
 					}
 				}
 			}
-		} 		
+		}
+		
+		ask agents of_generic_species households where (bool(each.family)) {
+			if flip (share_socialgroup_families) {
+				network_socialgroup <- true;
+			}	
+		}
+		ask agents of_generic_species households where (!bool(each.family)) {
+			if flip (share_socialgroup_nonfamilies) {
+				network_socialgroup <- true;
+			}	
+		} 	
 	}				
 }
 		
@@ -203,31 +220,25 @@ species households {
 	float EEH; // Energy Efficient Habits
 	
 	
-	int income; //households income/month -> ATTENTION -> besonderer Validierungshinweis, da zufaellige Menge
+	int income; // households income/month -> ATTENTION -> besonderer Validierungshinweis, da zufaellige Menge
 	string id_group; // identification which quartile within the income group agent belongs to
 		
-	int age; //random mean-age of households
-	string ownership; //type of ownership status of households
-	string employment; //employment status of households !!!
-	
-	
-//- SE wird eine andere Netzwerkstruktur unterstellt als E & P; sofern eine Person SE ist, wird dies daher auf den Haushalt übertragen
-//- S stehen für sich; ebenso U
-//- Haushalte in denen sowohl E & P vertreten sind, werden E zugeordnet, da mindestens eine Person erwerbstätig ist und der Einfluss auf das Netzwerkverhalten angenommen wird
-	
-	
+	int age; // random mean-age of households
+	string ownership; // type of ownership status of households
+	string employment; // employment status of households !!!
+		
 
-	//defines network behavior of each agent in parent species by employment status
-	int network_contacts_temporal_daily;	
-	int network_contacts_temporal_weekly;
-	int network_contacts_temporal_occasional;
-	int network_contacts_spatial_direct;
-	int network_contacts_spatial_street;
-	int network_contacts_spatial_neighborhood;
-	int network_contacts_spatial_beyond;
+	// defines network behavior of each agent in parent species by employment status
+	int network_contacts_temporal_daily; // amount of agents a household has daily contact with - 30x / month
+	int network_contacts_temporal_weekly; // amount of agents a household has weekly contact with - 4x / month
+	int network_contacts_temporal_occasional; // amount of agents a household has occasional contact with - 1x / month
+	int network_contacts_spatial_direct; // available amount of contacts within an households network - direct neighbors
+	int network_contacts_spatial_street; // available amount of contacts within an households network - contacts in the same street
+	int network_contacts_spatial_neighborhood; // available amount of contacts within an households network - contacts in the same neighborhood
+	int network_contacts_spatial_beyond; // available amount of contacts within an households network - contacts beyond the system's environment TODO
 	
-	bool family; //households of age between 21 and 40 have a possibility of being families -> impact on socialgroup variable
-	bool network_socialgroup; //households are part of a social group - accelerates the networking behavior
+	bool family; // represents young families - higher possibility of being part of a socialgroup
+	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 				
 } 
 
@@ -235,7 +246,7 @@ species households {
 species households_500_1000 parent: households {
 	
 	aspect base {
-		draw circle(1) color: #green; //test-darstellung
+		draw circle(1) color: #green; // test-darstellung
 	}
 	
 	int income <- rnd(500, 1000);
@@ -246,7 +257,7 @@ species households_500_1000 parent: households {
 species households_1000_1500 parent: households {
 	
 	aspect base {
-		draw circle(1) color: #red; //test-darstellung
+		draw circle(1) color: #red; // test-darstellung
 	}
 
 	int income <- rnd(1000, 1500);
@@ -257,7 +268,7 @@ species households_1000_1500 parent: households {
 species households_1500_2000 parent: households {
 	
 	aspect base {
-		draw circle(1) color: #blue; //test-darstellung
+		draw circle(1) color: #blue; // test-darstellung
 	}
 
 	int income <- rnd(1500, 2000);
@@ -268,7 +279,7 @@ species households_1500_2000 parent: households {
 species households_2000_3000 parent: households {
 	
 	aspect base {
-		draw circle(1) color: #yellow; //test-darstellung
+		draw circle(1) color: #yellow; // test-darstellung
 	}
 
 	int income <- rnd(2000, 3000);
@@ -279,7 +290,7 @@ species households_2000_3000 parent: households {
 species households_3000_4000 parent: households {
 	
 	aspect base {
-		draw circle(1) color: #purple; //test-darstellung
+		draw circle(1) color: #purple; // test-darstellung
 	}
 	
 	int income <- rnd(3000, 4000);
@@ -290,10 +301,10 @@ species households_3000_4000 parent: households {
 species households_4000etc parent: households {
 	
 	aspect base {
-		draw circle(1) color: #grey; //test-darstellung
+		draw circle(1) color: #grey; // test-darstellung
 	}
 	
-	int income <- rnd(4000, 10000); //max income / month = 10.000
+	int income <- rnd(4000, 10000); // max income / month = 10.000
 	
 	
 }
