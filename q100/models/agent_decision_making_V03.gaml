@@ -231,16 +231,17 @@ species households {
 		
 
 
-	//defines network behavior of each agent in parent species by employment status
-	int network_contacts_temporal_daily;	
-	int network_contacts_temporal_weekly;
-	int network_contacts_temporal_occasional;
-	int network_contacts_spatial_direct;
-	int network_contacts_spatial_street;
-	int network_contacts_spatial_neighborhood;
-	int network_contacts_spatial_beyond;
-	
-	float network_socialgroup;
+	// defines network behavior of each agent in parent species by employment status
+	int network_contacts_temporal_daily; // amount of agents a household has daily contact with - 30x / month
+	int network_contacts_temporal_weekly; // amount of agents a household has weekly contact with - 4x / month
+	int network_contacts_temporal_occasional; // amount of agents a household has occasional contact with - 1x / month
+	int network_contacts_spatial_direct; // available amount of contacts within an households network - direct neighbors
+	int network_contacts_spatial_street; // available amount of contacts within an households network - contacts in the same street
+	int network_contacts_spatial_neighborhood; // available amount of contacts within an households network - contacts in the same neighborhood
+	int network_contacts_spatial_beyond; // available amount of contacts within an households network - contacts beyond the system's environment TODO
+
+	bool family; // represents young families - higher possibility of being part of a socialgroup
+	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 	
 
 	
