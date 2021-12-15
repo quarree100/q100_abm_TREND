@@ -38,8 +38,8 @@ global {
 	matrix share_ownership_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
 	
 	matrix share_age_buildings_existing <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
-	
-
+	matrix average_lor_inclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups including people who never moved
+	matrix average_lor_exclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups ecluding people who never moved
 
 	int nb_units <- 377; // number of households in v1
 	float share_families <- 0.17; // share of families in whole neighborhood
@@ -223,9 +223,10 @@ species households {
 	
 	
 	int income; // households income/month -> ATTENTION -> besonderer Validierungshinweis, da zufaellige Menge
-	string id_group; // identification which quartile within the income group agent belongs to
+	string id_group; // identification which quartile within the income group the agent belongs to
 		
 	int age; // random mean-age of households
+	int lenght_of_residence <- 0; //years since the household moved in
 	string ownership; // type of ownership status of households
 	string employment; // employment status of households !!!
 		
@@ -246,13 +247,26 @@ species households {
 
 	
 	
-  action update_decision_thresholds{
-	/* calculate household's current knowledge (0 <= KA <= 1),
-	motivation (0 <= PSN <= 1) and
-	consideration (0 <= N_PBC <= 1) **/ 
-	KA <- mean(CEEK, CEEA, EDA) / 7;
-	PSN <- mean(PN, SN) / 7;
-	N_PBC <- mean(PBC_I, PBC_C, PBC_S) / 7;
+	action update_decision_thresholds{
+		/* calculate household's current knowledge (0 <= KA <= 1),
+		motivation (0 <= PSN <= 1) and
+		consideration (0 <= N_PBC <= 1) **/ 
+		KA <- mean(CEEK, CEEA, EDA) / 7;
+		PSN <- mean(PN, SN) / 7;
+		N_PBC <- mean(PBC_I, PBC_C, PBC_S) / 7;
+	}
+	
+	reflex move_out {
+		age <- age + 1;
+		lenght_of_residence <- lenght_of_residence + 1;
+		if age >= 100 {
+			do die;
+		}
+		let current_age_group type: int <- floor(age / 20) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
+		let moving_prob type: float <- 1 / average_lor_inclusive[1, current_age_group];
+		if flip(moving_prob) {
+			do die;
+		}
 	}
 
 } 
