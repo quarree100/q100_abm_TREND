@@ -38,8 +38,8 @@ global {
 	matrix share_ownership_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
 	
 	matrix share_age_buildings_existing <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
-	
-
+	matrix average_lor_inclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups including people who never moved
+	matrix average_lor_exclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups ecluding people who never moved
 
 	int nb_units <- 377; // number of households in v1
 	float share_families <- 0.17; // share of families in whole neighborhood
@@ -75,32 +75,32 @@ global {
 			let letters <- ["a", "b", "c", "d"];
 			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
 				create income_group number: share_income_map[income_group] * nb_units * 0.25 {
-					float decision_500_1000_CEEK_min <- decision_500_1000[1,i];
-					float decision_500_1000_CEEK_1st <- decision_500_1000[1,i+1];
+					float decision_500_1000_CEEK_min <- decision_map[income_group][1,i];
+					float decision_500_1000_CEEK_1st <- decision_map[income_group][1,i+1];
 					CEEK <- rnd (decision_500_1000_CEEK_min, decision_500_1000_CEEK_1st);
-					float decision_500_1000_CEEA_min <- decision_500_1000[2,i];
-					float decision_500_1000_CEEA_1st <- decision_500_1000[2,i+1];
+					float decision_500_1000_CEEA_min <- decision_map[income_group][2,i];
+					float decision_500_1000_CEEA_1st <- decision_map[income_group][2,i+1];
 					CEEA <- rnd (decision_500_1000_CEEA_min, decision_500_1000_CEEA_1st);
-					float decision_500_1000_EDA_min <- decision_500_1000[3,i];
-					float decision_500_1000_EDA_1st <- decision_500_1000[3,i+1];
+					float decision_500_1000_EDA_min <- decision_map[income_group][3,i];
+					float decision_500_1000_EDA_1st <- decision_map[income_group][3,i+1];
 					EDA <- rnd (decision_500_1000_EDA_min, decision_500_1000_EDA_1st);
-					float decision_500_1000_PN_min <- decision_500_1000[4,i];
-					float decision_500_1000_PN_1st <- decision_500_1000[4,i+1];
+					float decision_500_1000_PN_min <- decision_map[income_group][4,i];
+					float decision_500_1000_PN_1st <- decision_map[income_group][4,i+1];
 					PN <- rnd (decision_500_1000_PN_min, decision_500_1000_PN_1st);
-					float decision_500_1000_SN_min <- decision_500_1000[5,i];
-					float decision_500_1000_SN_1st <- decision_500_1000[5,i+1];
+					float decision_500_1000_SN_min <- decision_map[income_group][5,i];
+					float decision_500_1000_SN_1st <- decision_map[income_group][5,i+1];
 					SN <- rnd (decision_500_1000_SN_min, decision_500_1000_SN_1st);
-					float decision_500_1000_EEH_min <- decision_500_1000[6,i];
-					float decision_500_1000_EEH_1st <- decision_500_1000[6,i+1];
+					float decision_500_1000_EEH_min <- decision_map[income_group][6,i];
+					float decision_500_1000_EEH_1st <- decision_map[income_group][6,i+1];
 					EEH <- rnd (decision_500_1000_EEH_min, decision_500_1000_EEH_1st);
-					float decision_500_1000_PBC_I_min <- decision_500_1000[7,i];
-					float decision_500_1000_PBC_I_1st <- decision_500_1000[7,i+1];
+					float decision_500_1000_PBC_I_min <- decision_map[income_group][7,i];
+					float decision_500_1000_PBC_I_1st <- decision_map[income_group][7,i+1];
 					PBC_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
-					float decision_500_1000_PBC_C_min <- decision_500_1000[8,i];
-					float decision_500_1000_PBC_C_1st <- decision_500_1000[8,i+1];
+					float decision_500_1000_PBC_C_min <- decision_map[income_group][8,i];
+					float decision_500_1000_PBC_C_1st <- decision_map[income_group][8,i+1];
 					PBC_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
-					float decision_500_1000_PBC_S_min <- decision_500_1000[9,i];
-					float decision_500_1000_PBC_S_1st <- decision_500_1000[9,i+1];
+					float decision_500_1000_PBC_S_min <- decision_map[income_group][9,i];
+					float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
 					PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 					id_group <- string(income_group) + "_" + letters[i]; 			
 				}
@@ -223,9 +223,10 @@ species households {
 	
 	
 	int income; // households income/month -> ATTENTION -> besonderer Validierungshinweis, da zufaellige Menge
-	string id_group; // identification which quartile within the income group agent belongs to
+	string id_group; // identification which quartile within the income group the agent belongs to
 		
 	int age; // random mean-age of households
+	int lenght_of_residence <- 0; //years since the household moved in
 	string ownership; // type of ownership status of households
 	string employment; // employment status of households !!!
 		
@@ -246,13 +247,26 @@ species households {
 
 	
 	
-  action update_decision_thresholds{
-	/* calculate household's current knowledge (0 <= KA <= 1),
-	motivation (0 <= PSN <= 1) and
-	consideration (0 <= N_PBC <= 1) **/ 
-	KA <- mean(CEEK, CEEA, EDA) / 7;
-	PSN <- mean(PN, SN) / 7;
-	N_PBC <- mean(PBC_I, PBC_C, PBC_S) / 7;
+	action update_decision_thresholds{
+		/* calculate household's current knowledge (0 <= KA <= 1),
+		motivation (0 <= PSN <= 1) and
+		consideration (0 <= N_PBC <= 1) **/ 
+		KA <- mean(CEEK, CEEA, EDA) / 7;
+		PSN <- mean(PN, SN) / 7;
+		N_PBC <- mean(PBC_I, PBC_C, PBC_S) / 7;
+	}
+	
+	reflex move_out {
+		age <- age + 1;
+		lenght_of_residence <- lenght_of_residence + 1;
+		if age >= 100 {
+			do die;
+		}
+		let current_age_group type: int <- floor(age / 20) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
+		let moving_prob type: float <- 1 / average_lor_inclusive[1, current_age_group];
+		if flip(moving_prob) {
+			do die;
+		}
 	}
 
 } 
