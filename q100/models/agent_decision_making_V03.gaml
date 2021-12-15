@@ -218,8 +218,15 @@ species households {
 	float PBC_I; // Perceived-Behavioral-Control Invest
 	float PBC_C; // Perceived-Behavioral-Control Change
 	float PBC_S; // Perceived-Behavioral-Control Switch
+	float PBC_I_7;
+	float PBC_C_7;
+	float PBC_S_7;
+	float N_PBC_I;
+	float N_PBC_C;
+	float N_PBC_S;
 	float N_PBC; // ---Decicision-Threshold---: Normative Perceived Behavioral Control
 	float EEH; // Energy Efficient Habits
+	
 	
 	
 	int income; // households income/month -> ATTENTION -> besonderer Validierungshinweis, da zufaellige Menge
@@ -246,14 +253,26 @@ species households {
 
 	
 	
-  action update_decision_thresholds{
-	/* calculate household's current knowledge (0 <= KA <= 1),
-	motivation (0 <= PSN <= 1) and
-	consideration (0 <= N_PBC <= 1) **/ 
-	KA <- mean(CEEK, CEEA, EDA) / 7;
-	PSN <- mean(PN, SN) / 7;
-	N_PBC <- mean(PBC_I, PBC_C, PBC_S) / 7;
+	action update_decision_thresholds_v1{
+		/* calculate household's current knowledge (0 <= KA <= 1),
+		motivation (0 <= PSN <= 1) and
+		consideration (0 <= N_PBC <= 1) **/ 
+		KA <- mean(CEEK, CEEA, EDA) / 7;
+		PSN <- mean(PN, SN) / 7;
+		PBC_I_7 <- PBC_I / 7;
+		PBC_C_7 <- PBC_C / 7;
+		PBC_S_7 <- PBC_S / 7;
+		
 	}
+	
+	action update_decision_thresholds_strong_subjectivenorm{
+		KA <- mean(CEEK, CEEA, EDA, SN) / 7;
+		PSN <- mean(PN, SN) / 7;
+		N_PBC_I <- mean(PBC_I, SN) / 7;
+		N_PBC_C <- mean(PBC_I, SN) / 7;
+		N_PBC_S <- mean(PBC_I, SN) / 7;
+	}
+	
 
 } 
 
