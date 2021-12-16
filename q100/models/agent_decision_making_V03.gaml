@@ -148,6 +148,7 @@ global {
 				employment <- "student";
 			}
 			ask round(share_selfemployed[income_group] * length(income_group)) among income_group where (each.employment = nil) {
+				employment <- "self_employed";
 			}
 			ask round(share_unemployed[income_group] * length(income_group)) among income_group where (each.employment = nil) {
 				employment <- "unemployed";
@@ -203,6 +204,99 @@ global {
 			}	
 		} 	
 	}				
+
+	reflex new_household {
+		let new_households <- [];
+		let n <- length(agents of_generic_species households);
+		let wheights <- list(share_income);
+		remove 1.0 from: wheights;
+		let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
+		loop while: n < nb_units {
+			let income_group<- sample(income_groups_list, 1, false, wheights)[0];
+			let i <- rnd(0,3);
+			write income_group;
+			create income_group number: 1 {
+				add self to: new_households;
+				age <- rnd(21, 40);
+				let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units)));
+				family <- flip(share_families_21_40);
+				write self.age;
+				float decision_500_1000_CEEK_min <- decision_map[income_group][1,i];
+				float decision_500_1000_CEEK_1st <- decision_map[income_group][1,i+1];
+				CEEK <- rnd (decision_500_1000_CEEK_min, decision_500_1000_CEEK_1st);
+				float decision_500_1000_CEEA_min <- decision_map[income_group][2,i];
+				float decision_500_1000_CEEA_1st <- decision_map[income_group][2,i+1];
+				CEEA <- rnd (decision_500_1000_CEEA_min, decision_500_1000_CEEA_1st);
+				float decision_500_1000_EDA_min <- decision_map[income_group][3,i];
+				float decision_500_1000_EDA_1st <- decision_map[income_group][3,i+1];
+				EDA <- rnd (decision_500_1000_EDA_min, decision_500_1000_EDA_1st);
+				float decision_500_1000_PN_min <- decision_map[income_group][4,i];
+				float decision_500_1000_PN_1st <- decision_map[income_group][4,i+1];
+				PN <- rnd (decision_500_1000_PN_min, decision_500_1000_PN_1st);
+				float decision_500_1000_SN_min <- decision_map[income_group][5,i];
+				float decision_500_1000_SN_1st <- decision_map[income_group][5,i+1];
+				SN <- rnd (decision_500_1000_SN_min, decision_500_1000_SN_1st);
+				float decision_500_1000_EEH_min <- decision_map[income_group][6,i];
+				float decision_500_1000_EEH_1st <- decision_map[income_group][6,i+1];
+				EEH <- rnd (decision_500_1000_EEH_min, decision_500_1000_EEH_1st);
+				float decision_500_1000_PBC_I_min <- decision_map[income_group][7,i];
+				float decision_500_1000_PBC_I_1st <- decision_map[income_group][7,i+1];
+				PBC_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
+				float decision_500_1000_PBC_C_min <- decision_map[income_group][8,i];
+				float decision_500_1000_PBC_C_1st <- decision_map[income_group][8,i+1];
+				PBC_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
+				float decision_500_1000_PBC_S_min <- decision_map[income_group][9,i];
+				float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
+				PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
+				id_group <- string(income_group) + "_" + ["a", "b", "c", "d"][i];
+				employment <- sample(employment_status_list, 1, false)[0];
+				if flip(share_owner_map[income_group]) {
+					ownership <- "owner";
+				}
+				else {
+					ownership <- "tenant";
+				}
+			}
+			n <- n + 1;
+		}
+		
+ 		// Distribute network values among the new households
+		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
+		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
+		let spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
+		loop emp_status over: employment_status_list { //iterate over the different employment states
+			let tmp_households <- new_households of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
+			let nb <- length(tmp_households); 
+			let network_matrix <- network_map[emp_status]; //corresponding matrix of network values
+			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
+				let index <- index_of(temporal_network_attributes, attr);
+				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
+					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
+					}
+				}
+			}
+			loop attr over: spatial_network_attributes { // loop over the different spatial network variables of each household
+				let index <- index_of(spatial_network_attributes, attr);
+				loop i over: range(0, 3) {// loop to split the households in 4 quarters
+					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+						self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
+					}
+				}
+			}
+		}
+		
+		ask new_households of_generic_species households where (bool(each.family)) {
+			if flip (share_socialgroup_families) {
+				network_socialgroup <- true;
+			}	
+		}
+		ask new_households of_generic_species households where (!bool(each.family)) {
+			if flip (share_socialgroup_nonfamilies) {
+				network_socialgroup <- true;
+			}	
+		}
+	}
 }
 		
 
