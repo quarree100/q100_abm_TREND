@@ -205,7 +205,7 @@ global {
 		} 	
 	}				
 
-	reflex new_household {
+	reflex new_household { //creates new households to keep the total number of households constant.
 		let new_households <- [];
 		let n <- length(agents of_generic_species households);
 		let wheights <- list(share_income);
@@ -214,13 +214,11 @@ global {
 		loop while: n < nb_units {
 			let income_group<- sample(income_groups_list, 1, false, wheights)[0];
 			let i <- rnd(0,3);
-			write income_group;
 			create income_group number: 1 {
 				add self to: new_households;
 				age <- rnd(21, 40);
 				let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units)));
 				family <- flip(share_families_21_40);
-				write self.age;
 				float decision_500_1000_CEEK_min <- decision_map[income_group][1,i];
 				float decision_500_1000_CEEK_1st <- decision_map[income_group][1,i+1];
 				CEEK <- rnd (decision_500_1000_CEEK_min, decision_500_1000_CEEK_1st);
@@ -259,7 +257,7 @@ global {
 			}
 			n <- n + 1;
 		}
-		
+		write length(new_households);
  		// Distribute network values among the new households
 		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
 		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
@@ -267,11 +265,13 @@ global {
 		loop emp_status over: employment_status_list { //iterate over the different employment states
 			let tmp_households <- new_households of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
 			let nb <- length(tmp_households); 
+			write [nb, 0.25 * nb];
 			let network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
 				let index <- index_of(temporal_network_attributes, attr);
 				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
-					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+					ask ceil(0.25 * nb) among tmp_households where (!bool(self[attr])){
+						write self.name;
 						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
 					}
 				}
@@ -279,7 +279,7 @@ global {
 			loop attr over: spatial_network_attributes { // loop over the different spatial network variables of each household
 				let index <- index_of(spatial_network_attributes, attr);
 				loop i over: range(0, 3) {// loop to split the households in 4 quarters
-					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+					ask ceil(0.25 * nb) among tmp_households where (!bool(self[attr])){
 						self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
 					}
 				}
