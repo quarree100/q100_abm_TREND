@@ -37,9 +37,11 @@ global {
 	matrix share_employment_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true)); // distribution of employment status of households in neighborhood sorted by income
 	matrix share_ownership_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
 	
+	
 	matrix share_age_buildings_existing <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
 	matrix average_lor_inclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups including people who never moved
 	matrix average_lor_exclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups ecluding people who never moved
+
 
 	int nb_units <- 377; // number of households in v1
 	float share_families <- 0.17; // share of families in whole neighborhood
@@ -217,8 +219,13 @@ species households {
 	float PSN; // ---Decicision-Threshold---: Personal & Subjective Norms
 	float PBC_I; // Perceived-Behavioral-Control Invest
 	float PBC_C; // Perceived-Behavioral-Control Change
-	float PBC_S; // Perceived-Behavioral-Control Switch
-	float N_PBC; // ---Decicision-Threshold---: Normative Perceived Behavioral Control
+	float PBC_S; // Perceived-Behavioral-Control Switch	
+	float PBC_I_7; // Perceived-Behavioral-Control Invest divided by 7
+	float PBC_C_7; // Perceived-Behavioral-Control Change divided by 7
+	float PBC_S_7; // Perceived-Behavioral-Control Switch divided by 7	
+	float N_PBC_I; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Invest
+	float N_PBC_C; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Change
+	float N_PBC_S; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Switch
 	float EEH; // Energy Efficient Habits
 	
 	
@@ -248,12 +255,27 @@ species households {
 	
 	
 	action update_decision_thresholds{
-		/* calculate household's current knowledge (0 <= KA <= 1),
-		motivation (0 <= PSN <= 1) and
-		consideration (0 <= N_PBC <= 1) **/ 
+		/* calculate household's current 
+		knowledge & awareness (0 <= KA <= 1),
+		personal & subjective norms (0 <= PSN <= 1) and
+		perceived behavioral control (0 <= N_PBC <= 1) */ 
 		KA <- mean(CEEK, CEEA, EDA) / 7;
 		PSN <- mean(PN, SN) / 7;
-		N_PBC <- mean(PBC_I, PBC_C, PBC_S) / 7;
+		PBC_I_7 <- mean(PBC_I) / 7;
+		PBC_C_7 <- mean(PBC_C) / 7;
+		PBC_S_7 <- mean(PBC_S) / 7;
+	}
+	
+	action update_decision_thresholds_subjectivenorm{ // gives subjective norms a higher weight in an agent's decision making process
+		/* calculate household's current 
+		knowledge & awareness (0 <= KA <= 1),
+		personal & subjective norms (0 <= PSN <= 1) and
+		normative perceived behavioral control (0 <= N_PBC <= 1) */ 
+		KA <- mean(CEEK, CEEA, EDA, SN) / 7;
+		PSN <- mean(PN, SN) / 7;
+		N_PBC_I <- mean(PBC_I, SN) / 7;
+		N_PBC_C <- mean(PBC_C, SN) / 7;
+		N_PBC_S <- mean(PBC_S, SN) / 7;
 	}
 	
 	reflex move_out {
