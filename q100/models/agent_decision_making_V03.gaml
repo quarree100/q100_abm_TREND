@@ -69,10 +69,30 @@ global {
 	map share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
 	map share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
 		
-
-
+	action random_groups(list input, int n) {
+		int len <- length(input);
+		if len = 0 {
+			return range(n - 1) accumulate [[]];
+		}
+		else if len = 1 {
+			list output <- range(n - 2) accumulate [[]];
+			add input to: output;
+			return shuffle(output);
+		}
+		else {
+			list shuffled_input <- shuffle(input);
+			list inds <- split_in(range(len - 1), n);
+			list output;
+			loop group over: inds {
+				add shuffled_input where (index_of(shuffled_input, each) in group) to: output;
+			}
+			return shuffle(output);
+		}
+	
+	}
+	
 	init { 
-		
+		write  random_groups([1,2,3,4,5,6,7,8,9,10], 5);		
 		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
 			let letters <- ["a", "b", "c", "d"];
 			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
@@ -179,28 +199,30 @@ global {
 			let network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
 				let index <- index_of(temporal_network_attributes, attr);
+				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
-					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+					ask tmp_households_grouped[i] {
 						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
 					}
 				}
 			}
 			loop attr over: spatial_network_attributes { // loop over the different spatial network variables of each household
 				let index <- index_of(spatial_network_attributes, attr);
+				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) {// loop to split the households in 4 quarters
-					ask (0.25 * nb) among tmp_households where (!bool(self[attr])){
+					ask tmp_households_grouped[i] {
 						self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
 					}
 				}
 			}
 		}
 		
-		ask agents of_generic_species households where (bool(each.family)) {
+		ask agents of_generic_species households where (each.family) {
 			if flip (share_socialgroup_families) {
 				network_socialgroup <- true;
 			}	
 		}
-		ask agents of_generic_species households where (!bool(each.family)) {
+		ask agents of_generic_species households where (!each.family) {
 			if flip (share_socialgroup_nonfamilies) {
 				network_socialgroup <- true;
 			}	
@@ -271,8 +293,9 @@ global {
 			let network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
 				let index <- index_of(temporal_network_attributes, attr);
+				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
-					ask ceil(0.25 * nb) among tmp_households where (!bool(self[attr])){
+					ask tmp_households_grouped[i] {
 						write self.name;
 						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
 					}
@@ -280,8 +303,9 @@ global {
 			}
 			loop attr over: spatial_network_attributes { // loop over the different spatial network variables of each household
 				let index <- index_of(spatial_network_attributes, attr);
+				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) {// loop to split the households in 4 quarters
-					ask ceil(0.25 * nb) among tmp_households where (!bool(self[attr])){
+					ask tmp_households_grouped[i] {
 						self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
 					}
 				}
@@ -334,7 +358,7 @@ species households {
 
 
 	// defines network behavior of each agent in parent species by employment status
-	int network_contacts_temporal_daily; // amount of agents a household has daily contact with - 30x / month
+	int network_contacts_temporal_daily <- -99; // amount of agents a household has daily contact with - 30x / month
 	int network_contacts_temporal_weekly; // amount of agents a household has weekly contact with - 4x / month
 	int network_contacts_temporal_occasional; // amount of agents a household has occasional contact with - 1x / month
 	int network_contacts_spatial_direct; // available amount of contacts within an households network - direct neighbors
