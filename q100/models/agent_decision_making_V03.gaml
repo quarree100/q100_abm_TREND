@@ -69,7 +69,7 @@ global {
 	map share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
 	map share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
 		
-	action random_groups(list input, int n) {
+	action random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
 		int len <- length(input);
 		if len = 0 {
 			return range(n - 1) accumulate [[]];
