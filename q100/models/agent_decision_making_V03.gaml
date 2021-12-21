@@ -91,8 +91,7 @@ global {
 	
 	}
 	
-	init { 
-		write  random_groups([1,2,3,4,5,6,7,8,9,10], 5);		
+	init { 		
 		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
 			let letters <- ["a", "b", "c", "d"];
 			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
