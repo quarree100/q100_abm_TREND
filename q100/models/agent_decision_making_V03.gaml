@@ -15,6 +15,8 @@ global {
 	// bool show_roads <- true;
 	
 	float step <- 1 #day;
+	date starting_date <- date([2020,1,1,0,0,0]);
+	
 	
 // for choosing specific value -> [columns, rows]
 
@@ -211,20 +213,19 @@ global {
 		ask agents of_generic_species households { //TODO
 			do get_social_contacts;
 			
-			network <- network add_node(myself); //ab hier unvollstaendig
-			loop edges over: social_contacts {
-				network <- network add_edge(myself::edges);
+			loop nodes over: agents of_generic_species households {
+				network <- network add_node(nodes);
 			}
-			
-			
-			
+			loop edges_from over: agents of_generic_species households {
+				loop edges_to over: social_contacts {
+					network <- network add_edge(edges_from::edges_to);
+				}
+			}
+		}
 	}
+			
 		
 	
-	
-		
-		
-	}	
 				
 
 	reflex new_household { //creates new households to keep the total number of households constant.
@@ -495,13 +496,6 @@ species households_4000etc parent: households {
 }
 
 
-species link{
-	list<agent> nodes;
-	aspect base{
-		draw polyline(nodes) color: #black;
-	}
-}
-
 
 	// grid vegetation_cell width: 50 height: 50 neighbors: 4 {} -> Bei derzeitiger Vorstellung wird kein grid benötigt; ggf mit qScope-Tisch-dev abgleichen
 
@@ -520,10 +514,12 @@ experiment agent_decision_making type: gui{
 			species households_3000_4000 aspect: base;
 			species households_4000etc aspect: base;
 			
-			species link aspect: base; //fehlerhaft TODO -
-			
-			
-		}		
+			graphics "network_edges" {
+				loop e over: network.edges {
+					draw geometry(e) color: #black; //TODO im test funktioniert es, im modell nicht; ab hier weiter
+				}
+			}	
+		}			
 	
 		display "households_income_bar" {
 			chart "households_income" type: histogram {
@@ -545,7 +541,6 @@ experiment agent_decision_making type: gui{
 				data "un_employed" value: length (agents of_generic_species households where (each.employment = "un_employed")) color: #lightgoldenrodyellow;
 				data "pensioner" value: length (agents of_generic_species households where (each.employment = "pensioner")) color: #lightgray;
 			}
-
 		}
 	}
 }
