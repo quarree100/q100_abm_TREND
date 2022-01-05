@@ -16,7 +16,7 @@ global {
 	
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
-	
+	graph network <- graph([]);	//TODO
 	
 // for choosing specific value -> [columns, rows]
 
@@ -71,7 +71,6 @@ global {
 	map share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
 	map share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
 
-	graph network <- graph([]);	//TODO
 
 	action random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
 		int len <- length(input);
@@ -409,85 +408,16 @@ species households {
 	}
 	
 	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
-		
-		ask network_contacts_temporal_daily among social_contacts {
-        	if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
-        		CEEA <- CEEA + 0.25; // validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? --> Parameter einfuegen um Wert innerhalb der Simulation zu aendern
-        	}
-        	else if CEEA > 0 {
-        		CEEA <- CEEA - 0.25;
-        	}
-        }
-		ask network_contacts_temporal_daily among social_contacts {
-        	if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
-        		EDA <- EDA + 0.25; 
-        	}
-        	else if EDA > 0 {
-        		EDA <- EDA - 0.25;
-        	}
-        }
-		ask network_contacts_temporal_daily among social_contacts {
-        	if (SN < mean([SN, self.SN])) and SN < 7 {
-        		SN <- SN + 0.25; 
-        	}
-        	else if SN > 0 {
-        		SN <- SN - 0.25;
-        	}
-        }
-	}
-	
-	reflex communicate_weekly { // includes communication with social groups -> increasing factor
-		if cycle mod 7 = 0 { 
-			ask network_contacts_temporal_weekly among social_contacts {
-        		if network_socialgroup = true and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
-        			CEEA <- CEEA + 0.5; 
-        		}
-        		else if network_socialgroup = true and CEEA > 0 {
-        			CEEA <- CEEA - 0.5;
-      		  	}
-      		  	else if network_socialgroup = false and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
-        			CEEA <- CEEA + 0.25; 
-        		}
-        		else if network_socialgroup = false and CEEA > 0 {
-        			CEEA <- CEEA - 0.25;
-      		  	}
-        	}
-			ask network_contacts_temporal_weekly among social_contacts {
-        		if network_socialgroup = true and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
-        			EDA <- EDA + 0.5; 
-        		}
-        		else if network_socialgroup = true and EDA > 0 {
-        			EDA <- EDA - 0.5;
-      		  	}
-      		  	else if network_socialgroup = false and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
-        			EDA <- EDA + 0.25; 
-        		}
-        		else if network_socialgroup = false and EDA > 0 {
-        			EDA <- EDA - 0.25;
-      		  	}
-        	}
-			ask network_contacts_temporal_weekly among social_contacts {
-        		if (SN < mean([SN, self.SN])) and SN < 7 {
-        			SN <- SN + 0.25; 
-        		}
-        		else if SN > 0 {
-        			SN <- SN - 0.25;
-        		}
-        	}
-        }
-	}
-	
-	reflex communicate_weekly { 
-		if cycle mod 30 = 0 { 
-			ask network_contacts_temporal_occasional among social_contacts {
+		if network_contacts_temporal_daily > 0 {
+			ask network_contacts_temporal_daily among social_contacts {
         		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
-        			CEEA <- CEEA + 0.25; 
+        			CEEA <- CEEA + 0.25; // validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? --> Parameter einfuegen um Wert innerhalb der Simulation zu aendern
         		}
         		else if CEEA > 0 {
         			CEEA <- CEEA - 0.25;
-      		  	}
+        		}
         	}
-			ask network_contacts_temporal_occasional among social_contacts {
+			ask network_contacts_temporal_daily among social_contacts {
         		if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
         			EDA <- EDA + 0.25; 
         		}
@@ -495,19 +425,94 @@ species households {
         			EDA <- EDA - 0.25;
         		}
         	}
-			ask network_contacts_temporal_occasional among social_contacts {
+			ask network_contacts_temporal_daily among social_contacts {
         		if (SN < mean([SN, self.SN])) and SN < 7 {
         			SN <- SN + 0.25; 
         		}
         		else if SN > 0 {
         			SN <- SN - 0.25;
         		}
+        	}	
+        }
+	}
+	
+	reflex communicate_weekly { // includes communication with social groups -> increasing factor
+		if network_contacts_temporal_weekly > 0 {
+			if cycle mod 7 = 0 { 
+				ask network_contacts_temporal_weekly among social_contacts {
+        			if network_socialgroup = true and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
+        				CEEA <- CEEA + 0.5; 
+        			}
+        			else if network_socialgroup = true and CEEA > 0 {
+        				CEEA <- CEEA - 0.5;
+      			  	}
+      			  	else if network_socialgroup = false and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
+        				CEEA <- CEEA + 0.25; 
+        			}
+        			else if network_socialgroup = false and CEEA > 0 {
+        				CEEA <- CEEA - 0.25;
+      			  	}
+        		}
+				ask network_contacts_temporal_weekly among social_contacts {
+        			if network_socialgroup = true and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
+        				EDA <- EDA + 0.5; 
+        			}
+        			else if network_socialgroup = true and EDA > 0 {
+        				EDA <- EDA - 0.5;
+      			  	}
+      			  	else if network_socialgroup = false and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
+        				EDA <- EDA + 0.25; 
+        			}
+        			else if network_socialgroup = false and EDA > 0 {
+        				EDA <- EDA - 0.25;
+      			  	}
+      			}
+				ask network_contacts_temporal_weekly among social_contacts {
+        			if (SN < mean([SN, self.SN])) and SN < 7 {
+        				SN <- SN + 0.25; 
+        			}
+        			else if SN > 0 {
+        				SN <- SN - 0.25;
+        			}
+        		}
+        	}
+        }
+	}
+	
+	reflex communicate_occasional { 
+		if network_contacts_temporal_weekly > 0 {
+			if cycle mod 30 = 0 { 
+				ask network_contacts_temporal_occasional among social_contacts {
+       		 		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
+       				CEEA <- CEEA + 0.25; 
+       	 			}
+        			else if CEEA > 0 {
+        				CEEA <- CEEA - 0.25;
+      		 	 	}
+        		}
+				ask network_contacts_temporal_occasional among social_contacts {
+        			if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
+        				EDA <- EDA + 0.25; 
+        			}
+        			else if EDA > 0 {
+        				EDA <- EDA - 0.25;
+        			}
+        		}
+				ask network_contacts_temporal_occasional among social_contacts {
+        			if (SN < mean([SN, self.SN])) and SN < 7 {
+        				SN <- SN + 0.25; 
+        			}
+        			else if SN > 0 {
+        				SN <- SN - 0.25;
+        			}
+        		}
         	}
         }
 	}
 	
 	
-	action update_decision_thresholds{
+	
+	action update_decision_thresholds {
 		/* calculate household's current 
 		knowledge & awareness (0 <= KA <= 1),
 		personal & subjective norms (0 <= PSN <= 1) and
@@ -519,7 +524,7 @@ species households {
 		PBC_S_7 <- mean(PBC_S) / 7;
 	}
 	
-	action update_decision_thresholds_subjectivenorm{ // gives subjective norms a higher weight in an agent's decision making process
+	action update_decision_thresholds_subjectivenorm { // gives subjective norms a higher weight in an agent's decision making process
 		/* calculate household's current 
 		knowledge & awareness (0 <= KA <= 1),
 		personal & subjective norms (0 <= PSN <= 1) and
@@ -533,17 +538,18 @@ species households {
 	
 	
 	
-	
 	reflex move_out {
-		age <- age + 1;
-		lenght_of_residence <- lenght_of_residence + 1;
-		if age >= 100 {
-			do die;
-		}
-		let current_age_group type: int <- floor(age / 20) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
-		let moving_prob type: float <- 1 / average_lor_inclusive[1, current_age_group];
-		if flip(moving_prob) {
-			do die;
+		if cycle mod 365 = 0 {
+			age <- age + 1;
+			lenght_of_residence <- lenght_of_residence + 1;
+			if age >= 100 {
+				do die;
+			}
+			let current_age_group type: int <- floor(age / 20) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
+			let moving_prob type: float <- 1 / average_lor_inclusive[1, current_age_group];
+			if flip(moving_prob) {
+				do die;
+			}
 		}
 	}
 
