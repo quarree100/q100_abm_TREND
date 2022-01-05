@@ -630,7 +630,7 @@ species households_4000etc parent: households {
 
 experiment agent_decision_making type: gui{
 	
- 	parameter "Influence of private communication" var: private_communication min: 0 max: 1 category: "decision making"; 	
+ 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
 	
 	output {
 		monitor date value: current_date refresh: every(1#cycle);		
