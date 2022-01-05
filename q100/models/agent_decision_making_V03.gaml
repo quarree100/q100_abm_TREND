@@ -198,7 +198,7 @@ global {
 			}
 		}
 		
-		ask agents of_generic_species households where (bool(each.family)) {
+		ask agents of_generic_species households where (bool(each.family)) { //distributes belonging to socialgroups over non-/families
 			if flip (share_socialgroup_families) {
 				network_socialgroup <- true;
 			}	
@@ -209,9 +209,9 @@ global {
 			}	
 		}
 		
-		
-		ask agents of_generic_species households { //TODO
-			do get_social_contacts;
+		//TODO
+		ask agents of_generic_species households { //creates network of social contacts
+			do get_social_contacts; 
 			
 			loop nodes over: agents of_generic_species households {
 				network <- network add_node(nodes);
@@ -373,16 +373,111 @@ species households {
 	list social_contacts_neighborhood;
 	list social_contacts <- [social_contacts_direct, social_contacts_street, social_contacts_neighborhood];
 
+
+
+
 	action get_social_contacts { //scheint fehlerhaft! TODO
-			add self.network_contacts_spatial_direct among agents_at_distance (10) to: social_contacts_direct; //exclusion of myself necessary? & check distance
-			add self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment) to: social_contacts_street; // TODO age ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
-			add self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment) to: social_contacts_neighborhood;
+		add self.network_contacts_spatial_direct among agents_at_distance (10) to: social_contacts_direct; //exclusion of myself necessary? & check distance
+		add self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment) to: social_contacts_street; // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
+		add self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment) to: social_contacts_neighborhood;
 	}
 	
-	action communicate { //TODO
+	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
 		
-		
-		
+		ask network_contacts_temporal_daily among social_contacts {
+        	if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
+        		CEEA <- CEEA + 0.25; // validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? --> Parameter einfuegen um Wert innerhalb der Simulation zu aendern
+        	}
+        	else if CEEA > 0 {
+        		CEEA <- CEEA - 0.25;
+        	}
+        }
+		ask network_contacts_temporal_daily among social_contacts {
+        	if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
+        		EDA <- EDA + 0.25; 
+        	}
+        	else if EDA > 0 {
+        		EDA <- EDA - 0.25;
+        	}
+        }
+		ask network_contacts_temporal_daily among social_contacts {
+        	if (SN < mean([SN, self.SN])) and SN < 7 {
+        		SN <- SN + 0.25; 
+        	}
+        	else if SN > 0 {
+        		SN <- SN - 0.25;
+        	}
+        }
+	}
+	
+	reflex communicate_weekly { // includes communication with social groups -> increasing factor
+		if cycle mod 7 = 0 { 
+			ask network_contacts_temporal_weekly among social_contacts {
+        		if network_socialgroup = true and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
+        			CEEA <- CEEA + 0.5; 
+        		}
+        		else if network_socialgroup = true and CEEA > 0 {
+        			CEEA <- CEEA - 0.5;
+      		  	}
+      		  	else if network_socialgroup = false and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
+        			CEEA <- CEEA + 0.25; 
+        		}
+        		else if network_socialgroup = false and CEEA > 0 {
+        			CEEA <- CEEA - 0.25;
+      		  	}
+        	}
+			ask network_contacts_temporal_weekly among social_contacts {
+        		if network_socialgroup = true and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
+        			EDA <- EDA + 0.5; 
+        		}
+        		else if network_socialgroup = true and EDA > 0 {
+        			EDA <- EDA - 0.5;
+      		  	}
+      		  	else if network_socialgroup = false and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
+        			EDA <- EDA + 0.25; 
+        		}
+        		else if network_socialgroup = false and EDA > 0 {
+        			EDA <- EDA - 0.25;
+      		  	}
+        	}
+			ask network_contacts_temporal_weekly among social_contacts {
+        		if (SN < mean([SN, self.SN])) and SN < 7 {
+        			SN <- SN + 0.25; 
+        		}
+        		else if SN > 0 {
+        			SN <- SN - 0.25;
+        		}
+        	}
+        }
+	}
+	
+	reflex communicate_weekly { 
+		if cycle mod 30 = 0 { 
+			ask network_contacts_temporal_occasional among social_contacts {
+        		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
+        			CEEA <- CEEA + 0.25; 
+        		}
+        		else if CEEA > 0 {
+        			CEEA <- CEEA - 0.25;
+      		  	}
+        	}
+			ask network_contacts_temporal_occasional among social_contacts {
+        		if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
+        			EDA <- EDA + 0.25; 
+        		}
+        		else if EDA > 0 {
+        			EDA <- EDA - 0.25;
+        		}
+        	}
+			ask network_contacts_temporal_occasional among social_contacts {
+        		if (SN < mean([SN, self.SN])) and SN < 7 {
+        			SN <- SN + 0.25; 
+        		}
+        		else if SN > 0 {
+        			SN <- SN - 0.25;
+        		}
+        	}
+        }
 	}
 	
 	
@@ -413,7 +508,7 @@ species households {
 	
 	
 	
-	reflex move_out { 
+	reflex move_out {
 		age <- age + 1;
 		lenght_of_residence <- lenght_of_residence + 1;
 		if age >= 100 {
@@ -504,6 +599,9 @@ experiment agent_decision_making type: gui{
   	// parameter "example" var: example (muss global sein) min: 1 max: 1000 category: "example";
 	
 	output {
+		monitor date value: current_date refresh: every(1#cycle);
+		
+		
 		layout #split;
 		display neighborhood {
 			
@@ -514,11 +612,11 @@ experiment agent_decision_making type: gui{
 			species households_3000_4000 aspect: base;
 			species households_4000etc aspect: base;
 			
-			graphics "network_edges" {
-				loop e over: network.edges {
-					draw geometry(e) color: #black; //TODO im test funktioniert es, im modell nicht; ab hier weiter
-				}
-			}	
+//			graphics "network_edges" {
+//				loop e over: network.edges {
+//					draw geometry(e) color: #black; //TODO im test funktioniert es, im modell nicht; ab hier weiter
+//				}
+//			}	
 		}			
 	
 		display "households_income_bar" {
