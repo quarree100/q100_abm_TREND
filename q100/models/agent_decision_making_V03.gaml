@@ -50,6 +50,8 @@ global {
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
 	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
 	
+	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor
+	
 	
 	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map share_income_map <- create_map(income_groups_list, list(share_income));
@@ -411,26 +413,26 @@ species households {
 		if network_contacts_temporal_daily > 0 {
 			ask network_contacts_temporal_daily among social_contacts {
         		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
-        			CEEA <- CEEA + 0.25; // validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? --> Parameter einfuegen um Wert innerhalb der Simulation zu aendern
+        			CEEA <- CEEA + private_communication; // validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein?
         		}
         		else if CEEA > 0 {
-        			CEEA <- CEEA - 0.25;
+        			CEEA <- CEEA - private_communication;
         		}
         	}
 			ask network_contacts_temporal_daily among social_contacts {
         		if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
-        			EDA <- EDA + 0.25; 
+        			EDA <- EDA + private_communication; 
         		}
         		else if EDA > 0 {
-        			EDA <- EDA - 0.25;
+        			EDA <- EDA - private_communication;
         		}
         	}
 			ask network_contacts_temporal_daily among social_contacts {
         		if (SN < mean([SN, self.SN])) and SN < 7 {
-        			SN <- SN + 0.25; 
+        			SN <- SN + private_communication; 
         		}
         		else if SN > 0 {
-        			SN <- SN - 0.25;
+        			SN <- SN - private_communication;
         		}
         	}	
         }
@@ -441,38 +443,38 @@ species households {
 			if cycle mod 7 = 0 { 
 				ask network_contacts_temporal_weekly among social_contacts {
         			if network_socialgroup = true and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
-        				CEEA <- CEEA + 0.5; 
+        				CEEA <- CEEA + (private_communication * 2); 
         			}
         			else if network_socialgroup = true and CEEA > 0 {
-        				CEEA <- CEEA - 0.5;
+        				CEEA <- CEEA - (private_communication * 2);
       			  	}
       			  	else if network_socialgroup = false and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
-        				CEEA <- CEEA + 0.25; 
+        				CEEA <- CEEA + private_communication; 
         			}
         			else if network_socialgroup = false and CEEA > 0 {
-        				CEEA <- CEEA - 0.25;
+        				CEEA <- CEEA - private_communication;
       			  	}
         		}
 				ask network_contacts_temporal_weekly among social_contacts {
         			if network_socialgroup = true and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
-        				EDA <- EDA + 0.5; 
+        				EDA <- EDA + (private_communication * 2); 
         			}
         			else if network_socialgroup = true and EDA > 0 {
-        				EDA <- EDA - 0.5;
+        				EDA <- EDA - (private_communication * 2);
       			  	}
       			  	else if network_socialgroup = false and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
-        				EDA <- EDA + 0.25; 
+        				EDA <- EDA + private_communication; 
         			}
         			else if network_socialgroup = false and EDA > 0 {
-        				EDA <- EDA - 0.25;
+        				EDA <- EDA - private_communication;
       			  	}
       			}
 				ask network_contacts_temporal_weekly among social_contacts {
         			if (SN < mean([SN, self.SN])) and SN < 7 {
-        				SN <- SN + 0.25; 
+        				SN <- SN + private_communication; 
         			}
         			else if SN > 0 {
-        				SN <- SN - 0.25;
+        				SN <- SN - private_communication;
         			}
         		}
         	}
@@ -484,26 +486,26 @@ species households {
 			if cycle mod 30 = 0 { 
 				ask network_contacts_temporal_occasional among social_contacts {
        		 		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
-       				CEEA <- CEEA + 0.25; 
+       				CEEA <- CEEA + private_communication; 
        	 			}
         			else if CEEA > 0 {
-        				CEEA <- CEEA - 0.25;
+        				CEEA <- CEEA - private_communication;
       		 	 	}
         		}
 				ask network_contacts_temporal_occasional among social_contacts {
         			if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
-        				EDA <- EDA + 0.25; 
+        				EDA <- EDA + private_communication; 
         			}
         			else if EDA > 0 {
-        				EDA <- EDA - 0.25;
+        				EDA <- EDA - private_communication;
         			}
         		}
 				ask network_contacts_temporal_occasional among social_contacts {
         			if (SN < mean([SN, self.SN])) and SN < 7 {
-        				SN <- SN + 0.25; 
+        				SN <- SN + private_communication; 
         			}
         			else if SN > 0 {
-        				SN <- SN - 0.25;
+        				SN <- SN - private_communication;
         			}
         		}
         	}
@@ -628,10 +630,10 @@ species households_4000etc parent: households {
 
 experiment agent_decision_making type: gui{
 	
-  	// parameter "example" var: example (muss global sein) min: 1 max: 1000 category: "example";
+ 	parameter "Influence of private communication" var: private_communication min: 0 max: 1 category: "decision making"; 	
 	
 	output {
-		monitor date value: current_date refresh: every(1#cycle);
+		monitor date value: current_date refresh: every(1#cycle);		
 		
 		
 		layout #split;
