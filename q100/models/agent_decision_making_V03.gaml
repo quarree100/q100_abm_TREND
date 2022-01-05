@@ -14,6 +14,9 @@ global {
 	// bool show_heatingnetwork <- true;
 	// bool show_roads <- true;
 	
+	float step <- 1 #day;
+	date starting_date <- date([2020,1,1,0,0,0]);
+	
 	
 // for choosing specific value -> [columns, rows]
 
@@ -31,8 +34,7 @@ global {
 	matrix network_selfemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_self-employed_V1.csv", ",", int, true));
 	matrix network_student <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_student_V1.csv", ",", int, true));
 	matrix network_unemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_unemployed_V1.csv", ",", int, true));
-	
-	
+		
 	matrix share_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-income_V1.csv",  ",", float, true)); // share of households in neighborhood sorted by income
 	matrix share_employment_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true)); // distribution of employment status of households in neighborhood sorted by income
 	matrix share_ownership_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
@@ -68,7 +70,9 @@ global {
 	map share_selfemployed <- create_map(income_groups_list, shares_selfemployed_list);
 	map share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
 	map share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
-		
+
+	graph network <- graph([]);	//TODO
+
 	action random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
 		int len <- length(input);
 		if len = 0 {
@@ -92,6 +96,7 @@ global {
 	}
 	
 	init { 		
+
 		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
 			let letters <- ["a", "b", "c", "d"];
 			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
@@ -216,17 +221,36 @@ global {
 			}
 		}
 		
-		ask agents of_generic_species households where (each.family) {
+		ask agents of_generic_species households where (bool(each.family)) { //distributes belonging to socialgroups over non-/families
+
 			if flip (share_socialgroup_families) {
 				network_socialgroup <- true;
 			}	
 		}
 		ask agents of_generic_species households where (!each.family) {
 			if flip (share_socialgroup_nonfamilies) {
-				network_socialgroup <- true;
+				network_socialgroup <- true;	
 			}	
-		} 	
-	}				
+		}
+		
+		//TODO
+		ask agents of_generic_species households { //creates network of social contacts
+			do get_social_contacts; 
+			
+			loop nodes over: agents of_generic_species households {
+				network <- network add_node(nodes);
+			}
+			loop edges_from over: agents of_generic_species households {
+				loop edges_to over: social_contacts {
+					network <- network add_edge(edges_from::edges_to);
+				}
+			}
+		}
+	}
+			
+		
+	
+				
 
 	reflex new_household { //creates new households to keep the total number of households constant.
 		let new_households <- [];
@@ -346,6 +370,7 @@ species households {
 	float EEH; // Energy Efficient Habits
 	
 	
+	
 	int income; // households income/month -> ATTENTION -> besonderer Validierungshinweis, da zufaellige Menge
 	string id_group; // identification which quartile within the income group the agent belongs to
 		
@@ -368,7 +393,118 @@ species households {
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 	
+	
+	list social_contacts_direct;
+	list social_contacts_street;
+	list social_contacts_neighborhood;
+	list social_contacts <- [social_contacts_direct, social_contacts_street, social_contacts_neighborhood];
 
+
+
+
+	action get_social_contacts { //scheint fehlerhaft! TODO
+		add self.network_contacts_spatial_direct among agents_at_distance (10) to: social_contacts_direct; //exclusion of myself necessary? & check distance
+		add self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment) to: social_contacts_street; // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
+		add self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment) to: social_contacts_neighborhood;
+	}
+	
+	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
+		
+		ask network_contacts_temporal_daily among social_contacts {
+        	if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
+        		CEEA <- CEEA + 0.25; // validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? --> Parameter einfuegen um Wert innerhalb der Simulation zu aendern
+        	}
+        	else if CEEA > 0 {
+        		CEEA <- CEEA - 0.25;
+        	}
+        }
+		ask network_contacts_temporal_daily among social_contacts {
+        	if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
+        		EDA <- EDA + 0.25; 
+        	}
+        	else if EDA > 0 {
+        		EDA <- EDA - 0.25;
+        	}
+        }
+		ask network_contacts_temporal_daily among social_contacts {
+        	if (SN < mean([SN, self.SN])) and SN < 7 {
+        		SN <- SN + 0.25; 
+        	}
+        	else if SN > 0 {
+        		SN <- SN - 0.25;
+        	}
+        }
+	}
+	
+	reflex communicate_weekly { // includes communication with social groups -> increasing factor
+		if cycle mod 7 = 0 { 
+			ask network_contacts_temporal_weekly among social_contacts {
+        		if network_socialgroup = true and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
+        			CEEA <- CEEA + 0.5; 
+        		}
+        		else if network_socialgroup = true and CEEA > 0 {
+        			CEEA <- CEEA - 0.5;
+      		  	}
+      		  	else if network_socialgroup = false and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
+        			CEEA <- CEEA + 0.25; 
+        		}
+        		else if network_socialgroup = false and CEEA > 0 {
+        			CEEA <- CEEA - 0.25;
+      		  	}
+        	}
+			ask network_contacts_temporal_weekly among social_contacts {
+        		if network_socialgroup = true and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
+        			EDA <- EDA + 0.5; 
+        		}
+        		else if network_socialgroup = true and EDA > 0 {
+        			EDA <- EDA - 0.5;
+      		  	}
+      		  	else if network_socialgroup = false and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
+        			EDA <- EDA + 0.25; 
+        		}
+        		else if network_socialgroup = false and EDA > 0 {
+        			EDA <- EDA - 0.25;
+      		  	}
+        	}
+			ask network_contacts_temporal_weekly among social_contacts {
+        		if (SN < mean([SN, self.SN])) and SN < 7 {
+        			SN <- SN + 0.25; 
+        		}
+        		else if SN > 0 {
+        			SN <- SN - 0.25;
+        		}
+        	}
+        }
+	}
+	
+	reflex communicate_weekly { 
+		if cycle mod 30 = 0 { 
+			ask network_contacts_temporal_occasional among social_contacts {
+        		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
+        			CEEA <- CEEA + 0.25; 
+        		}
+        		else if CEEA > 0 {
+        			CEEA <- CEEA - 0.25;
+      		  	}
+        	}
+			ask network_contacts_temporal_occasional among social_contacts {
+        		if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
+        			EDA <- EDA + 0.25; 
+        		}
+        		else if EDA > 0 {
+        			EDA <- EDA - 0.25;
+        		}
+        	}
+			ask network_contacts_temporal_occasional among social_contacts {
+        		if (SN < mean([SN, self.SN])) and SN < 7 {
+        			SN <- SN + 0.25; 
+        		}
+        		else if SN > 0 {
+        			SN <- SN - 0.25;
+        		}
+        	}
+        }
+	}
 	
 	
 	action update_decision_thresholds{
@@ -394,6 +530,9 @@ species households {
 		N_PBC_C <- mean(PBC_C, SN) / 7;
 		N_PBC_S <- mean(PBC_S, SN) / 7;
 	}
+	
+	
+	
 	
 	reflex move_out {
 		age <- age + 1;
@@ -478,6 +617,7 @@ species households_4000etc parent: households {
 }
 
 
+
 	// grid vegetation_cell width: 50 height: 50 neighbors: 4 {} -> Bei derzeitiger Vorstellung wird kein grid benötigt; ggf mit qScope-Tisch-dev abgleichen
 
 experiment agent_decision_making type: gui{
@@ -485,6 +625,9 @@ experiment agent_decision_making type: gui{
   	// parameter "example" var: example (muss global sein) min: 1 max: 1000 category: "example";
 	
 	output {
+		monitor date value: current_date refresh: every(1#cycle);
+		
+		
 		layout #split;
 		display neighborhood {
 			
@@ -493,19 +636,36 @@ experiment agent_decision_making type: gui{
 			species households_1500_2000 aspect: base;
 			species households_2000_3000 aspect: base;
 			species households_3000_4000 aspect: base;
-			species households_4000etc aspect: base; 
-		}		
+			species households_4000etc aspect: base;
+			
+//			graphics "network_edges" {
+//				loop e over: network.edges {
+//					draw geometry(e) color: #black; //TODO im test funktioniert es, im modell nicht; ab hier weiter
+//				}
+//			}	
+		}			
 	
-		display "charts" {
-			chart "households" type: histogram {
-				data "households_500-1000" value: length (households_500_1000) color:#green;
-				data "households_1000-1500" value: length (households_1000_1500) color:#red;
-				data "households_1500-2000" value: length (households_1500_2000) color:#blue;
-				data "households_2000-3000" value: length (households_2000_3000) color:#yellow;
-				data "households_3000-4000" value: length (households_3000_4000) color:#purple;
-				data "households_>4000" value: length (households_4000etc) color:#grey;
-				data "total" value: sum (length (households_500_1000), length (households_1000_1500),length (households_1500_2000), length (households_2000_3000), length (households_3000_4000), length (households_4000etc)) color:#black;
+		display "households_income_bar" {
+			chart "households_income" type: histogram {
+				data "households_500-1000" value: length (households_500_1000) color:#darkblue;
+				data "households_1000-1500" value: length (households_1000_1500) color:#darkcyan;
+				data "households_1500-2000" value: length (households_1500_2000) color:#darkgoldenrod;
+				data "households_2000-3000" value: length (households_2000_3000) color:#darkgray;
+				data "households_3000-4000" value: length (households_3000_4000) color:#darkgreen;
+				data "households_>4000" value: length (households_4000etc) color:#darkkhaki;
+				data "total" value: sum (length (households_500_1000), length (households_1000_1500),length (households_1500_2000), length (households_2000_3000), length (households_3000_4000), length (households_4000etc)) color:#darkmagenta;
+			}
+		}
+		
+		display "households_employment_pie" type: java2D {
+			chart "households_employment" type: pie {
+				data "student" value: length (agents of_generic_species households where (each.employment = "student")) color: #lightblue;
+				data "employed" value: length (agents of_generic_species households where (each.employment = "employed")) color: #lightcoral;
+				data "self_employed" value: length (agents of_generic_species households where (each.employment = "self_employed")) color: #lightcyan;
+				data "un_employed" value: length (agents of_generic_species households where (each.employment = "un_employed")) color: #lightgoldenrodyellow;
+				data "pensioner" value: length (agents of_generic_species households where (each.employment = "pensioner")) color: #lightgray;
 			}
 		}
 	}
 }
+
