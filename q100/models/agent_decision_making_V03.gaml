@@ -237,16 +237,16 @@ global {
 		//TODO
 		ask agents of_generic_species households { //creates network of social contacts
 			do get_social_contacts; 
-			
-			loop nodes over: agents of_generic_species households {
-				network <- network add_node(nodes);
-			}
+			network <- network add_node(self);
+		}
+		
 			loop edges_from over: agents of_generic_species households {
-				loop edges_to over: social_contacts {
+				loop edges_to over: edges_from.social_contacts {
 					network <- network add_edge(edges_from::edges_to);
 				}
 			}
-		}
+		
+		
 	}
 			
 		
@@ -305,7 +305,6 @@ global {
 			}
 			n <- n + 1;
 		}
-		write length(new_households);
  		// Distribute network values among the new households
 		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
 		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
@@ -313,14 +312,14 @@ global {
 		loop emp_status over: employment_status_list { //iterate over the different employment states
 			let tmp_households <- new_households of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
 			let nb <- length(tmp_households); 
-			write [nb, 0.25 * nb];
+			//write [nb, 0.25 * nb];
 			let network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
 				let index <- index_of(temporal_network_attributes, attr);
 				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
 					ask tmp_households_grouped[i] {
-						write self.name;
+						//write self.name;
 						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
 					}
 				}
@@ -398,15 +397,17 @@ species households {
 	list social_contacts_direct;
 	list social_contacts_street;
 	list social_contacts_neighborhood;
-	list social_contacts <- [social_contacts_direct, social_contacts_street, social_contacts_neighborhood];
+	list social_contacts;
 
 
 
 
 	action get_social_contacts { //scheint fehlerhaft! TODO
-		add self.network_contacts_spatial_direct among agents_at_distance (10) to: social_contacts_direct; //exclusion of myself necessary? & check distance
-		add self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment) to: social_contacts_street; // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
-		add self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment) to: social_contacts_neighborhood;
+		social_contacts_direct <- self.network_contacts_spatial_direct among agents_at_distance (10); //exclusion of myself necessary? & check distance
+		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment); // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
+		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment);
+		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
+		write self.social_contacts;
 	}
 	
 	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
@@ -639,6 +640,12 @@ experiment agent_decision_making type: gui{
 		layout #split;
 		display neighborhood {
 			
+			graphics "network_edges" {
+				loop e over: network.edges {
+					draw geometry(e) color: #black;
+				}
+			}			
+			
 			species households_500_1000 aspect: base;
 			species households_1000_1500 aspect: base;
 			species households_1500_2000 aspect: base;
@@ -646,11 +653,7 @@ experiment agent_decision_making type: gui{
 			species households_3000_4000 aspect: base;
 			species households_4000etc aspect: base;
 			
-//			graphics "network_edges" {
-//				loop e over: network.edges {
-//					draw geometry(e) color: #black; //TODO im test funktioniert es, im modell nicht; ab hier weiter
-//				}
-//			}	
+	
 		}			
 	
 		display "households_income_bar" {
