@@ -579,6 +579,12 @@ species households {
 		
 	}
 	
+	reflex retire { //emp-status of the household moves to "retired" when they reach age 64.
+		if (self.age >= 64) and (self.employment != "pensioner") {
+			self.employment <- "pensioner";
+		}
+	}
+	
 
 } 
 
