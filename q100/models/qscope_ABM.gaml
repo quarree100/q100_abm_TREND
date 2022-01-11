@@ -14,6 +14,7 @@ global {
 	// bool show_heatingnetwork <- true;
 	// bool show_roads <- true;
 	
+	
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
 	graph network <- graph([]);	//TODO
@@ -242,19 +243,20 @@ global {
 		
 			loop edges_from over: agents of_generic_species households {
 				loop edges_to over: edges_from.social_contacts {
-					network <- network add_edge(edges_from::edges_to);
+					if !(contains_edge(network, edges_from::edges_to)) {
+						network <- network add_edge(edges_from::edges_to);						
+					}
 				}
 			}
-		
 		
 	}
 			
 		
 	
-				
+					
 
 	reflex new_household { //creates new households to keep the total number of households constant.
-		let new_households <- [];
+		let new_households of: households <- [];
 		let n <- length(agents of_generic_species households);
 		let wheights <- list(share_income);
 		remove 1.0 from: wheights;
@@ -345,6 +347,20 @@ global {
 				network_socialgroup <- true;
 			}	
 		}
+		
+		ask new_households {
+			do get_social_contacts;
+			network <- network add_node(self);
+			loop edges_to over: self.social_contacts {
+					
+					if !(contains_edge(network, self::edges_to)) {
+						network <- network add_edge(self::edges_to);						
+					}
+			}
+		}
+		if sum_of(new_households, length(each.social_contacts)) > 0 {
+		}
+	
 	}
 }
 		
@@ -407,7 +423,7 @@ species households {
 		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment); // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
 		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment);
 		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
-		write self.social_contacts;
+		
 	}
 	
 	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
@@ -545,16 +561,24 @@ species households {
 		if cycle mod 365 = 0 {
 			age <- age + 1;
 			lenght_of_residence <- lenght_of_residence + 1;
+			
 			if age >= 100 {
+				remove self from: network;
 				do die;
+				
 			}
 			let current_age_group type: int <- floor(age / 20) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
 			let moving_prob type: float <- 1 / average_lor_inclusive[1, current_age_group];
 			if flip(moving_prob) {
+				remove self from: network;
 				do die;
+				
 			}
+			
 		}
+		
 	}
+	
 
 } 
 
