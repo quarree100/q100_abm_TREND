@@ -348,7 +348,7 @@ global {
 			}	
 		}
 		
-		ask new_households {
+		ask new_households of_generic_species households {
 			do get_social_contacts;
 			network <- network add_node(self);
 			loop edges_to over: self.social_contacts {
@@ -358,7 +358,7 @@ global {
 					}
 			}
 		}
-		if sum_of(new_households, length(each.social_contacts)) > 0 {
+		if sum_of(new_households of_generic_species households, length(each.social_contacts)) > 0 { 
 		}
 	
 	}
@@ -418,7 +418,7 @@ species households {
 
 
 
-	action get_social_contacts { //scheint fehlerhaft! TODO
+	action get_social_contacts {
 		social_contacts_direct <- self.network_contacts_spatial_direct among agents_at_distance (10); //exclusion of myself necessary? & check distance
 		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment); // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
 		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment);
