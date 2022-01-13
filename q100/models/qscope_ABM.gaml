@@ -426,7 +426,7 @@ species households {
 		
 	}
 	
-	action update_social_contacts(agent old_contact) { //removes the 'old_contact' from the households list of contacts and adds a new randomo contact.
+	action update_social_contacts(agent old_contact) { //removes the 'old_contact' from the households list of contacts and adds a new random contact.
 		
 		if (old_contact in self.social_contacts_direct) {
 			remove old_contact from: self.social_contacts_direct;
@@ -446,31 +446,41 @@ species households {
 			network <- network add_edge(self::node);
 		}
 	}
+
+	
+
+	
 	
 	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
 		if network_contacts_temporal_daily > 0 {
 			ask network_contacts_temporal_daily among social_contacts {
-        		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
-        			CEEA <- CEEA + private_communication; // validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein?
+        		if (CEEA < mean([CEEA, self.CEEA])) and CEEA < 7 {
+        			CEEA <- CEEA + private_communication;
+        			self.CEEA <- self.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
         		}
         		else if CEEA > 0 {
         			CEEA <- CEEA - private_communication;
+        			self.CEEA <- self.CEEA + private_communication;
         		}
         	}
 			ask network_contacts_temporal_daily among social_contacts {
         		if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
-        			EDA <- EDA + private_communication; 
+        			EDA <- EDA + private_communication;
+        			self.EDA <- self.EDA - private_communication; 
         		}
         		else if EDA > 0 {
         			EDA <- EDA - private_communication;
+        			self.EDA <- self.EDA + private_communication;
         		}
         	}
 			ask network_contacts_temporal_daily among social_contacts {
         		if (SN < mean([SN, self.SN])) and SN < 7 {
-        			SN <- SN + private_communication; 
+        			SN <- SN + private_communication;
+        			self.SN <- self.SN - private_communication; 
         		}
         		else if SN > 0 {
         			SN <- SN - private_communication;
+        			self.SN <- self.SN + private_communication;
         		}
         	}	
         }
@@ -480,13 +490,13 @@ species households {
 		if network_contacts_temporal_weekly > 0 {
 			if cycle mod 7 = 0 { 
 				ask network_contacts_temporal_weekly among social_contacts {
-        			if network_socialgroup = true and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
+        			if network_socialgroup = true and ((CEEA < mean([CEEA, self.CEEA])) and CEEA < 7) {
         				CEEA <- CEEA + (private_communication * 2); 
         			}
         			else if network_socialgroup = true and CEEA > 0 {
         				CEEA <- CEEA - (private_communication * 2);
       			  	}
-      			  	else if network_socialgroup = false and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
+      			  	else if network_socialgroup = false and ((CEEA < mean([CEEA, self.CEEA])) and CEEA < 7) {
         				CEEA <- CEEA + private_communication; 
         			}
         			else if network_socialgroup = false and CEEA > 0 {
@@ -494,13 +504,13 @@ species households {
       			  	}
         		}
 				ask network_contacts_temporal_weekly among social_contacts {
-        			if network_socialgroup = true and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
+        			if network_socialgroup = true and ((EDA < mean([EDA, self.EDA])) and EDA < 7) {
         				EDA <- EDA + (private_communication * 2); 
         			}
         			else if network_socialgroup = true and EDA > 0 {
         				EDA <- EDA - (private_communication * 2);
       			  	}
-      			  	else if network_socialgroup = false and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
+      			  	else if network_socialgroup = false and ((EDA < mean([EDA, self.EDA])) and EDA < 7) {
         				EDA <- EDA + private_communication; 
         			}
         			else if network_socialgroup = false and EDA > 0 {
@@ -523,7 +533,7 @@ species households {
 		if network_contacts_temporal_weekly > 0 {
 			if cycle mod 30 = 0 { 
 				ask network_contacts_temporal_occasional among social_contacts {
-       		 		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
+       		 		if (CEEA < mean([CEEA, self.CEEA])) and CEEA < 7 {
        				CEEA <- CEEA + private_communication; 
        	 			}
         			else if CEEA > 0 {
