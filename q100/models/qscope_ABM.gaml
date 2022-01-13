@@ -426,6 +426,27 @@ species households {
 		
 	}
 	
+	action update_social_contacts(agent old_contact) { //removes the 'old_contact' from the households list of contacts and adds a new randomo contact.
+		
+		if (old_contact in self.social_contacts_direct) {
+			remove old_contact from: self.social_contacts_direct;
+			social_contacts_direct <- social_contacts_direct + (1 among agents_at_distance (10));
+		}
+		if (old_contact in self.social_contacts_street) {
+			remove old_contact from: self.social_contacts_street;
+			social_contacts_street <- social_contacts_street + (1 among agents of_generic_species households where(each.employment = self.employment));
+		}
+		if (old_contact in self.social_contacts_neighborhood) {
+			remove old_contact from: self.social_contacts_neighborhood;
+			social_contacts_neighborhood <- social_contacts_neighborhood + (1 among agents of_generic_species households where(each.employment = self.employment));
+		}
+		let new_social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood) - social_contacts;
+		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
+		loop node over: new_social_contacts {
+			network <- network add_edge(self::node);
+		}
+	}
+	
 	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
 		if network_contacts_temporal_daily > 0 {
 			ask network_contacts_temporal_daily among social_contacts {
@@ -561,8 +582,11 @@ species households {
 		if cycle mod 365 = 0 {
 			age <- age + 1;
 			lenght_of_residence <- lenght_of_residence + 1;
-			
+			let current_agent <- self;
 			if age >= 100 {
+				ask neighbors_of(network, self) {
+					do update_social_contacts(current_agent);
+				}
 				remove self from: network;
 				do die;
 				
@@ -570,6 +594,9 @@ species households {
 			let current_age_group type: int <- floor(age / 20) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
 			let moving_prob type: float <- 1 / average_lor_inclusive[1, current_age_group];
 			if flip(moving_prob) {
+				ask neighbors_of(network, self) {
+					do update_social_contacts(current_agent);
+				}
 				remove self from: network;
 				do die;
 				
