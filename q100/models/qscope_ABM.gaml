@@ -410,10 +410,10 @@ species households {
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 	
 	
-	list social_contacts_direct;
-	list social_contacts_street;
-	list social_contacts_neighborhood;
-	list social_contacts;
+	list<households> social_contacts_direct;
+	list<households> social_contacts_street;
+	list<households> social_contacts_neighborhood;
+	list<households> social_contacts;
 
 
 
@@ -452,37 +452,38 @@ species households {
 	
 	
 	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
+
 		if network_contacts_temporal_daily > 0 {
-			ask network_contacts_temporal_daily among social_contacts {
-        		if (CEEA < mean([CEEA, self.CEEA])) and CEEA < 7 {
-        			CEEA <- CEEA + private_communication;
-        			self.CEEA <- self.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
+			ask network_contacts_temporal_daily among social_contacts { //TODO Soll für jede Variable eine andere Gruppe von Kontakten ausgewählt werden? 
+        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
+        			self.CEEA <- self.CEEA + private_communication;
+        			myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
         		}
         		else if CEEA > 0 {
-        			CEEA <- CEEA - private_communication;
-        			self.CEEA <- self.CEEA + private_communication;
+        			self.CEEA <- self.CEEA - private_communication;
+        			myself.CEEA <- myself.CEEA + private_communication;
         		}
-        	}
-			ask network_contacts_temporal_daily among social_contacts {
-        		if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
-        			EDA <- EDA + private_communication;
-        			self.EDA <- self.EDA - private_communication; 
+        		
+        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
+        			self.EDA <- self.EDA + private_communication;
+        			myself.EDA <- myself.EDA - private_communication;
         		}
         		else if EDA > 0 {
-        			EDA <- EDA - private_communication;
-        			self.EDA <- self.EDA + private_communication;
+        			self.EDA <- self.EDA - private_communication;
+        			myself.EDA <- myself.EDA + private_communication;
         		}
-        	}
-			ask network_contacts_temporal_daily among social_contacts {
-        		if (SN < mean([SN, self.SN])) and SN < 7 {
-        			SN <- SN + private_communication;
-        			self.SN <- self.SN - private_communication; 
+        		
+        		if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+        			self.SN <- self.SN + private_communication;
+        			myself.SN <- myself.SN - private_communication;
         		}
         		else if SN > 0 {
-        			SN <- SN - private_communication;
-        			self.SN <- self.SN + private_communication;
+        			self.SN <- self.SN - private_communication;
+        			myself.SN <- myself.SN + private_communication;
         		}
-        	}	
+        		
+        	}
+				
         }
 	}
 	
@@ -490,39 +491,39 @@ species households {
 		if network_contacts_temporal_weekly > 0 {
 			if cycle mod 7 = 0 { 
 				ask network_contacts_temporal_weekly among social_contacts {
-        			if network_socialgroup = true and ((CEEA < mean([CEEA, self.CEEA])) and CEEA < 7) {
-        				CEEA <- CEEA + (private_communication * 2); 
+        			if self.network_socialgroup = true and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
+        				self.CEEA <- self.CEEA + (private_communication * 2); 
         			}
-        			else if network_socialgroup = true and CEEA > 0 {
-        				CEEA <- CEEA - (private_communication * 2);
+        			else if self.network_socialgroup = true and self.CEEA > 0 {
+        				self.CEEA <- self.CEEA - (private_communication * 2);
       			  	}
-      			  	else if network_socialgroup = false and ((CEEA < mean([CEEA, self.CEEA])) and CEEA < 7) {
-        				CEEA <- CEEA + private_communication; 
+      			  	else if self.network_socialgroup = false and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
+        				self.CEEA <- self.CEEA + private_communication; 
         			}
-        			else if network_socialgroup = false and CEEA > 0 {
-        				CEEA <- CEEA - private_communication;
+        			else if self.network_socialgroup = false and self.CEEA > 0 {
+        				self.CEEA <- self.CEEA - private_communication;
       			  	}
         		}
 				ask network_contacts_temporal_weekly among social_contacts {
-        			if network_socialgroup = true and ((EDA < mean([EDA, self.EDA])) and EDA < 7) {
-        				EDA <- EDA + (private_communication * 2); 
+        			if self.network_socialgroup = true and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
+        				self.EDA <- self.EDA + (private_communication * 2); 
         			}
-        			else if network_socialgroup = true and EDA > 0 {
-        				EDA <- EDA - (private_communication * 2);
+        			else if self.network_socialgroup = true and self.EDA > 0 {
+        				self.EDA <- self.EDA - (private_communication * 2);
       			  	}
-      			  	else if network_socialgroup = false and ((EDA < mean([EDA, self.EDA])) and EDA < 7) {
-        				EDA <- EDA + private_communication; 
+      			  	else if self.network_socialgroup = false and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
+        				self.EDA <- self.EDA + private_communication; 
         			}
-        			else if network_socialgroup = false and EDA > 0 {
-        				EDA <- EDA - private_communication;
+        			else if self.network_socialgroup = false and self.EDA > 0 {
+        				self.EDA <- self.EDA - private_communication;
       			  	}
       			}
 				ask network_contacts_temporal_weekly among social_contacts {
-        			if (SN < mean([SN, self.SN])) and SN < 7 {
-        				SN <- SN + private_communication; 
+        			if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+        				self.SN <- self.SN + private_communication; 
         			}
         			else if SN > 0 {
-        				SN <- SN - private_communication;
+        				self.SN <- self.SN - private_communication;
         			}
         		}
         	}
@@ -530,30 +531,31 @@ species households {
 	}
 	
 	reflex communicate_occasional { 
-		if network_contacts_temporal_weekly > 0 {
+		if network_contacts_temporal_occasional > 0 {
 			if cycle mod 30 = 0 { 
 				ask network_contacts_temporal_occasional among social_contacts {
-       		 		if (CEEA < mean([CEEA, self.CEEA])) and CEEA < 7 {
-       				CEEA <- CEEA + private_communication; 
-       	 			}
+       		 		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
+        				self.CEEA <- self.CEEA + private_communication;
+        			}
         			else if CEEA > 0 {
-        				CEEA <- CEEA - private_communication;
-      		 	 	}
+        				self.CEEA <- self.CEEA - private_communication;
+        			}
+        		
         		}
 				ask network_contacts_temporal_occasional among social_contacts {
-        			if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
-        				EDA <- EDA + private_communication; 
+        			if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
+        				self.EDA <- self.EDA + private_communication;
         			}
         			else if EDA > 0 {
-        				EDA <- EDA - private_communication;
+        				self.EDA <- self.EDA - private_communication;
         			}
         		}
 				ask network_contacts_temporal_occasional among social_contacts {
-        			if (SN < mean([SN, self.SN])) and SN < 7 {
-        				SN <- SN + private_communication; 
+        			if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+        				self.SN <- self.SN + private_communication;
         			}
         			else if SN > 0 {
-        				SN <- SN - private_communication;
+        				self.SN <- self.SN - private_communication;
         			}
         		}
         	}
@@ -633,7 +635,7 @@ species households_500_1000 parent: households {
 	}
 	
 	int income <- rnd(500, 1000);
-
+	
 	
 }
 
