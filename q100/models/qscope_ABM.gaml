@@ -451,7 +451,7 @@ species households {
 
 	
 	
-	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
+	reflex communicate_daily { //TODO Validiere kurz Unterschied auf Werte bei (1) einseitigem Einfluss (2) gegenseitigem Einfluss; Erweiterung: (3) Einmalige Kommunikation zweier Kontakte
 
 		if network_contacts_temporal_daily > 0 {
 			ask network_contacts_temporal_daily among social_contacts { //TODO Soll für jede Variable eine andere Gruppe von Kontakten ausgewählt werden? 
