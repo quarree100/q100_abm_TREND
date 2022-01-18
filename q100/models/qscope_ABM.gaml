@@ -177,6 +177,8 @@ global {
 					float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
 					PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 					id_group <- string(income_group) + "_" + letters[i]; 			
+					
+					location <- any_location_in (one_of (building));
 				}
 			}
 		}
