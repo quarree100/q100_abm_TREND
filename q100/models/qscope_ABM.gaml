@@ -52,7 +52,7 @@ global {
 	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
 	
 	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor
-	
+	string communication_type <- "one-side";
 	
 	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map share_income_map <- create_map(income_groups_list, list(share_income));
@@ -452,34 +452,58 @@ species households {
 	
 	
 	reflex communicate_daily { //TODO Validiere kurz Unterschied auf Werte bei (1) einseitigem Einfluss (2) gegenseitigem Einfluss; Erweiterung: (3) Einmalige Kommunikation zweier Kontakte
-
+		
 		if network_contacts_temporal_daily > 0 {
 			ask network_contacts_temporal_daily among social_contacts { //TODO Soll für jede Variable eine andere Gruppe von Kontakten ausgewählt werden? 
-        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
-        			self.CEEA <- self.CEEA + private_communication;
-        			myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
+        		let flag <- false;
+        		if communication_type = "connections" {
+        			let current_edge <- edge_between(network, self::myself);
+        			if weight_of(network, current_edge) != cycle{
+        				network <- with_weights(network, [current_edge::cycle]);
+        				flag <- true;
+        			}
         		}
-        		else if CEEA > 0 {
-        			self.CEEA <- self.CEEA - private_communication;
-        			myself.CEEA <- myself.CEEA + private_communication;
-        		}
+        		else {flag <- true;}
+        		if flag {
+	        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
+	        			self.CEEA <- self.CEEA + private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
+	        			}
+	        		}
+	        		else if CEEA > 0 {
+	        			self.CEEA <- self.CEEA - private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.CEEA <- myself.CEEA + private_communication;
+	        			}
+	        		}
+	        		
+	        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
+	        			self.EDA <- self.EDA + private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.EDA <- myself.EDA - private_communication;
+	        			}
+	        		}
+	        		else if EDA > 0 {
+	        			self.EDA <- self.EDA - private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.EDA <- myself.EDA + private_communication;
+	        			}
+	        		}
+	        		
+	        		if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+	        			self.SN <- self.SN + private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.SN <- myself.SN - private_communication;
+	        			}
+	        		}
+	        		else if SN > 0 {
+	        			self.SN <- self.SN - private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.SN <- myself.SN + private_communication;
+	        			}
+	        		}
         		
-        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
-        			self.EDA <- self.EDA + private_communication;
-        			myself.EDA <- myself.EDA - private_communication;
-        		}
-        		else if EDA > 0 {
-        			self.EDA <- self.EDA - private_communication;
-        			myself.EDA <- myself.EDA + private_communication;
-        		}
-        		
-        		if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
-        			self.SN <- self.SN + private_communication;
-        			myself.SN <- myself.SN - private_communication;
-        		}
-        		else if SN > 0 {
-        			self.SN <- self.SN - private_communication;
-        			myself.SN <- myself.SN + private_communication;
         		}
         		
         	}
@@ -491,40 +515,82 @@ species households {
 		if network_contacts_temporal_weekly > 0 {
 			if cycle mod 7 = 0 { 
 				ask network_contacts_temporal_weekly among social_contacts {
-        			if self.network_socialgroup = true and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
-        				self.CEEA <- self.CEEA + (private_communication * 2); 
-        			}
-        			else if self.network_socialgroup = true and self.CEEA > 0 {
-        				self.CEEA <- self.CEEA - (private_communication * 2);
-      			  	}
-      			  	else if self.network_socialgroup = false and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
-        				self.CEEA <- self.CEEA + private_communication; 
-        			}
-        			else if self.network_socialgroup = false and self.CEEA > 0 {
-        				self.CEEA <- self.CEEA - private_communication;
-      			  	}
-        		}
-				ask network_contacts_temporal_weekly among social_contacts {
-        			if self.network_socialgroup = true and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
-        				self.EDA <- self.EDA + (private_communication * 2); 
-        			}
-        			else if self.network_socialgroup = true and self.EDA > 0 {
-        				self.EDA <- self.EDA - (private_communication * 2);
-      			  	}
-      			  	else if self.network_socialgroup = false and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
-        				self.EDA <- self.EDA + private_communication; 
-        			}
-        			else if self.network_socialgroup = false and self.EDA > 0 {
-        				self.EDA <- self.EDA - private_communication;
-      			  	}
-      			}
-				ask network_contacts_temporal_weekly among social_contacts {
-        			if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
-        				self.SN <- self.SN + private_communication; 
-        			}
-        			else if SN > 0 {
-        				self.SN <- self.SN - private_communication;
-        			}
+        			let flag <- false;
+	        		if communication_type = "connections" {
+	        			let current_edge <- edge_between(network, self::myself);
+	        			if weight_of(network, current_edge) != cycle{
+	        				network <- with_weights(network, [current_edge::cycle]);
+	        				flag <- true;
+	        			}
+	        		}
+        			else {flag <- true;}
+        			if flag {
+	        			if self.network_socialgroup = true and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
+	        				self.CEEA <- self.CEEA + (private_communication * 2);
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.CEEA <- myself.CEEA - (private_communication * 2);
+	        				} 
+	        			}
+	        			else if self.network_socialgroup = true and self.CEEA > 0 {
+	        				self.CEEA <- self.CEEA - (private_communication * 2);
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.CEEA <- myself.CEEA + (private_communication * 2);
+	        				} 
+	      			  	}
+	      			  	else if self.network_socialgroup = false and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
+	        				self.CEEA <- self.CEEA + private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.CEEA <- myself.CEEA - private_communication;
+	        				}  
+	        			}
+	        			else if self.network_socialgroup = false and self.CEEA > 0 {
+	        				self.CEEA <- self.CEEA - private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.CEEA <- myself.CEEA + private_communication;
+	        				}
+	      			  	}
+	      			  	
+	      			
+        		
+	        			if self.network_socialgroup = true and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
+	        				self.EDA <- self.EDA + (private_communication * 2);
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.EDA <- myself.EDA - (private_communication * 2);
+	        				} 
+	        			}
+	        			else if self.network_socialgroup = true and self.EDA > 0 {
+	        				self.EDA <- self.EDA - (private_communication * 2);
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.EDA <- myself.EDA + (private_communication * 2);
+	        				} 
+	      			  	}
+	      			  	else if self.network_socialgroup = false and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
+	        				self.EDA <- self.EDA + private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.EDA <- myself.EDA - private_communication;
+	        				}  
+	        			}
+	        			else if self.network_socialgroup = false and self.EDA > 0 {
+	        				self.EDA <- self.EDA - private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.EDA <- myself.EDA + private_communication;
+	        				}
+	      			  	}
+	      			
+	        			if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+	        				self.SN <- self.SN + private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.SN <- myself.SN - private_communication;
+	        				} 
+	        			}
+	        			else if SN > 0 {
+	        				self.SN <- self.SN - private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.SN <- myself.SN + private_communication;
+	        				}
+	        			}
+	        			
+	        		}
         		}
         	}
         }
@@ -534,29 +600,57 @@ species households {
 		if network_contacts_temporal_occasional > 0 {
 			if cycle mod 30 = 0 { 
 				ask network_contacts_temporal_occasional among social_contacts {
-       		 		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
-        				self.CEEA <- self.CEEA + private_communication;
-        			}
-        			else if CEEA > 0 {
-        				self.CEEA <- self.CEEA - private_communication;
-        			}
+       		 		let flag <- false;
+	        		if communication_type = "connections" {
+	        			let current_edge <- edge_between(network, self::myself);
+	        			if weight_of(network, current_edge) != cycle{
+	        				network <- with_weights(network, [current_edge::cycle]);
+	        				flag <- true;
+	        			}
+	        		}
+	        		else {flag <- true;}
+	        		if flag {
+		        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
+		        			self.CEEA <- self.CEEA + private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
+		        			}
+		        		}
+		        		else if CEEA > 0 {
+		        			self.CEEA <- self.CEEA - private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.CEEA <- myself.CEEA + private_communication;
+		        			}
+		        		}
+		        		
+		        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
+		        			self.EDA <- self.EDA + private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.EDA <- myself.EDA - private_communication;
+		        			}
+		        		}
+		        		else if EDA > 0 {
+		        			self.EDA <- self.EDA - private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.EDA <- myself.EDA + private_communication;
+		        			}
+		        		}
+		        		
+		        		if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+		        			self.SN <- self.SN + private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.SN <- myself.SN - private_communication;
+		        			}
+		        		}
+		        		else if SN > 0 {
+		        			self.SN <- self.SN - private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.SN <- myself.SN + private_communication;
+		        			}
+		        		}
+	        		
+	        		}
         		
-        		}
-				ask network_contacts_temporal_occasional among social_contacts {
-        			if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
-        				self.EDA <- self.EDA + private_communication;
-        			}
-        			else if EDA > 0 {
-        				self.EDA <- self.EDA - private_communication;
-        			}
-        		}
-				ask network_contacts_temporal_occasional among social_contacts {
-        			if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
-        				self.SN <- self.SN + private_communication;
-        			}
-        			else if SN > 0 {
-        				self.SN <- self.SN - private_communication;
-        			}
         		}
         	}
         }
@@ -700,7 +794,8 @@ species households_4000etc parent: households {
 
 experiment agent_decision_making type: gui{
 	
- 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
+ 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making";
+ 	parameter "Communication-Type" var: communication_type among: ["one-side", "both_sides", "connections"] category: "Communication";	
 	
 	output {
 		monitor date value: current_date refresh: every(1#cycle);		
@@ -744,6 +839,14 @@ experiment agent_decision_making type: gui{
 				data "self_employed" value: length (agents of_generic_species households where (each.employment = "self_employed")) color: #lightcyan;
 				data "un_employed" value: length (agents of_generic_species households where (each.employment = "un_employed")) color: #lightgoldenrodyellow;
 				data "pensioner" value: length (agents of_generic_species households where (each.employment = "pensioner")) color: #lightgray;
+			}
+		}
+		
+		display "Charts" {
+			chart "Average of decision-variables" type: series {
+				data "CEEA" value: sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
+				data "EDA" value: sum_of(agents of_generic_species households, each.EDA) / length(agents of_generic_species households);
+				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
 			}
 		}
 	}
