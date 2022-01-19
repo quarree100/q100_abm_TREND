@@ -1,8 +1,11 @@
 /**
-* Name: agent_decision_making
-* Description: Integration of data and first test of the decision making of agents within the framework of q100 
-* Author: lennartwinkeler
-* Tags: 
+* Name: qScope_ABM
+* Description: agent-based model within the project quarree100 - work group 2
+* (1) simulating household decision-making in built-up urban areas to develop an understanding of sociotechnical dynamics of energy transitions;
+* (2) implementing the simulation in a CityScope framework for increasing and investigating stakeholder interaction & empowerment
+*
+* Authors: lennartwinkeler, davidunland, philippolaleye
+*  
 */
 
 
@@ -10,15 +13,23 @@ model agent_decision_making
 
 
 global {
-	// shape_file example_shapefile <- shape_file("../includes/shapefiles/example.shp");
 	// bool show_heatingnetwork <- true;
 	// bool show_roads <- true;
 	
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
-	graph network <- graph([]);	//TODO
+	graph network <- graph([]);
+	geometry shape <- envelope(shape_file_typologiezonen);
 	
 // for choosing specific value -> [columns, rows]
+
+	// load shapefiles
+	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
+	file shape_file_typologiezonen <- file("../includes/Shapefiles/Typologiezonen.shp");
+	file nahwaerme <- file("../includes/Shapefiles/Nahwärmenetz.shp");
+	
+	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
+	string attributes_source <- attributes_possible_sources[1];
 
 	// data of survey#1 - values for decision-making distributed in six income-groups
 	matrix decision_500_1000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv", ",", float, true));
@@ -46,6 +57,8 @@ global {
 
 
 	int nb_units <- 377; // number of households in v1
+	int global_neighboring_distance <- 5;
+	
 	float share_families <- 0.17; // share of families in whole neighborhood
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
 	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
@@ -98,6 +111,40 @@ global {
 	
 	init { 		
 
+		// Hausfarben anpassen in Wohnhaeuser & Nicht-Wohnhaeuser; max Unterteilung in MFH & EFH
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source))] { // create agents according to shapefile metadata
+			if type = "EFH" {
+				color <- #blue;
+			}
+			else if type = "MFH" {
+				color <- #orange;
+			}
+			else if type = "NWG" {
+				color <- #red;
+			}
+			else if type = "DHH" {
+				color <- #brown;
+			}
+			else if type = "E-MG" {
+				color <- #yellow;
+			}
+			else if type = "M-MG" {
+				color <- #purple;
+			}
+			else if type = "RH" {
+				color <- #green;
+			}
+			else if type = "SON" {
+				color <- #black;
+			}
+			else if type = "SOZ" {
+				color <- #pink;
+			}
+		}
+		
+		create nahwaermenetz from: nahwaerme;
+
+
 		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
 			let letters <- ["a", "b", "c", "d"];
 			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
@@ -130,6 +177,8 @@ global {
 					float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
 					PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 					id_group <- string(income_group) + "_" + letters[i]; 			
+					
+					location <- any_location_in (one_of (building));
 				}
 			}
 		}
@@ -248,10 +297,7 @@ global {
 		
 		
 	}
-			
-		
-	
-				
+					
 
 	reflex new_household { //creates new households to keep the total number of households constant.
 		let new_households <- [];
@@ -348,6 +394,24 @@ global {
 	}
 }
 		
+species building {
+	string type;
+	
+	rgb color <- #gray;
+	geometry line;
+	aspect base {
+		draw shape color: color;
+	}
+}
+
+
+species nahwaermenetz{
+	
+	rgb color <- #gray;
+	aspect base{
+		draw shape color: color;
+	}
+}
 
 
 species households {
@@ -403,7 +467,7 @@ species households {
 
 
 	action get_social_contacts { //scheint fehlerhaft! TODO
-		social_contacts_direct <- self.network_contacts_spatial_direct among agents_at_distance (10); //exclusion of myself necessary? & check distance
+		social_contacts_direct <- self.network_contacts_spatial_direct among agents_at_distance (global_neighboring_distance); //exclusion of myself necessary? & check distance
 		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment); // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
 		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment);
 		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
@@ -632,6 +696,10 @@ species households_4000etc parent: households {
 experiment agent_decision_making type: gui{
 	
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
+ 	parameter "Neighboring distance" var: global_neighboring_distance min: 0.0 max: 30.0 category: "communication";
+ 	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
+ 	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
+ 	
 	
 	output {
 		monitor date value: current_date refresh: every(1#cycle);		
@@ -645,6 +713,9 @@ experiment agent_decision_making type: gui{
 					draw geometry(e) color: #black;
 				}
 			}			
+			
+			species building aspect: base;
+			species nahwaermenetz aspect: base;
 			
 			species households_500_1000 aspect: base;
 			species households_1000_1500 aspect: base;
