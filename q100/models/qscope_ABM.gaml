@@ -16,6 +16,7 @@ global {
 	// bool show_heatingnetwork <- true;
 	// bool show_roads <- true;
 	
+	
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
 	graph network <- graph([]);
@@ -64,7 +65,7 @@ global {
 	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
 	
 	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor
-	
+	string communication_type <- "one-side";
 	
 	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map share_income_map <- create_map(income_groups_list, list(share_income));
@@ -291,16 +292,18 @@ global {
 		
 			loop edges_from over: agents of_generic_species households {
 				loop edges_to over: edges_from.social_contacts {
-					network <- network add_edge(edges_from::edges_to);
+					if !(contains_edge(network, edges_from::edges_to)) {
+						network <- network add_edge(edges_from::edges_to);						
+					}
 				}
 			}
 		
-		
 	}
+
 					
 
 	reflex new_household { //creates new households to keep the total number of households constant.
-		let new_households <- [];
+		let new_households of: households <- [];
 		let n <- length(agents of_generic_species households);
 		let wheights <- list(share_income);
 		remove 1.0 from: wheights;
@@ -391,6 +394,20 @@ global {
 				network_socialgroup <- true;
 			}	
 		}
+		
+		ask new_households of_generic_species households {
+			do get_social_contacts;
+			network <- network add_node(self);
+			loop edges_to over: self.social_contacts {
+					
+					if !(contains_edge(network, self::edges_to)) {
+						network <- network add_edge(self::edges_to);						
+					}
+			}
+		}
+		if sum_of(new_households of_generic_species households, length(each.social_contacts)) > 0 { 
+		}
+	
 	}
 }
 		
@@ -458,48 +475,105 @@ species households {
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 	
 	
-	list social_contacts_direct;
-	list social_contacts_street;
-	list social_contacts_neighborhood;
-	list social_contacts;
+	list<households> social_contacts_direct;
+	list<households> social_contacts_street;
+	list<households> social_contacts_neighborhood;
+	list<households> social_contacts;
 
 
 
 
-	action get_social_contacts { //scheint fehlerhaft! TODO
+	action get_social_contacts { 
 		social_contacts_direct <- self.network_contacts_spatial_direct among agents_at_distance (global_neighboring_distance); //exclusion of myself necessary? & check distance
+
 		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment); // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
 		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment);
 		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
-		write self.social_contacts;
+		
 	}
 	
-	reflex communicate_daily { //TODO kommunikationsdiskussion: 1) aufrufender agent beeinflusst werte der kontakte 2) werte des aufrufenden agenten und der kontakte werden veraendert, was bei netzwerk-gruppen zu mehrfachaenderung fuehrt 3) in jedem schritt merken, welche kommunikation bereits stattgefunden hat um doppelte zu vermeiden
+	action update_social_contacts(agent old_contact) { //removes the 'old_contact' from the households list of contacts and adds a new random contact.
+		
+		if (old_contact in self.social_contacts_direct) {
+			remove old_contact from: self.social_contacts_direct;
+			social_contacts_direct <- social_contacts_direct + (1 among agents_at_distance (10));
+		}
+		if (old_contact in self.social_contacts_street) {
+			remove old_contact from: self.social_contacts_street;
+			social_contacts_street <- social_contacts_street + (1 among agents of_generic_species households where(each.employment = self.employment));
+		}
+		if (old_contact in self.social_contacts_neighborhood) {
+			remove old_contact from: self.social_contacts_neighborhood;
+			social_contacts_neighborhood <- social_contacts_neighborhood + (1 among agents of_generic_species households where(each.employment = self.employment));
+		}
+		let new_social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood) - social_contacts;
+		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
+		loop node over: new_social_contacts {
+			network <- network add_edge(self::node);
+		}
+	}
+
+	
+
+	
+	
+	reflex communicate_daily { //TODO Validiere kurz Unterschied auf Werte bei (1) einseitigem Einfluss (2) gegenseitigem Einfluss; Erweiterung: (3) Einmalige Kommunikation zweier Kontakte
+		
 		if network_contacts_temporal_daily > 0 {
-			ask network_contacts_temporal_daily among social_contacts {
-        		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
-        			CEEA <- CEEA + private_communication; // validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein?
+			ask network_contacts_temporal_daily among social_contacts { //TODO Soll für jede Variable eine andere Gruppe von Kontakten ausgewählt werden? 
+        		let flag <- false;
+        		if communication_type = "connections" {
+        			let current_edge <- edge_between(network, self::myself);
+        			if weight_of(network, current_edge) != cycle{
+        				network <- with_weights(network, [current_edge::cycle]);
+        				flag <- true;
+        			}
         		}
-        		else if CEEA > 0 {
-        			CEEA <- CEEA - private_communication;
+        		else {flag <- true;}
+        		if flag {
+	        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
+	        			self.CEEA <- self.CEEA + private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
+	        			}
+	        		}
+	        		else if CEEA > 0 {
+	        			self.CEEA <- self.CEEA - private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.CEEA <- myself.CEEA + private_communication;
+	        			}
+	        		}
+	        		
+	        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
+	        			self.EDA <- self.EDA + private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.EDA <- myself.EDA - private_communication;
+	        			}
+	        		}
+	        		else if EDA > 0 {
+	        			self.EDA <- self.EDA - private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.EDA <- myself.EDA + private_communication;
+	        			}
+	        		}
+	        		
+	        		if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+	        			self.SN <- self.SN + private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.SN <- myself.SN - private_communication;
+	        			}
+	        		}
+	        		else if SN > 0 {
+	        			self.SN <- self.SN - private_communication;
+	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        				myself.SN <- myself.SN + private_communication;
+	        			}
+	        		}
+        		
         		}
+        		
         	}
-			ask network_contacts_temporal_daily among social_contacts {
-        		if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
-        			EDA <- EDA + private_communication; 
-        		}
-        		else if EDA > 0 {
-        			EDA <- EDA - private_communication;
-        		}
-        	}
-			ask network_contacts_temporal_daily among social_contacts {
-        		if (SN < mean([SN, self.SN])) and SN < 7 {
-        			SN <- SN + private_communication; 
-        		}
-        		else if SN > 0 {
-        			SN <- SN - private_communication;
-        		}
-        	}	
+				
         }
 	}
 	
@@ -507,71 +581,142 @@ species households {
 		if network_contacts_temporal_weekly > 0 {
 			if cycle mod 7 = 0 { 
 				ask network_contacts_temporal_weekly among social_contacts {
-        			if network_socialgroup = true and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
-        				CEEA <- CEEA + (private_communication * 2); 
-        			}
-        			else if network_socialgroup = true and CEEA > 0 {
-        				CEEA <- CEEA - (private_communication * 2);
-      			  	}
-      			  	else if network_socialgroup = false and ((CEEA < mean(CEEA, self.CEEA)) and CEEA < 7) {
-        				CEEA <- CEEA + private_communication; 
-        			}
-        			else if network_socialgroup = false and CEEA > 0 {
-        				CEEA <- CEEA - private_communication;
-      			  	}
-        		}
-				ask network_contacts_temporal_weekly among social_contacts {
-        			if network_socialgroup = true and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
-        				EDA <- EDA + (private_communication * 2); 
-        			}
-        			else if network_socialgroup = true and EDA > 0 {
-        				EDA <- EDA - (private_communication * 2);
-      			  	}
-      			  	else if network_socialgroup = false and ((EDA < mean(EDA, self.EDA)) and EDA < 7) {
-        				EDA <- EDA + private_communication; 
-        			}
-        			else if network_socialgroup = false and EDA > 0 {
-        				EDA <- EDA - private_communication;
-      			  	}
-      			}
-				ask network_contacts_temporal_weekly among social_contacts {
-        			if (SN < mean([SN, self.SN])) and SN < 7 {
-        				SN <- SN + private_communication; 
-        			}
-        			else if SN > 0 {
-        				SN <- SN - private_communication;
-        			}
+        			let flag <- false;
+	        		if communication_type = "connections" {
+	        			let current_edge <- edge_between(network, self::myself);
+	        			if weight_of(network, current_edge) != cycle{
+	        				network <- with_weights(network, [current_edge::cycle]);
+	        				flag <- true;
+	        			}
+	        		}
+        			else {flag <- true;}
+        			if flag {
+	        			if self.network_socialgroup = true and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
+	        				self.CEEA <- self.CEEA + (private_communication * 2);
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.CEEA <- myself.CEEA - (private_communication * 2);
+	        				} 
+	        			}
+	        			else if self.network_socialgroup = true and self.CEEA > 0 {
+	        				self.CEEA <- self.CEEA - (private_communication * 2);
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.CEEA <- myself.CEEA + (private_communication * 2);
+	        				} 
+	      			  	}
+	      			  	else if self.network_socialgroup = false and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
+	        				self.CEEA <- self.CEEA + private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.CEEA <- myself.CEEA - private_communication;
+	        				}  
+	        			}
+	        			else if self.network_socialgroup = false and self.CEEA > 0 {
+	        				self.CEEA <- self.CEEA - private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.CEEA <- myself.CEEA + private_communication;
+	        				}
+	      			  	}
+	      			  	
+	      			
+        		
+	        			if self.network_socialgroup = true and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
+	        				self.EDA <- self.EDA + (private_communication * 2);
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.EDA <- myself.EDA - (private_communication * 2);
+	        				} 
+	        			}
+	        			else if self.network_socialgroup = true and self.EDA > 0 {
+	        				self.EDA <- self.EDA - (private_communication * 2);
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.EDA <- myself.EDA + (private_communication * 2);
+	        				} 
+	      			  	}
+	      			  	else if self.network_socialgroup = false and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
+	        				self.EDA <- self.EDA + private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.EDA <- myself.EDA - private_communication;
+	        				}  
+	        			}
+	        			else if self.network_socialgroup = false and self.EDA > 0 {
+	        				self.EDA <- self.EDA - private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.EDA <- myself.EDA + private_communication;
+	        				}
+	      			  	}
+	      			
+	        			if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+	        				self.SN <- self.SN + private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.SN <- myself.SN - private_communication;
+	        				} 
+	        			}
+	        			else if SN > 0 {
+	        				self.SN <- self.SN - private_communication;
+	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        					myself.SN <- myself.SN + private_communication;
+	        				}
+	        			}
+	        			
+	        		}
         		}
         	}
         }
 	}
 	
 	reflex communicate_occasional { 
-		if network_contacts_temporal_weekly > 0 {
+		if network_contacts_temporal_occasional > 0 {
 			if cycle mod 30 = 0 { 
 				ask network_contacts_temporal_occasional among social_contacts {
-       		 		if (CEEA < mean(CEEA, self.CEEA)) and CEEA < 7 {
-       				CEEA <- CEEA + private_communication; 
-       	 			}
-        			else if CEEA > 0 {
-        				CEEA <- CEEA - private_communication;
-      		 	 	}
-        		}
-				ask network_contacts_temporal_occasional among social_contacts {
-        			if (EDA < mean([EDA, self.EDA])) and EDA < 7 {
-        				EDA <- EDA + private_communication; 
-        			}
-        			else if EDA > 0 {
-        				EDA <- EDA - private_communication;
-        			}
-        		}
-				ask network_contacts_temporal_occasional among social_contacts {
-        			if (SN < mean([SN, self.SN])) and SN < 7 {
-        				SN <- SN + private_communication; 
-        			}
-        			else if SN > 0 {
-        				SN <- SN - private_communication;
-        			}
+       		 		let flag <- false;
+	        		if communication_type = "connections" {
+	        			let current_edge <- edge_between(network, self::myself);
+	        			if weight_of(network, current_edge) != cycle{
+	        				network <- with_weights(network, [current_edge::cycle]);
+	        				flag <- true;
+	        			}
+	        		}
+	        		else {flag <- true;}
+	        		if flag {
+		        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
+		        			self.CEEA <- self.CEEA + private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
+		        			}
+		        		}
+		        		else if CEEA > 0 {
+		        			self.CEEA <- self.CEEA - private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.CEEA <- myself.CEEA + private_communication;
+		        			}
+		        		}
+		        		
+		        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
+		        			self.EDA <- self.EDA + private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.EDA <- myself.EDA - private_communication;
+		        			}
+		        		}
+		        		else if EDA > 0 {
+		        			self.EDA <- self.EDA - private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.EDA <- myself.EDA + private_communication;
+		        			}
+		        		}
+		        		
+		        		if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
+		        			self.SN <- self.SN + private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.SN <- myself.SN - private_communication;
+		        			}
+		        		}
+		        		else if SN > 0 {
+		        			self.SN <- self.SN - private_communication;
+		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        				myself.SN <- myself.SN + private_communication;
+		        			}
+		        		}
+	        		
+	        		}
+        		
         		}
         	}
         }
@@ -609,16 +754,36 @@ species households {
 		if cycle mod 365 = 0 {
 			age <- age + 1;
 			lenght_of_residence <- lenght_of_residence + 1;
+			let current_agent <- self;
 			if age >= 100 {
+				ask neighbors_of(network, self) {
+					do update_social_contacts(current_agent);
+				}
+				remove self from: network;
 				do die;
+				
 			}
 			let current_age_group type: int <- floor(age / 20) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
 			let moving_prob type: float <- 1 / average_lor_inclusive[1, current_age_group];
 			if flip(moving_prob) {
+				ask neighbors_of(network, self) {
+					do update_social_contacts(current_agent);
+				}
+				remove self from: network;
 				do die;
+				
 			}
+			
+		}
+		
+	}
+	
+	reflex retire { //emp-status of the household moves to "pensioner" when they reach age 64.
+		if (self.age >= 64) and (self.employment != "pensioner") {
+			self.employment <- "pensioner";
 		}
 	}
+	
 
 } 
 
@@ -630,7 +795,7 @@ species households_500_1000 parent: households {
 	}
 	
 	int income <- rnd(500, 1000);
-
+	
 	
 }
 
@@ -695,11 +860,13 @@ species households_4000etc parent: households {
 
 experiment agent_decision_making type: gui{
 	
+
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0.0 max: 30.0 category: "communication";
  	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
- 	
+  parameter "Communication-Type" var: communication_type among: ["one-side", "both_sides", "connections"] category: "Communication";	
+
 	
 	output {
 		monitor date value: current_date refresh: every(1#cycle);		
@@ -746,6 +913,14 @@ experiment agent_decision_making type: gui{
 				data "self_employed" value: length (agents of_generic_species households where (each.employment = "self_employed")) color: #lightcyan;
 				data "un_employed" value: length (agents of_generic_species households where (each.employment = "un_employed")) color: #lightgoldenrodyellow;
 				data "pensioner" value: length (agents of_generic_species households where (each.employment = "pensioner")) color: #lightgray;
+			}
+		}
+		
+		display "Charts" {
+			chart "Average of decision-variables" type: series {
+				data "CEEA" value: sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
+				data "EDA" value: sum_of(agents of_generic_species households, each.EDA) / length(agents of_generic_species households);
+				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
 			}
 		}
 	}
