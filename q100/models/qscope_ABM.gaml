@@ -400,7 +400,7 @@ global {
 			network <- network add_node(self);
 			loop edges_to over: self.social_contacts {
 					
-					if !(contains_edge(network, self::edges_to)) {
+					if !(contains_edge(network, self::edges_to)){
 						network <- network add_edge(self::edges_to);						
 					}
 			}
@@ -484,19 +484,18 @@ species households {
 
 
 	action get_social_contacts { 
-		social_contacts_direct <- self.network_contacts_spatial_direct among agents_at_distance (global_neighboring_distance); //exclusion of myself necessary? & check distance
+		social_contacts_direct <- self.network_contacts_spatial_direct among ((agents of_generic_species households) at_distance(global_neighboring_distance)); //exclusion of myself necessary? & check distance
 
 		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment); // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
 		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment);
 		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
-		
 	}
 	
 	action update_social_contacts(agent old_contact) { //removes the 'old_contact' from the households list of contacts and adds a new random contact.
 		
 		if (old_contact in self.social_contacts_direct) {
 			remove old_contact from: self.social_contacts_direct;
-			social_contacts_direct <- social_contacts_direct + (1 among agents_at_distance (10));
+			social_contacts_direct <- social_contacts_direct + (1 among ((agents of_generic_species households) at_distance(global_neighboring_distance)));
 		}
 		if (old_contact in self.social_contacts_street) {
 			remove old_contact from: self.social_contacts_street;
