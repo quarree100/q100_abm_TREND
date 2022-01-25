@@ -520,15 +520,19 @@ species households {
 		
 		if network_contacts_temporal_daily > 0 {
 			ask network_contacts_temporal_daily among social_contacts { //TODO Soll für jede Variable eine andere Gruppe von Kontakten ausgewählt werden? 
+        		let current_edge <- edge_between(network, self::myself);
         		let flag <- false;
         		if communication_type = "connections" {
-        			let current_edge <- edge_between(network, self::myself);
         			if weight_of(network, current_edge) != cycle{
         				network <- with_weights(network, [current_edge::cycle]);
         				flag <- true;
+        				create edge_vis number: 1 with: (my_edge:current_edge);
         			}
         		}
-        		else {flag <- true;}
+        		else {
+        			flag <- true;
+        			create edge_vis number: 1 with: (my_edge:current_edge);
+        		}
         		if flag {
 	        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
 	        			self.CEEA <- self.CEEA + private_communication;
@@ -581,14 +585,18 @@ species households {
 			if cycle mod 7 = 0 { 
 				ask network_contacts_temporal_weekly among social_contacts {
         			let flag <- false;
-	        		if communication_type = "connections" {
-	        			let current_edge <- edge_between(network, self::myself);
+        			let current_edge <- edge_between(network, self::myself);
+	        		if communication_type = "connections" {        			
 	        			if weight_of(network, current_edge) != cycle{
 	        				network <- with_weights(network, [current_edge::cycle]);
 	        				flag <- true;
+	        				create edge_vis number: 1 with: (my_edge:current_edge);
 	        			}
 	        		}
-        			else {flag <- true;}
+        			else {
+        				flag <- true;
+        				create edge_vis number: 1 with: (my_edge:current_edge);
+        			}
         			if flag {
 	        			if self.network_socialgroup = true and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
 	        				self.CEEA <- self.CEEA + (private_communication * 2);
@@ -666,14 +674,18 @@ species households {
 			if cycle mod 30 = 0 { 
 				ask network_contacts_temporal_occasional among social_contacts {
        		 		let flag <- false;
+       		 		let current_edge <- edge_between(network, self::myself);
 	        		if communication_type = "connections" {
-	        			let current_edge <- edge_between(network, self::myself);
 	        			if weight_of(network, current_edge) != cycle{
 	        				network <- with_weights(network, [current_edge::cycle]);
 	        				flag <- true;
+	        				create edge_vis number: 1 with: (my_edge:current_edge);
 	        			}
 	        		}
-	        		else {flag <- true;}
+	        		else {
+	        			flag <- true;
+	        			create edge_vis number: 1 with: (my_edge:current_edge);
+	        		}
 	        		if flag {
 		        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
 		        			self.CEEA <- self.CEEA + private_communication;
@@ -853,6 +865,23 @@ species households_4000etc parent: households {
 	
 }
 
+species edge_vis {
+	pair my_edge;
+	int age <- 0;
+	
+	reflex disappear {
+		if self.age = 0 {
+			self.age <- self.age + 1;
+		}
+		else {
+			do die;
+		}
+	}
+	
+	aspect base {
+		draw geometry(my_edge) color: #green;
+	}
+}
 
 
 	// grid vegetation_cell width: 50 height: 50 neighbors: 4 {} -> Bei derzeitiger Vorstellung wird kein grid benötigt; ggf mit qScope-Tisch-dev abgleichen
@@ -864,7 +893,7 @@ experiment agent_decision_making type: gui{
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0.0 max: 30.0 category: "communication";
  	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
-  parameter "Communication-Type" var: communication_type among: ["one-side", "both_sides", "connections"] category: "Communication";	
+  	parameter "Communication-Type" var: communication_type among: ["one-side", "both_sides", "connections"] category: "Communication";	
 
 	
 	output {
@@ -874,11 +903,11 @@ experiment agent_decision_making type: gui{
 		layout #split;
 		display neighborhood {
 			
-			graphics "network_edges" {
-				loop e over: network.edges {
-					draw geometry(e) color: #black;
-				}
-			}			
+//			graphics "network_edges" {
+//				loop e over: network.edges {
+//					draw geometry(e) color: #black;
+//				}
+//			}			
 			
 			species building aspect: base;
 			species nahwaermenetz aspect: base;
@@ -889,6 +918,7 @@ experiment agent_decision_making type: gui{
 			species households_2000_3000 aspect: base;
 			species households_3000_4000 aspect: base;
 			species households_4000etc aspect: base;
+			species edge_vis aspect: base;
 			
 	
 		}			
