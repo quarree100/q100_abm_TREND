@@ -28,6 +28,7 @@ global {
 	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
 	file shape_file_typologiezonen <- file("../includes/Shapefiles/Typologiezonen.shp");
 	file nahwaerme <- file("../includes/Shapefiles/Nahwärmenetz.shp");
+	file background_map <- file("../includes/Shapefiles/rüsdorfer_kamp_osm.png");
 	
 	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
 	string attributes_source <- attributes_possible_sources[1];
@@ -313,6 +314,7 @@ global {
 			let i <- rnd(0,3);
 			create income_group number: 1 {
 				add self to: new_households;
+				location <- any_location_in (one_of (building));
 				age <- rnd(21, 40);
 				let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units)));
 				family <- flip(share_families_21_40);
@@ -902,7 +904,7 @@ experiment agent_decision_making type: gui{
 		
 		layout #split;
 		display neighborhood {
-			
+			image background_map;
 //			graphics "network_edges" {
 //				loop e over: network.edges {
 //					draw geometry(e) color: #black;
@@ -919,6 +921,7 @@ experiment agent_decision_making type: gui{
 			species households_3000_4000 aspect: base;
 			species households_4000etc aspect: base;
 			species edge_vis aspect: base;
+			
 			
 	
 		}			
