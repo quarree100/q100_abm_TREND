@@ -16,9 +16,9 @@ project qScope
 │   │	└───RuesdorferKamp_Network_Model-01.gaml
 │   └───Project_RuesdorferKamp_Restoration
 │    	└───Restoration_Model_01.gaml
-└───q100_info
+└───qScope_infoscreen
 │       infoscreen (JavaScript)
-└───q100_viz
+└───qScope_frontend
 │       projection (Python)
 └───settings
         initial setup data to initialize ALL SOFTWARE COMPONENTS centrally
@@ -28,8 +28,8 @@ where:
 - cspy: https://github.com/dunland/cspy
 - data: has to be linked from server
 - GAMA: https://github.com/quarree100/q100_abm
-- q100_info: https://github.com/cqx931/q100_info
-- q100_viz: https://github.com/dunland/q100_viz
+- qScope_infoscreen: https://github.com/quarree100/qScope_infoscreen
+- qScope_frontend: https://github.com/quarree100/qScope_frontend
 - settings: t.b.a (currently from cspy/settings)
 
 
