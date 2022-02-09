@@ -8,17 +8,33 @@
 model json_udp
 
 global {
-	reflex construct_json_object {
+	string client_ip <- "localhost";
+	int client_port <- 9876;
+	string save_path <- "../jstring.json";
+	
+	init {
+		create udp_sender number: 1 with: [numeric_attrs::["SN", "CEEK"], text_attrs::["name"], indicated_species::"households" ] {
+			do connect to: client_ip protocol: "udp_emitter" port: client_port;
+		    
+		}	
+	}
+}
+
+species udp_sender skills: [network] {
+	bool save_json <- true;
+	list<string> numeric_attrs;
+	list<string> text_attrs;
+	string indicated_species;
+	string construct_json_object {
 		/**
 		 * Compiles a json-string containing the current simulation step and a json-object with the given attributes for each household.
 		 * The string is saved to ../jstring.json and sent to localhost via udp.
 		 */ 
-		list<string> numeric_attrs <- ["SN", "CEEK"];
-		list<string> text_attrs <- ["name"];
+		
 		string json_string <- "{ \"step\": " + cycle + ", \"date\": " + "\"" + current_date + "\",";
 		json_string <- json_string + "\"agents\": [";
 		bool first <- true;
-		ask agents of_generic_species(households){
+		ask agents of_generic_species(species(indicated_species)){
 			string my_string <- "{";
 			loop a over: text_attrs{
 				if my_string = "{" {
@@ -46,28 +62,21 @@ global {
 			}
 		}
 		json_string <- json_string + " ] }";
-		ask udp_sender {
-			do send_message(json_string);
+		if save_json {
+			save json_string to: save_path rewrite: true;
 		}
-		save json_string to: "../jstring.json" rewrite: true;
+		
+		return json_string;
 	}
 	
-	init {
-		create udp_sender number: 1 {
-			do connect to: "localhost" protocol: "udp_emitter" port: 9876;
-		}	
-	}
-}
-
-species udp_sender skills: [network] {
-	action send_message(string messg){
+	
+	reflex send_message{
+		string messg <- self.construct_json_object(); 
 		do send contents: messg;
 		
 	}
 }
 
-experiment json_udp type: gui {
+experiment json_udp{
 
-	output {
-	}
 }
