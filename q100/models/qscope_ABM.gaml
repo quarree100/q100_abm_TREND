@@ -66,7 +66,8 @@ global {
 	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
 	
 	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor
-	string communication_type <- "one-side";
+	string influence_type <- "one-side";
+	bool communication_memory <- true;
 	
 	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map share_income_map <- create_map(income_groups_list, list(share_income));
@@ -180,7 +181,7 @@ global {
 					PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 					id_group <- string(income_group) + "_" + letters[i]; 			
 					
-					location <- any_location_in (one_of (building));
+					location <- any_location_in (one_of (building)); //Locate household in a random building.
 				}
 			}
 		}
@@ -353,6 +354,8 @@ global {
 				else {
 					ownership <- "tenant";
 				}
+				
+				location <- any_location_in (one_of (building));
 			}
 			n <- n + 1;
 		}
@@ -524,7 +527,7 @@ species households {
 			ask network_contacts_temporal_daily among social_contacts { //TODO Soll für jede Variable eine andere Gruppe von Kontakten ausgewählt werden? 
         		let current_edge <- edge_between(network, self::myself);
         		let flag <- false;
-        		if communication_type = "connections" {
+        		if communication_memory {
         			if weight_of(network, current_edge) != cycle{
         				network <- with_weights(network, [current_edge::cycle]);
         				flag <- true;
@@ -538,39 +541,39 @@ species households {
         		if flag {
 	        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
 	        			self.CEEA <- self.CEEA + private_communication;
-	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        			if influence_type = "both_sides"{
 	        				myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
 	        			}
 	        		}
 	        		else if CEEA > 0 {
 	        			self.CEEA <- self.CEEA - private_communication;
-	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        			if influence_type = "both_sides"{
 	        				myself.CEEA <- myself.CEEA + private_communication;
 	        			}
 	        		}
 	        		
 	        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
 	        			self.EDA <- self.EDA + private_communication;
-	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        			if influence_type = "both_sides"{
 	        				myself.EDA <- myself.EDA - private_communication;
 	        			}
 	        		}
 	        		else if EDA > 0 {
 	        			self.EDA <- self.EDA - private_communication;
-	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        			if influence_type = "both_sides"{
 	        				myself.EDA <- myself.EDA + private_communication;
 	        			}
 	        		}
 	        		
 	        		if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
 	        			self.SN <- self.SN + private_communication;
-	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        			if influence_type = "both_sides"{
 	        				myself.SN <- myself.SN - private_communication;
 	        			}
 	        		}
 	        		else if SN > 0 {
 	        			self.SN <- self.SN - private_communication;
-	        			if communication_type = "both_sides" or communication_type = "connections" {
+	        			if influence_type = "both_sides"{
 	        				myself.SN <- myself.SN + private_communication;
 	        			}
 	        		}
@@ -588,7 +591,7 @@ species households {
 				ask network_contacts_temporal_weekly among social_contacts {
         			let flag <- false;
         			let current_edge <- edge_between(network, self::myself);
-	        		if communication_type = "connections" {        			
+	        		if communication_memory {        			
 	        			if weight_of(network, current_edge) != cycle{
 	        				network <- with_weights(network, [current_edge::cycle]);
 	        				flag <- true;
@@ -602,25 +605,25 @@ species households {
         			if flag {
 	        			if self.network_socialgroup = true and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
 	        				self.CEEA <- self.CEEA + (private_communication * 2);
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.CEEA <- myself.CEEA - (private_communication * 2);
 	        				} 
 	        			}
 	        			else if self.network_socialgroup = true and self.CEEA > 0 {
 	        				self.CEEA <- self.CEEA - (private_communication * 2);
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.CEEA <- myself.CEEA + (private_communication * 2);
 	        				} 
 	      			  	}
 	      			  	else if self.network_socialgroup = false and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
 	        				self.CEEA <- self.CEEA + private_communication;
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.CEEA <- myself.CEEA - private_communication;
 	        				}  
 	        			}
 	        			else if self.network_socialgroup = false and self.CEEA > 0 {
 	        				self.CEEA <- self.CEEA - private_communication;
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.CEEA <- myself.CEEA + private_communication;
 	        				}
 	      			  	}
@@ -629,38 +632,38 @@ species households {
         		
 	        			if self.network_socialgroup = true and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
 	        				self.EDA <- self.EDA + (private_communication * 2);
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.EDA <- myself.EDA - (private_communication * 2);
 	        				} 
 	        			}
 	        			else if self.network_socialgroup = true and self.EDA > 0 {
 	        				self.EDA <- self.EDA - (private_communication * 2);
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.EDA <- myself.EDA + (private_communication * 2);
 	        				} 
 	      			  	}
 	      			  	else if self.network_socialgroup = false and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
 	        				self.EDA <- self.EDA + private_communication;
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.EDA <- myself.EDA - private_communication;
 	        				}  
 	        			}
 	        			else if self.network_socialgroup = false and self.EDA > 0 {
 	        				self.EDA <- self.EDA - private_communication;
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.EDA <- myself.EDA + private_communication;
 	        				}
 	      			  	}
 	      			
 	        			if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
 	        				self.SN <- self.SN + private_communication;
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.SN <- myself.SN - private_communication;
 	        				} 
 	        			}
 	        			else if SN > 0 {
 	        				self.SN <- self.SN - private_communication;
-	        				if communication_type = "both_sides" or communication_type = "connections" {
+	        				if influence_type = "both_sides"{
 	        					myself.SN <- myself.SN + private_communication;
 	        				}
 	        			}
@@ -677,7 +680,7 @@ species households {
 				ask network_contacts_temporal_occasional among social_contacts {
        		 		let flag <- false;
        		 		let current_edge <- edge_between(network, self::myself);
-	        		if communication_type = "connections" {
+	        		if communication_memory {
 	        			if weight_of(network, current_edge) != cycle{
 	        				network <- with_weights(network, [current_edge::cycle]);
 	        				flag <- true;
@@ -691,39 +694,39 @@ species households {
 	        		if flag {
 		        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
 		        			self.CEEA <- self.CEEA + private_communication;
-		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        			if influence_type = "both_sides"{
 		        				myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
 		        			}
 		        		}
 		        		else if CEEA > 0 {
 		        			self.CEEA <- self.CEEA - private_communication;
-		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        			if influence_type = "both_sides"{
 		        				myself.CEEA <- myself.CEEA + private_communication;
 		        			}
 		        		}
 		        		
 		        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
 		        			self.EDA <- self.EDA + private_communication;
-		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        			if influence_type = "both_sides"{
 		        				myself.EDA <- myself.EDA - private_communication;
 		        			}
 		        		}
 		        		else if EDA > 0 {
 		        			self.EDA <- self.EDA - private_communication;
-		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        			if influence_type = "both_sides"{
 		        				myself.EDA <- myself.EDA + private_communication;
 		        			}
 		        		}
 		        		
 		        		if (self.SN < mean([myself.SN, self.SN])) and self.SN < 7 {
 		        			self.SN <- self.SN + private_communication;
-		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        			if influence_type = "both_sides"{
 		        				myself.SN <- myself.SN - private_communication;
 		        			}
 		        		}
 		        		else if SN > 0 {
 		        			self.SN <- self.SN - private_communication;
-		        			if communication_type = "both_sides" or communication_type = "connections" {
+		        			if influence_type = "both_sides"{
 		        				myself.SN <- myself.SN + private_communication;
 		        			}
 		        		}
@@ -895,8 +898,8 @@ experiment agent_decision_making type: gui{
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0.0 max: 30.0 category: "communication";
  	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
-  	parameter "Communication-Type" var: communication_type among: ["one-side", "both_sides", "connections"] category: "Communication";	
-
+  	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
 	
 	output {
 		monitor date value: current_date refresh: every(1#cycle);		
