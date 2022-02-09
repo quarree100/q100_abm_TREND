@@ -433,7 +433,6 @@ species building {
 	geometry line;
 	
 	action add_tenant {
-		highlight self;
 		self.tenants <- self.tenants + 1;
 		if self.tenants = self.units {
 			self.vacant <- false;
