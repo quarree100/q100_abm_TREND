@@ -58,7 +58,7 @@ global {
 	matrix average_lor_exclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups ecluding people who never moved
 
 
-	int nb_units <- 377; // number of households in v1
+	int nb_units <- get_nb_units(); // number of households in v1
 	int global_neighboring_distance <- 5;
 	
 	float share_families <- 0.17; // share of families in whole neighborhood
@@ -88,7 +88,14 @@ global {
 	map share_selfemployed <- create_map(income_groups_list, shares_selfemployed_list);
 	map share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
 	map share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
-
+	
+	int get_nb_units { //Calculates the number of available units based on the Kataster-data.
+		int sum <- 0;
+		loop house over: shape_file_buildings {
+			sum <- sum + int(house get "Kataster_W");
+		}
+		return sum;
+	}
 
 	action random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
 		int len <- length(input);
@@ -113,9 +120,9 @@ global {
 	}
 	
 	init { 		
-
+		
 		// Hausfarben anpassen in Wohnhaeuser & Nicht-Wohnhaeuser; max Unterteilung in MFH & EFH
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source))] { // create agents according to shapefile metadata
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W"))] { // create agents according to shapefile metadata
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -181,7 +188,7 @@ global {
 					PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 					id_group <- string(income_group) + "_" + letters[i]; 			
 					
-					location <- any_location_in (one_of (building)); //Locate household in a random building.
+					do find_house; //Locate household in a random building.
 				}
 			}
 		}
@@ -315,7 +322,7 @@ global {
 			let i <- rnd(0,3);
 			create income_group number: 1 {
 				add self to: new_households;
-				location <- any_location_in (one_of (building));
+				do find_house;
 				age <- rnd(21, 40);
 				let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units)));
 				family <- flip(share_families_21_40);
@@ -418,9 +425,25 @@ global {
 		
 species building {
 	string type;
+	int units;
+	int tenants <- 0;
+	bool vacant <- true;
 	
 	rgb color <- #gray;
 	geometry line;
+	
+	action add_tenant {
+		self.tenants <- self.tenants + 1;
+		if self.tenants = self.units {
+			self.vacant <- false;
+		}
+		return any_location_in(self);
+	}
+	action remove_tenant {
+		self.tenants <- self.tenants - 1;
+		self.vacant <- true;
+	
+	}
 	aspect base {
 		draw shape color: color;
 	}
@@ -479,6 +502,8 @@ species households {
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 	
+	list<building> house; 
+	
 	
 	list<households> social_contacts_direct;
 	list<households> social_contacts_street;
@@ -486,7 +511,10 @@ species households {
 	list<households> social_contacts;
 
 
-
+	action find_house {
+		self.house <- any (building where (each.vacant));
+		self.location <- self.house[0].add_tenant();
+	}
 
 	action get_social_contacts { 
 		social_contacts_direct <- self.network_contacts_spatial_direct among ((agents of_generic_species households) at_distance(global_neighboring_distance)); //exclusion of myself necessary? & check distance
@@ -776,6 +804,9 @@ species households {
 					do update_social_contacts(current_agent);
 				}
 				remove self from: network;
+				ask self.house {
+					do remove_tenant;
+				}
 				do die;
 				
 			}
@@ -786,6 +817,9 @@ species households {
 					do update_social_contacts(current_agent);
 				}
 				remove self from: network;
+				ask self.house {
+					do remove_tenant;
+				}
 				do die;
 				
 			}
