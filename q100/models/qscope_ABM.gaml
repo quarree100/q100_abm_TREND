@@ -59,7 +59,7 @@ global {
 
 
 	int nb_units <- get_nb_units(); // number of households in v1
-	int global_neighboring_distance <- 5;
+	int global_neighboring_distance <- 2;
 	
 	float share_families <- 0.17; // share of families in whole neighborhood
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
@@ -91,8 +91,8 @@ global {
 	
 	int get_nb_units { //Calculates the number of available units based on the Kataster-data.
 		int sum <- 0;
-		loop house over: shape_file_buildings {
-			sum <- sum + int(house get "Kataster_W");
+		loop bldg over: shape_file_buildings {
+			sum <- sum + int(bldg get "Kataster_W");
 		}
 		return sum;
 	}
@@ -122,7 +122,7 @@ global {
 	init { 		
 		
 		// Hausfarben anpassen in Wohnhaeuser & Nicht-Wohnhaeuser; max Unterteilung in MFH & EFH
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W"))] { // create agents according to shapefile metadata
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("addr_stree")), vacant::bool(int(read("Kataster_W")))] { // create agents according to shapefile metadata
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -362,7 +362,6 @@ global {
 					ownership <- "tenant";
 				}
 				
-				location <- any_location_in (one_of (building));
 			}
 			n <- n + 1;
 		}
@@ -428,6 +427,7 @@ species building {
 	int units;
 	int tenants <- 0;
 	bool vacant <- true;
+	string street;
 	
 	rgb color <- #gray;
 	geometry line;
@@ -444,6 +444,19 @@ species building {
 		self.vacant <- true;
 	
 	}
+	
+	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
+		list neighbors;
+		ask closest_to(building, self, global_neighboring_distance) {
+			neighbors <- self.get_tenants() + neighbors;
+		}
+		return neighbors;
+	}
+	
+	list get_tenants { // returns a list of all households that are living in the building.
+		return inside(agents of_generic_species(households), self);
+	}
+	
 	aspect base {
 		draw shape color: color;
 	}
@@ -502,7 +515,7 @@ species households {
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 	
-	list<building> house; 
+	building house; 
 	
 	
 	list<households> social_contacts_direct;
@@ -513,14 +526,14 @@ species households {
 
 	action find_house {
 		self.house <- any (building where (each.vacant));
-		self.location <- self.house[0].add_tenant();
+		self.location <- self.house.add_tenant();
+
 	}
 
 	action get_social_contacts { 
-		social_contacts_direct <- self.network_contacts_spatial_direct among ((agents of_generic_species households) at_distance(global_neighboring_distance)); //exclusion of myself necessary? & check distance
-
-		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.employment = self.employment); // TODO employment ist platzhalter, eigentlich muss hier location rein -> where (myself.street = self.street)
-		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.employment = self.employment);
+		social_contacts_direct <- self.network_contacts_spatial_direct among (self.house.get_neighboring_households() + self.house.get_tenants() - self);
+		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.house.street = self.house.street);
+		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.house.street != self.house.street);
 		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
 	}
 	
@@ -804,7 +817,7 @@ species households {
 					do update_social_contacts(current_agent);
 				}
 				remove self from: network;
-				ask self.house {
+				ask self.house{
 					do remove_tenant;
 				}
 				do die;
@@ -929,7 +942,7 @@ experiment agent_decision_making type: gui{
 	
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
- 	parameter "Neighboring distance" var: global_neighboring_distance min: 0.0 max: 30.0 category: "communication";
+ 	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "communication";
  	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
   	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
