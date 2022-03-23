@@ -559,7 +559,7 @@ species households {
 	reflex communicate_daily { //TODO Validiere kurz Unterschied auf Werte bei (1) einseitigem Einfluss (2) gegenseitigem Einfluss; Erweiterung: (3) Einmalige Kommunikation zweier Kontakte
 		
 		if network_contacts_temporal_daily > 0 {
-			ask network_contacts_temporal_daily among social_contacts { //TODO Soll für jede Variable eine andere Gruppe von Kontakten ausgewählt werden? 
+			ask network_contacts_temporal_daily among social_contacts { //TODO Soll fuer jede Variable eine andere Gruppe von Kontakten ausgewaehlt werden? 
         		let current_edge <- edge_between(network, self::myself);
         		let flag <- false;
         		if communication_memory {
@@ -933,7 +933,7 @@ species edge_vis {
 }
 
 
-	// grid vegetation_cell width: 50 height: 50 neighbors: 4 {} -> Bei derzeitiger Vorstellung wird kein grid benötigt; ggf mit qScope-Tisch-dev abgleichen
+	// grid vegetation_cell width: 50 height: 50 neighbors: 4 {} -> Bei derzeitiger Vorstellung wird kein grid benoetigt; ggf mit qScope-Tisch-dev abgleichen
 
 experiment agent_decision_making type: gui{
 	
