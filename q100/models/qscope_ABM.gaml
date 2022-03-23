@@ -1,20 +1,18 @@
 /**
-* Name: qScope_ABM
-* Description: agent-based model within the project quarree100 - work group 2
-* (1) simulating household decision-making in built-up urban areas to develop an understanding of sociotechnical dynamics of energy transitions;
-* (2) implementing the simulation in a CityScope framework for increasing and investigating stakeholder interaction & empowerment
+* Name: q100_ABM
 *
 * Authors: lennartwinkeler, davidunland, philippolaleye
+* Institution: University of Bremen, Department of Resilient Energy Systems
+* Date: 2022-03-18
 *  
 */
 
 
-model agent_decision_making
+model q100
 
 
 global {
-	// bool show_heatingnetwork <- true;
-	// bool show_roads <- true;
+
 	
 	
 	float step <- 1 #day;
@@ -22,59 +20,55 @@ global {
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
 	
-// for choosing specific value -> [columns, rows]
 
 	// load shapefiles
 	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
 	file shape_file_typologiezonen <- file("../includes/Shapefiles/Typologiezonen.shp");
-	file nahwaerme <- file("../includes/Shapefiles/Nahwärmenetz.shp");
-	file background_map <- file("../includes/Shapefiles/rüsdorfer_kamp_osm.png");
+
 	
-	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
+	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; 
 	string attributes_source <- attributes_possible_sources[1];
 
-	// data of survey#1 - values for decision-making distributed in six income-groups
-	matrix decision_500_1000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv", ",", float, true));
-	matrix decision_1000_1500 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1000-1500_V1.csv", ",", float, true));
-	matrix decision_1500_2000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1500-2000_V1.csv", ",", float, true));
-	matrix decision_2000_3000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_2000-3000_V1.csv", ",", float, true));
-	matrix decision_3000_4000 <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_3000-4000_V1.csv", ",", float, true));
-	matrix decision_4000etc <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_4000etc_V1.csv", ",", float, true));
+	matrix<float> decision_500_1000 <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv", ",", float, true));
+	matrix<float> decision_1000_1500 <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1000-1500_V1.csv", ",", float, true));
+	matrix<float> decision_1500_2000 <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1500-2000_V1.csv", ",", float, true));
+	matrix<float> decision_2000_3000 <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_2000-3000_V1.csv", ",", float, true));
+	matrix<float> decision_3000_4000 <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_3000-4000_V1.csv", ",", float, true));
+	matrix<float> decision_4000etc <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_4000etc_V1.csv", ",", float, true));
 	
-	// data of survey#2 - values for networking distributed in five employment-groups
-	matrix network_employed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_employed_V1.csv", ",", int, true));
-	matrix network_pensioner <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_pensioner_V1.csv", ",", int, true));
-	matrix network_selfemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_self-employed_V1.csv", ",", int, true));
-	matrix network_student <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_student_V1.csv", ",", int, true));
-	matrix network_unemployed <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_unemployed_V1.csv", ",", int, true));
+	matrix<int> network_employed <- matrix<int>(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_employed_V1.csv", ",", int, true));
+	matrix<int> network_pensioner <- matrix<int>(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_pensioner_V1.csv", ",", int, true));
+	matrix<int> network_selfemployed <- matrix<int>(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_self-employed_V1.csv", ",", int, true));
+	matrix<int> network_student <- matrix<int>(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_student_V1.csv", ",", int, true));
+	matrix<int> network_unemployed <- matrix<int>(csv_file("../includes/csv-data_socio/2021-11-18_V1/network_unemployed_V1.csv", ",", int, true));
 		
-	matrix share_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-income_V1.csv",  ",", float, true)); // share of households in neighborhood sorted by income
-	matrix share_employment_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true)); // distribution of employment status of households in neighborhood sorted by income
-	matrix share_ownership_income <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
+	matrix<float> share_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-income_V1.csv",  ",", float, true)); // share of households in neighborhood sorted by income
+	matrix<float> share_employment_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true)); // distribution of employment status of households in neighborhood sorted by income
+	matrix<float> share_ownership_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
 	
 	
-	matrix share_age_buildings_existing <- matrix(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
-	matrix average_lor_inclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups including people who never moved
+	matrix<float> share_age_buildings_existing <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
+	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups including people who never moved
 	matrix average_lor_exclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups ecluding people who never moved
 
 
 	int nb_units <- get_nb_units(); // number of households in v1
 	int global_neighboring_distance <- 2;
 	
-	float share_families <- 0.17; // share of families in whole neighborhood
-	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
-	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
+	float share_families <- 0.17; 
+	float share_socialgroup_families <- 0.75; 
+	float share_socialgroup_nonfamilies <- 0.29; 
 	
-	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor
+	float private_communication <- 0.25; // 
 	string influence_type <- "one-side";
 	bool communication_memory <- true;
 	
-	list income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
-	map share_income_map <- create_map(income_groups_list, list(share_income));
+	list<species<households>> income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
+	map<species<households>,float> share_income_map <- create_map(income_groups_list, list(share_income));
 	map decision_map <- create_map(income_groups_list, [decision_500_1000, decision_1000_1500, decision_1500_2000, decision_2000_3000, decision_3000_4000, decision_4000etc]);
 	
 	list<float> shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];	
-	map share_owner_map <- create_map(income_groups_list, shares_owner_list); 
+	map<species<households>,float> share_owner_map <- create_map(income_groups_list, shares_owner_list); 
 
 
 	list<float> shares_student_list <- [share_employment_income[1,0], share_employment_income[2,0], share_employment_income[3,0], share_employment_income[4,0], share_employment_income[5,0], share_employment_income[6,0]];
@@ -83,11 +77,11 @@ global {
 	list<float> shares_unemployed_list <- [share_employment_income[1,3], share_employment_income[2,3], share_employment_income[3,3], share_employment_income[4,3], share_employment_income[5,3], share_employment_income[6,3]];
 	list<float> shares_pensioner_list <- [share_employment_income[1,4], share_employment_income[2,4], share_employment_income[3,4], share_employment_income[4,4], share_employment_income[5,4], share_employment_income[6,4]];
 	
-	map share_student <- create_map(income_groups_list, shares_student_list);
-	map share_employed <- create_map(income_groups_list, shares_employed_list);
-	map share_selfemployed <- create_map(income_groups_list, shares_selfemployed_list);
-	map share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
-	map share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
+	map<species<households>,float> share_student <- create_map(income_groups_list, shares_student_list);
+	map<species<households>,float> share_employed <- create_map(income_groups_list, shares_employed_list);
+	map<species<households>,float> share_selfemployed <- create_map(income_groups_list, shares_selfemployed_list);
+	map<species<households>,float> share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
+	map<species<households>,float> share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
 	
 	int get_nb_units { //Calculates the number of available units based on the Kataster-data.
 		int sum <- 0;
@@ -97,20 +91,20 @@ global {
 		return sum;
 	}
 
-	action random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
+	list<list<households>> random_groups(list<households> input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
 		int len <- length(input);
 		if len = 0 {
 			return range(n - 1) accumulate [[]];
 		}
 		else if len = 1 {
-			list output <- range(n - 2) accumulate [[]];
+			list<list<households>> output <- range(n - 2) accumulate [[]];
 			add input to: output;
 			return shuffle(output);
 		}
 		else {
 			list shuffled_input <- shuffle(input);
 			list inds <- split_in(range(len - 1), n);
-			list output;
+			list<list<households>> output;
 			loop group over: inds {
 				add shuffled_input where (index_of(shuffled_input, each) in group) to: output;
 			}
@@ -121,8 +115,8 @@ global {
 	
 	init { 		
 		
-		// Hausfarben anpassen in Wohnhaeuser & Nicht-Wohnhaeuser; max Unterteilung in MFH & EFH
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("addr_stree")), vacant::bool(int(read("Kataster_W")))] { // create agents according to shapefile metadata
+		
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), vacant::bool(int(read("Kataster_W")))] { // create agents according to shapefile metadata
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -152,10 +146,10 @@ global {
 			}
 		}
 		
-		create nahwaermenetz from: nahwaerme;
+	//	create nahwaermenetz from: nahwaerme;
 
 
-		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
+		loop income_group over: income_groups_list { 
 			let letters <- ["a", "b", "c", "d"];
 			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
 				create income_group number: share_income_map[income_group] * nb_units * 0.25 {
@@ -214,7 +208,7 @@ global {
 		}
 		
 		
-// Ownership -> distributes the share of ownership-status among household-groups 
+// Ownership 
 	
 		loop income_group over: income_groups_list {
 			ask income_group {
@@ -227,7 +221,7 @@ global {
 		}
 		
 	
-// Employment -> distributes the share of employment-groups among income-groups
+// Employment
 
 		loop income_group over: income_groups_list {
 			ask round(share_student[income_group] * length(income_group)) among income_group{
@@ -252,18 +246,18 @@ global {
 
 		
 //Network -> distributes the share of network-relations among the households. there are different network values for each employment status
-		let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"]; 
+		list<string> employment_status_list  <- ["student", "employed", "self-employed", "unemployed", "pensioner"]; 
 
-		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
-		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
-		let spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
+		map<string,matrix<float>> network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
+		list<string> temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
+		list<string>  spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
 		loop emp_status over: employment_status_list { //iterate over the different employment states
-			let tmp_households <- agents of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
-			let nb <- length(tmp_households); 
-			let network_matrix <- network_map[emp_status]; //corresponding matrix of network values
+			list<households> tmp_households <- (agents of_generic_species households) where (each.employment = emp_status); //temporary list of households with the current employment status
+			int nb <- length(tmp_households); 
+			matrix<float> network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
-				let index <- index_of(temporal_network_attributes, attr);
-				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
+				int index <- index_of(temporal_network_attributes, attr);
+				list tmp_households_grouped  <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
 					ask tmp_households_grouped[i] {
 						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
@@ -271,8 +265,8 @@ global {
 				}
 			}
 			loop attr over: spatial_network_attributes { // loop over the different spatial network variables of each household
-				let index <- index_of(spatial_network_attributes, attr);
-				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
+				int index <- index_of(spatial_network_attributes, attr);
+				list<list<households>>  tmp_households_grouped  <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) {// loop to split the households in 4 quarters
 					ask tmp_households_grouped[i] {
 						self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
@@ -366,27 +360,27 @@ global {
 			n <- n + 1;
 		}
  		// Distribute network values among the new households
-		let network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
-		let temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
-		let spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
+		map<string, matrix<float>> network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
+		list<string> temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
+		list<string> spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
 		loop emp_status over: employment_status_list { //iterate over the different employment states
 			let tmp_households <- new_households of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
 			let nb <- length(tmp_households); 
 			//write [nb, 0.25 * nb];
-			let network_matrix <- network_map[emp_status]; //corresponding matrix of network values
+			matrix<float> network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
 				let index <- index_of(temporal_network_attributes, attr);
 				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
-					ask tmp_households_grouped[i] {
+					ask (tmp_households_grouped[i]) {
 						//write self.name;
 						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
 					}
 				}
 			}
 			loop attr over: spatial_network_attributes { // loop over the different spatial network variables of each household
-				let index <- index_of(spatial_network_attributes, attr);
-				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
+				int index <- index_of(spatial_network_attributes, attr);
+				list tmp_households_grouped <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) {// loop to split the households in 4 quarters
 					ask tmp_households_grouped[i] {
 						self[attr] <- rnd(network_matrix[index+6, i],network_matrix[index+6, i+1]);
@@ -463,13 +457,13 @@ species building {
 }
 
 
-species nahwaermenetz{
+//species nahwaermenetz{
 	
-	rgb color <- #gray;
-	aspect base{
-		draw shape color: color;
-	}
-}
+//	rgb color <- #gray;
+//	aspect base{
+//		draw shape color: color;
+//	}
+//}
 
 
 species households {
@@ -813,7 +807,7 @@ species households {
 			lenght_of_residence <- lenght_of_residence + 1;
 			let current_agent <- self;
 			if age >= 100 {
-				ask neighbors_of(network, self) {
+				ask households(neighbors_of(network, self)) {
 					do update_social_contacts(current_agent);
 				}
 				remove self from: network;
@@ -823,11 +817,14 @@ species households {
 				do die;
 				
 			}
-			let current_age_group type: int <- floor(age / 20) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
-			let moving_prob type: float <- 1 / average_lor_inclusive[1, current_age_group];
+			int current_age_group <- int(floor(age / 20)) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
+			float moving_prob  <- 1 / average_lor_inclusive[1, current_age_group];
 			if flip(moving_prob) {
-				ask neighbors_of(network, self) {
-					do update_social_contacts(current_agent);
+				households hs <- households(neighbors_of(network, self));
+				if hs != nil {
+					ask hs {
+						do update_social_contacts(current_agent);
+					}
 				}
 				remove self from: network;
 				ask self.house {
@@ -954,7 +951,7 @@ experiment agent_decision_making type: gui{
 		
 		layout #split;
 		display neighborhood {
-			image background_map;
+		//	image background_map;
 //			graphics "network_edges" {
 //				loop e over: network.edges {
 //					draw geometry(e) color: #black;
@@ -962,7 +959,7 @@ experiment agent_decision_making type: gui{
 //			}			
 			
 			species building aspect: base;
-			species nahwaermenetz aspect: base;
+		//	species nahwaermenetz aspect: base;
 			
 			species households_500_1000 aspect: base;
 			species households_1000_1500 aspect: base;
