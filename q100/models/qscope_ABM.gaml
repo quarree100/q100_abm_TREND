@@ -9,6 +9,8 @@
 * Obejctives: 
 * (1) simulating household pro environmental decision-making in built-up neighborhoods to develop an understanding of sociotechnical dynamics of energy transitions;
 * (2) implementing the simulation in a CityScope framework for increasing the project's participation process and investigating stakeholder interaction & empowerment
+* 
+*
 */
 
 
