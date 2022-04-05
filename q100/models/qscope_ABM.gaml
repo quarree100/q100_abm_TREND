@@ -1,10 +1,14 @@
-/**
-* Name: q100_ABM
+/*
+* Name: qScope_ABM
 *
 * Authors: lennartwinkeler, davidunland, philippolaleye
 * Institution: University of Bremen, Department of Resilient Energy Systems
 * Date: 2022-03-18
-*  
+* Description: agent-based model within the project quarree100 - work group 2
+* 
+* Obejctives: 
+* (1) simulating household pro environmental decision-making in built-up neighborhoods to develop an understanding of sociotechnical dynamics of energy transitions;
+* (2) implementing the simulation in a CityScope framework for increasing the project's participation process and investigating stakeholder interaction & empowerment
 */
 
 
@@ -13,7 +17,7 @@ model q100
 
 global {
 
-	
+	// bool show_heatingnetwork <- true;
 	
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
@@ -24,9 +28,11 @@ global {
 	// load shapefiles
 	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
 	file shape_file_typologiezonen <- file("../includes/Shapefiles/Typologiezonen.shp");
+	file nahwaerme <- file("../includes/Shapefiles/Nahwaermenetz.shp");
+	file background_map <- file("../includes/Shapefiles/ruesdorfer_kamp_osm.png");
 
 	
-	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; 
+	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
 	string attributes_source <- attributes_possible_sources[1];
 
 	matrix<float> decision_500_1000 <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv", ",", float, true));
@@ -55,11 +61,11 @@ global {
 	int nb_units <- get_nb_units(); // number of households in v1
 	int global_neighboring_distance <- 2;
 	
-	float share_families <- 0.17; 
-	float share_socialgroup_families <- 0.75; 
-	float share_socialgroup_nonfamilies <- 0.29; 
+	float share_families <- 0.17; // share of families in whole neighborhood
+	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
 	
-	float private_communication <- 0.25; // 
+	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor
 	string influence_type <- "one-side";
 	bool communication_memory <- true;
 	
@@ -146,10 +152,10 @@ global {
 			}
 		}
 		
-	//	create nahwaermenetz from: nahwaerme;
+		create nahwaermenetz from: nahwaerme;
 
 
-		loop income_group over: income_groups_list { 
+		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
 			let letters <- ["a", "b", "c", "d"];
 			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
 				create income_group number: share_income_map[income_group] * nb_units * 0.25 {
@@ -208,7 +214,7 @@ global {
 		}
 		
 		
-// Ownership 
+// Ownership -> distributes the share of ownership-status among household-groups 
 	
 		loop income_group over: income_groups_list {
 			ask income_group {
@@ -221,7 +227,7 @@ global {
 		}
 		
 	
-// Employment
+// Employment -> distributes the share of employment-groups among income-groups
 
 		loop income_group over: income_groups_list {
 			ask round(share_student[income_group] * length(income_group)) among income_group{
@@ -246,6 +252,7 @@ global {
 
 		
 //Network -> distributes the share of network-relations among the households. there are different network values for each employment status
+
 		list<string> employment_status_list  <- ["student", "employed", "self-employed", "unemployed", "pensioner"]; 
 
 		map<string,matrix<float>> network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
@@ -457,13 +464,13 @@ species building {
 }
 
 
-//species nahwaermenetz{
+species nahwaermenetz{
 	
-//	rgb color <- #gray;
-//	aspect base{
-//		draw shape color: color;
-//	}
-//}
+	rgb color <- #gray;
+	aspect base{
+		draw shape color: color;
+	}
+}
 
 
 species households {
@@ -803,6 +810,8 @@ species households {
 	
 	reflex move_out {
 		if cycle mod 365 = 0 {
+			
+			//initiation of moving-out-procedure by age
 			age <- age + 1;
 			lenght_of_residence <- lenght_of_residence + 1;
 			let current_agent <- self;
@@ -815,14 +824,15 @@ species households {
 					do remove_tenant;
 				}
 				do die;
-				
 			}
+			
+			//initiation of moving-out-procedure by average probability
 			int current_age_group <- int(floor(age / 20)) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
 			float moving_prob  <- 1 / average_lor_inclusive[1, current_age_group];
 			if flip(moving_prob) {
-				households hs <- households(neighbors_of(network, self));
-				if hs != nil {
-					ask hs {
+				households my_temporary_network <- households(neighbors_of(network, self));
+				if my_temporary_network != nil {
+					ask my_temporary_network {
 						do update_social_contacts(current_agent);
 					}
 				}
@@ -951,15 +961,15 @@ experiment agent_decision_making type: gui{
 		
 		layout #split;
 		display neighborhood {
-		//	image background_map;
-//			graphics "network_edges" {
-//				loop e over: network.edges {
-//					draw geometry(e) color: #black;
-//				}
-//			}			
+			image background_map;
+			graphics "network_edges" {
+				loop e over: network.edges {
+					draw geometry(e) color: #black;
+				}
+			}			
 			
 			species building aspect: base;
-		//	species nahwaermenetz aspect: base;
+			species nahwaermenetz aspect: base;
 			
 			species households_500_1000 aspect: base;
 			species households_1000_1500 aspect: base;
