@@ -57,8 +57,15 @@ global {
 	
 	matrix<float> share_age_buildings_existing <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
 	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups including people who never moved
-	matrix average_lor_exclusive <- matrix(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups ecluding people who never moved
+	matrix<float> average_lor_exclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups ecluding people who never moved
 
+	
+	matrix<float> agora_45 <- matrix<float>(csv_file("../includes/csv-data_technical/agora2045_modell_rates.csv", ",", float, true));
+	matrix<float> alphas <- matrix<float>(csv_file("../includes/csv-data_technical/alpha.csv", ",", float, true));
+	matrix<float> carbon_prices <- matrix<float>(csv_file("../includes/csv-data_technical/carbon-prices.csv", ",", float, true));
+	matrix<float> energy_prices <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
+	matrix<float> q100_concept_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/q100_prices_emissions-dummy.csv", ",", float, true));
+	
 
 	int nb_units <- get_nb_units(); // number of households in v1
 	int global_neighboring_distance <- 2;
@@ -296,7 +303,7 @@ global {
 			}	
 		}
 		
-		//TODO
+
 		ask agents of_generic_species households { //creates network of social contacts
 			do get_social_contacts; 
 			network <- network add_node(self);
@@ -513,7 +520,7 @@ species households {
 	int network_contacts_spatial_direct; // available amount of contacts within an households network - direct neighbors
 	int network_contacts_spatial_street; // available amount of contacts within an households network - contacts in the same street
 	int network_contacts_spatial_neighborhood; // available amount of contacts within an households network - contacts in the same neighborhood
-	int network_contacts_spatial_beyond; // available amount of contacts within an households network - contacts beyond the system's environment TODO
+	int network_contacts_spatial_beyond; // available amount of contacts within an households network - contacts beyond the system's environment TODO - not yet implemented - no influence beyond the system boundaries
 
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
@@ -565,10 +572,10 @@ species households {
 
 	
 	
-	reflex communicate_daily { //TODO Validiere kurz Unterschied auf Werte bei (1) einseitigem Einfluss (2) gegenseitigem Einfluss; Erweiterung: (3) Einmalige Kommunikation zweier Kontakte
+	reflex communicate_daily { 
 		
 		if network_contacts_temporal_daily > 0 {
-			ask network_contacts_temporal_daily among social_contacts { //TODO Soll fuer jede Variable eine andere Gruppe von Kontakten ausgewaehlt werden? 
+			ask network_contacts_temporal_daily among social_contacts {  
         		let current_edge <- edge_between(network, self::myself);
         		let flag <- false;
         		if communication_memory {
@@ -586,7 +593,7 @@ species households {
 	        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
 	        			self.CEEA <- self.CEEA + private_communication;
 	        			if influence_type = "both_sides"{
-	        				myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
+	        				myself.CEEA <- myself.CEEA - private_communication;
 	        			}
 	        		}
 	        		else if CEEA > 0 {
