@@ -1042,19 +1042,23 @@ experiment agent_decision_making type: gui{
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
-	parameter "New Buildings" var: new_buildings_parameter <- "at_once" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
+	parameter "New Buildings" var: new_buildings_parameter <- "continually" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_ordered <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
  	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
   	
+  	font my_font <- font("Arial", 18, #bold);
+  	font my_font2 <- font("Arial", 14, #bold);
 	
 	output {
-		monitor date value: current_date refresh: every(1#cycle);		
+//		monitor date value: current_date refresh: every(1#cycle);		
 		
 		
 		layout #split;
 		display neighborhood {
+			
+			
 			image background_map;
 			graphics "network_edges" {
 				loop e over: network.edges {
@@ -1073,8 +1077,15 @@ experiment agent_decision_making type: gui{
 			species households_4000etc aspect: base;
 			species edge_vis aspect: base;
 			
+			graphics Strings {
+				draw string ("Date") at: {600, 0} anchor: #top_left color: #black font: my_font;
+				draw string (current_date) at: {600, 50} anchor: #top_left color: #black font: my_font;
+				draw string ("Transformation level in %") at: {450, 100} anchor: #top_left color: #black font: my_font2;
+				int percentage <- (length(building where (each.mod_status = "s")) / length(building) * 100);
+				draw string (percentage) at: {600, 150} anchor: #top_left color: #black font: my_font;
+
+			}
 			
-	
 		}			
 	
 		display "households_income_bar" {
@@ -1110,7 +1121,10 @@ experiment agent_decision_making type: gui{
 		
 		display "Modernization" {
 			chart "Rate of Modernization" type: xy {
-				data "Rate" value: {current_date.year, length(building where (each.mod_status = "s")) / length(building)};
+				data "Rate of Modernization" value: {current_date.year, length(building where (each.mod_status = "s")) / length(building where (each.mod_status != "s"))}; // TODO 
+				data "1% Refurbishment Rate" value: {current_date.year, 0.01};
+				data "1.5% Refurbishment Rate" value: {current_date.year, 0.015};
+				data "2% Refurbishment Rate" value: {current_date.year, current_date.year, 0.02};
 			}
 		}
 	}
