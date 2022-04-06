@@ -66,6 +66,7 @@ global {
 	string new_buildings_parameter;
 	bool new_buildings_ordered;
 	bool new_buildings_flag <- true; //flag to disable new_buildings reflex, when no more buildings are available.
+	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings.
 	
 	float share_families <- 0.17; // share of families in whole neighborhood
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
@@ -128,7 +129,7 @@ global {
 	init { 		
 		
 
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S"))] { // create agents according to shapefile metadata
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8"))] { // create agents according to shapefile metadata
 			vacant <- bool(units);
 			if type = "EFH" {
 				color <- #blue;
@@ -163,6 +164,7 @@ global {
 		create building from: shape_file_new_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S"))] { // create agents according to shapefile metadata
 			vacant <- false;
 			built <- false;
+			mod_status <- "s";
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -507,6 +509,7 @@ species building {
 	bool vacant <- true;
 	string street;
 	bool built <- true;
+	string mod_status; //modernization-status
 	
 	rgb color <- #gray;
 	geometry line;
@@ -521,7 +524,13 @@ species building {
 	action remove_tenant {
 		self.tenants <- self.tenants - 1;
 		self.vacant <- true;
+		do modernize;
+	}
 	
+	action modernize {
+		if (self.type = "EFH") and (self.mod_status = "u") {
+			self.mod_status <- "s";
+		}
 	}
 	
 	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
@@ -890,7 +899,7 @@ species households {
 	
 	
 	reflex move_out {
-		if cycle mod 365 = 0 {
+		if (current_date.month = 1) and (current_date.day = 1) {
 			
 			//initiation of moving-out-procedure by age
 			age <- age + 1;
@@ -1034,7 +1043,9 @@ experiment agent_decision_making type: gui{
 	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "at_once" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
-	parameter "Random Order of new Buildings" var: new_buildings_ordered <- true category: "Buildings"; 	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
+	parameter "Random Order of new Buildings" var: new_buildings_ordered <- true category: "Buildings"; 	
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
+ 	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
   	
 	
@@ -1094,6 +1105,12 @@ experiment agent_decision_making type: gui{
 				data "CEEA" value: sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
 				data "EDA" value: sum_of(agents of_generic_species households, each.EDA) / length(agents of_generic_species households);
 				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
+			}
+		}
+		
+		display "Modernization" {
+			chart "Rate of Modernization" type: xy {
+				data "Rate" value: {current_date.year, length(building where (each.mod_status = "s")) / length(building)};
 			}
 		}
 	}
