@@ -18,7 +18,7 @@ model q100
 
 
 global {
-
+	
 	// bool show_heatingnetwork <- true;
 	
 	float step <- 1 #day;
@@ -65,8 +65,12 @@ global {
 	int global_neighboring_distance <- 2;
 	string new_buildings_parameter;
 	bool new_buildings_ordered;
-	bool new_buildings_flag <- true; //flag to disable new_buildings reflex, when no more buildings are available.
-	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings.
+	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available.
+	int energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings.
+	
+	int refurbished_buildings_year; // sum of buildings refurbished this year
+	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
+	float modernization_rate; // yearly rate of modernization
 	
 	float share_families <- 0.17; // share of families in whole neighborhood
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
@@ -337,7 +341,6 @@ global {
 			}	
 		}
 		
-		//TODO
 		ask agents of_generic_species households { //creates network of social contacts
 			do get_social_contacts; 
 			network <- network add_node(self);
@@ -498,6 +501,20 @@ global {
 		}
 	
 	}
+	
+	reflex calculate_modernization_status{
+		if (current_date.month = 12) and (current_date.day = 30) {
+			modernization_rate <- refurbished_buildings_year / unrefurbished_buildings_year;
+		}
+	}
+	
+	reflex reset_modernization_status{
+		if (current_date.month = 1) and (current_date.day = 1) {
+			refurbished_buildings_year <- 0;
+			unrefurbished_buildings_year <- length(building where (each.mod_status = "u"));
+		}
+	}
+	
 }
 
 
@@ -530,6 +547,7 @@ species building {
 	action modernize {
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
+			refurbished_buildings_year <- refurbished_buildings_year +1;
 		}
 	}
 	
@@ -899,7 +917,7 @@ species households {
 	
 	
 	reflex move_out {
-		if (current_date.month = 1) and (current_date.day = 1) {
+		if (current_date.month = 12) and (current_date.day = 1) {
 			
 			//initiation of moving-out-procedure by age
 			age <- age + 1;
@@ -1044,12 +1062,11 @@ experiment agent_decision_making type: gui{
 	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "continually" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_ordered <- true category: "Buildings"; 	
- 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
   	
-  	font my_font <- font("Arial", 18, #bold);
-  	font my_font2 <- font("Arial", 14, #bold);
+  	font my_font <- font("Arial", 12, #bold);
 	
 	output {
 //		monitor date value: current_date refresh: every(1#cycle);		
@@ -1080,9 +1097,9 @@ experiment agent_decision_making type: gui{
 			graphics Strings {
 				draw string ("Date") at: {600, 0} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {600, 50} anchor: #top_left color: #black font: my_font;
-				draw string ("Transformation level in %") at: {450, 100} anchor: #top_left color: #black font: my_font2;
+				draw string ("Transformation level") at: {450, 100} anchor: #top_left color: #black font: my_font;
 				int percentage <- (length(building where (each.mod_status = "s")) / length(building) * 100);
-				draw string (percentage) at: {600, 150} anchor: #top_left color: #black font: my_font;
+				draw string ("" + percentage + " %") at: {600, 150} anchor: #top_left color: #black font: my_font;
 
 			}
 			
@@ -1121,10 +1138,13 @@ experiment agent_decision_making type: gui{
 		
 		display "Modernization" {
 			chart "Rate of Modernization" type: xy {
-				data "Rate of Modernization" value: {current_date.year, length(building where (each.mod_status = "s")) / length(building where (each.mod_status != "s"))}; // TODO 
-				data "1% Refurbishment Rate" value: {current_date.year, 0.01};
-				data "1.5% Refurbishment Rate" value: {current_date.year, 0.015};
-				data "2% Refurbishment Rate" value: {current_date.year, current_date.year, 0.02};
+				data "Rate of Modernization" value: {current_date.year, modernization_rate}; 
+				float one_percent <- 0.01;
+				data "1% Refurbishment Rate" value: {current_date.year, one_percent};
+				//float onepointfive_percent <- 0.015; TODO
+				//data "1.5% Refurbishment Rate" value: {current_date.year, onepointfive_percent};
+				//float two_percent <- 0.02;
+				//data "2% Refurbishment Rate" value: {current_date.year, current_date.year, two_percent};
 			}
 		}
 	}
