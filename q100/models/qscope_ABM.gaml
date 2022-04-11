@@ -18,7 +18,7 @@ model q100
 
 
 global {
-
+	
 	// bool show_heatingnetwork <- true;
 	
 	float step <- 1 #day;
@@ -33,6 +33,7 @@ global {
 	file nahwaerme <- file("../includes/Shapefiles/Nahwaermenetz.shp");
 	file background_map <- file("../includes/Shapefiles/ruesdorfer_kamp_osm.png");
 
+	file shape_file_new_buildings <- file("../includes/Shapefiles/Neubau Gebaeude Kataster.shp");
 	
 	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
 	string attributes_source <- attributes_possible_sources[1];
@@ -62,6 +63,14 @@ global {
 
 	int nb_units <- get_nb_units(); // number of households in v1
 	int global_neighboring_distance <- 2;
+	string new_buildings_parameter;
+	bool new_buildings_order_random <- true; // TODO
+	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available.
+	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings.
+	
+	int refurbished_buildings_year; // sum of buildings refurbished this year
+	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
+	float modernization_rate; // yearly rate of modernization
 	
 	float share_families <- 0.17; // share of families in whole neighborhood
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
@@ -93,8 +102,8 @@ global {
 	
 	int get_nb_units { //Calculates the number of available units based on the Kataster-data.
 		int sum <- 0;
-		loop bldg over: shape_file_buildings {
-			sum <- sum + int(bldg get "Kataster_W");
+		loop bldg over: (building where (each.built)) {
+			sum <- sum + bldg.units;
 		}
 		return sum;
 	}
@@ -123,8 +132,9 @@ global {
 	
 	init { 		
 		
-		
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), vacant::bool(int(read("Kataster_W")))] { // create agents according to shapefile metadata
+
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8"))] { // create agents according to shapefile metadata
+			vacant <- bool(units);
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -154,8 +164,43 @@ global {
 			}
 		}
 		
-		create nahwaermenetz from: nahwaerme;
 
+		create building from: shape_file_new_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S"))] { // create agents according to shapefile metadata
+			vacant <- false;
+			built <- false;
+			mod_status <- "s";
+			if type = "EFH" {
+				color <- #blue;
+			}
+			else if type = "MFH" {
+				color <- #orange;
+			}
+			else if type = "NWG" {
+				color <- #red;
+			}
+			else if type = "DHH" {
+				color <- #brown;
+			}
+			else if type = "E-MG" {
+				color <- #yellow;
+			}
+			else if type = "M-MG" {
+				color <- #purple;
+			}
+			else if type = "RH" {
+				color <- #green;
+			}
+			else if type = "SON" {
+				color <- #black;
+			}
+			else if type = "SOZ" {
+				color <- #pink;
+			}
+		}
+		nb_units <- get_nb_units();
+
+	
+		create nahwaermenetz from: nahwaerme;
 
 		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
 			let letters <- ["a", "b", "c", "d"];
@@ -254,8 +299,7 @@ global {
 
 		
 //Network -> distributes the share of network-relations among the households. there are different network values for each employment status
-
-		list<string> employment_status_list  <- ["student", "employed", "self-employed", "unemployed", "pensioner"]; 
+		list<string> employment_status_list  <- ["student", "employed", "self_employed", "unemployed", "pensioner"]; 
 
 		map<string,matrix<float>> network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
 		list<string> temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
@@ -263,13 +307,14 @@ global {
 		loop emp_status over: employment_status_list { //iterate over the different employment states
 			list<households> tmp_households <- (agents of_generic_species households) where (each.employment = emp_status); //temporary list of households with the current employment status
 			int nb <- length(tmp_households); 
-			matrix<float> network_matrix <- network_map[emp_status]; //corresponding matrix of network values
+			matrix<int> network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
 				int index <- index_of(temporal_network_attributes, attr);
 				list tmp_households_grouped  <- random_groups(tmp_households, 4);
 				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
 					ask tmp_households_grouped[i] {
 						self[attr] <- rnd(network_matrix[index+2, i],network_matrix[index+2, i+1]);
+						
 					}
 				}
 			}
@@ -296,7 +341,6 @@ global {
 			}	
 		}
 		
-		//TODO
 		ask agents of_generic_species households { //creates network of social contacts
 			do get_social_contacts; 
 			network <- network add_node(self);
@@ -319,7 +363,7 @@ global {
 		let n <- length(agents of_generic_species households);
 		let wheights <- list(share_income);
 		remove 1.0 from: wheights;
-		let employment_status_list of: string <- ["student", "employed", "self-employed", "unemployed", "pensioner"];
+		let employment_status_list of: string <- ["student", "employed", "self_employed", "unemployed", "pensioner"];
 		loop while: n < nb_units {
 			let income_group<- sample(income_groups_list, 1, false, wheights)[0];
 			let i <- rnd(0,3);
@@ -376,7 +420,7 @@ global {
 			let tmp_households <- new_households of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
 			let nb <- length(tmp_households); 
 			//write [nb, 0.25 * nb];
-			matrix<float> network_matrix <- network_map[emp_status]; //corresponding matrix of network values
+			matrix<int> network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
 				let index <- index_of(temporal_network_attributes, attr);
 				let tmp_households_grouped type: list <- random_groups(tmp_households, 4);
@@ -423,7 +467,57 @@ global {
 		}
 	
 	}
+
+	reflex new_building{ // Reflex to introduce new buildings into the model. Three different options are available. 
+		if new_buildings_flag and (cycle mod 365 = 0){ // New buildings are only created once a year.
+			if (new_buildings_parameter = "at_once") and (current_date.year = 2025) { // All new buildings are introduced at once.
+				ask building where (!each.built) {
+					self.built <- true;
+					self.vacant <- bool(self.units);
+				}
+				nb_units <- get_nb_units(); // Updates the number of available housing units.
+			}
+			if (new_buildings_parameter = "continually"){ // Each year, two new buildings are introduced.
+				ask 2 among (building where (!each.built)) {
+					self.built <- true;
+					self.vacant <- bool(self.units);
+				}
+				nb_units <- get_nb_units(); 
+			}
+			if (new_buildings_parameter = "linear2030") and (current_date.year < 2030){ // The number of buildings grows linearly with a rate that ensures, all buildings are introduced by year 2030.
+				int remaining_buildings <- length(building where (!each.built));
+				write remaining_buildings;
+				int rate <- remaining_buildings / (2030 - current_date.year) + 1; // + 1 rounds the rate up to the next integer.
+				write rate;
+				ask rate among (building where (!each.built)) {
+					self.built <- true;
+					self.vacant <- bool(self.units);
+				}
+				nb_units <- get_nb_units(); 
+			}
+			if length(building where (!each.built)) = 0 or (new_buildings_parameter = "none") { // If no more buildings are available, the reflex is deactivated.
+				new_buildings_flag <- false;
+			}
+		}
+	
+	}
+	
+	reflex calculate_modernization_status{
+		if (current_date.month = 12) and (current_date.day = 30) {
+			modernization_rate <- refurbished_buildings_year / unrefurbished_buildings_year;
+		}
+	}
+	
+	reflex reset_modernization_status{
+		if (current_date.month = 1) and (current_date.day = 1) {
+			refurbished_buildings_year <- 0;
+			unrefurbished_buildings_year <- length(building where (each.mod_status = "u"));
+		}
+	}
+	
 }
+
+
 		
 species building {
 	string type;
@@ -431,6 +525,8 @@ species building {
 	int tenants <- 0;
 	bool vacant <- true;
 	string street;
+	bool built <- true;
+	string mod_status; //modernization-status
 	
 	rgb color <- #gray;
 	geometry line;
@@ -445,7 +541,14 @@ species building {
 	action remove_tenant {
 		self.tenants <- self.tenants - 1;
 		self.vacant <- true;
+		do modernize;
+	}
 	
+	action modernize {
+		if (self.type = "EFH") and (self.mod_status = "u") {
+			self.mod_status <- "s";
+			refurbished_buildings_year <- refurbished_buildings_year +1;
+		}
 	}
 	
 	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
@@ -461,7 +564,10 @@ species building {
 	}
 	
 	aspect base {
+		if built {
 		draw shape color: color;
+		}
+	
 	}
 }
 
@@ -811,7 +917,7 @@ species households {
 	
 	
 	reflex move_out {
-		if cycle mod 365 = 0 {
+		if (current_date.month = 12) and (current_date.day = 1) {
 			
 			//initiation of moving-out-procedure by age
 			age <- age + 1;
@@ -951,18 +1057,25 @@ experiment agent_decision_making type: gui{
 	
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
- 	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "communication";
+ 	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
+	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
+	parameter "New Buildings" var: new_buildings_parameter <- "continually" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
+	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
  	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
-  	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
-	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
+  	
+  	font my_font <- font("Arial", 12, #bold);
 	
 	output {
-		monitor date value: current_date refresh: every(1#cycle);		
+//		monitor date value: current_date refresh: every(1#cycle);		
 		
 		
 		layout #split;
 		display neighborhood {
+			
+			
 			image background_map;
 			graphics "network_edges" {
 				loop e over: network.edges {
@@ -981,8 +1094,15 @@ experiment agent_decision_making type: gui{
 			species households_4000etc aspect: base;
 			species edge_vis aspect: base;
 			
+			graphics Strings {
+				draw string ("Date") at: {600, 0} anchor: #top_left color: #black font: my_font;
+				draw string (current_date) at: {600, 50} anchor: #top_left color: #black font: my_font;
+				draw string ("Transformation level") at: {450, 100} anchor: #top_left color: #black font: my_font;
+				int percentage <- (length(building where (each.mod_status = "s")) / length(building) * 100);
+				draw string ("" + percentage + " %") at: {600, 150} anchor: #top_left color: #black font: my_font;
+
+			}
 			
-	
 		}			
 	
 		display "households_income_bar" {
@@ -995,6 +1115,7 @@ experiment agent_decision_making type: gui{
 				data "households_>4000" value: length (households_4000etc) color:#darkkhaki;
 				data "total" value: sum (length (households_500_1000), length (households_1000_1500),length (households_1500_2000), length (households_2000_3000), length (households_3000_4000), length (households_4000etc)) color:#darkmagenta;
 			}
+			
 		}
 		
 		display "households_employment_pie" type: java2D {
@@ -1014,6 +1135,18 @@ experiment agent_decision_making type: gui{
 				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
 			}
 		}
+		
+		display "Modernization" {
+			chart "Rate of Modernization" type: xy {
+				data "Rate of Modernization" value: {current_date.year, modernization_rate}; 
+				float one_percent <- 0.01;
+				data "1% Refurbishment Rate" value: {current_date.year, one_percent};
+				//float onepointfive_percent <- 0.015; TODO
+				//data "1.5% Refurbishment Rate" value: {current_date.year, onepointfive_percent};
+				//float two_percent <- 0.02;
+				//data "2% Refurbishment Rate" value: {current_date.year, current_date.year, two_percent};
+			}
+		}
 	}
 }
-
+experiment debug type:gui {}
