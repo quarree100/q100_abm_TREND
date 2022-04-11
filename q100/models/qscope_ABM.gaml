@@ -64,9 +64,9 @@ global {
 	int nb_units <- get_nb_units(); // number of households in v1
 	int global_neighboring_distance <- 2;
 	string new_buildings_parameter;
-	bool new_buildings_ordered;
+	bool new_buildings_order_random <- true; // TODO
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available.
-	int energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings.
+	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings.
 	
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
@@ -484,10 +484,10 @@ global {
 				}
 				nb_units <- get_nb_units(); 
 			}
-			if (new_buildings_parameter = "linear2030") and (current_date.year < 2035){ // The number of buildings grows linearly with a rate that ensures, all buildings are introduced by year 2035.
+			if (new_buildings_parameter = "linear2030") and (current_date.year < 2030){ // The number of buildings grows linearly with a rate that ensures, all buildings are introduced by year 2030.
 				int remaining_buildings <- length(building where (!each.built));
 				write remaining_buildings;
-				int rate <- remaining_buildings / (2035 - current_date.year) + 1; // + 1 rounds the rate up to the next integer.
+				int rate <- remaining_buildings / (2030 - current_date.year) + 1; // + 1 rounds the rate up to the next integer.
 				write rate;
 				ask rate among (building where (!each.built)) {
 					self.built <- true;
@@ -495,7 +495,7 @@ global {
 				}
 				nb_units <- get_nb_units(); 
 			}
-			if length(building where (!each.built)) = 0 { // If no more buildings are available, the reflex is deactivated.
+			if length(building where (!each.built)) = 0 or (new_buildings_parameter = "none") { // If no more buildings are available, the reflex is deactivated.
 				new_buildings_flag <- false;
 			}
 		}
@@ -1061,8 +1061,8 @@ experiment agent_decision_making type: gui{
 	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "continually" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
-	parameter "Random Order of new Buildings" var: new_buildings_ordered <- true category: "Buildings"; 	
- 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
+	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
  	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
   	
