@@ -60,6 +60,8 @@ global {
 	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups including people who never moved
 	matrix<float> average_lor_exclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups ecluding people who never moved
 
+
+
 	
 	matrix<float> agora_45 <- matrix<float>(csv_file("../includes/csv-data_technical/agora2045_modell_rates.csv", ",", float, true));
 	matrix<float> alphas <- matrix<float>(csv_file("../includes/csv-data_technical/alpha.csv", ",", float, true));
@@ -67,13 +69,54 @@ global {
 	matrix<float> energy_prices <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
 	matrix<float> q100_concept_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/q100_prices_emissions-dummy.csv", ",", float, true));
 	
+	float alpha <- alphas [1,1]; // share of a household's expenditures that are spent on energy - the rest are composite goods
+	float carbon_price <- [1, carbon_price_scenario_column]; // TODO divide payment structure by ownership_status
+	string carbon_price_scenario;
+	
+	int carbon_price_scenario_column {
+		if  carbon_price_scenario = "A - Conservative" {
+			return 1;	
+		}
+		if  carbon_price_scenario = "B - Moderate" {
+			return 2;	
+		}
+		if  carbon_price_scenario = "C1 - Progressive" {
+			return 3;	
+		}
+		if  carbon_price_scenario = "C2 - Progressive" {
+			return 4;	
+		}
+		if  carbon_price_scenario = "C3 - Progressive" {
+			return 5;	
+		}
+	}
+	
+	float gas_price;
+	float oil_price;
+	float power_price;
+	float gas_emission;
+	float oil_emission;
+	float power_emission;
+	
+	float income_change_rate <- agora_45 [1,3];
+	
+	
+	int emissions_neighborhood_total; // sum_of (ask agents_of_generic_species household return emissions_household);
+	int emissions_neighborhood_heat;
+	int emissions_neighborhood_power;
+	int emissions_neighborhood_accu; // accumulated emissions of the neighborhood
+	int emissions_household_average;
+	int emissions_household_average_accu; // accumulated emissions of the average household
+	
+	
+	
 
-	int nb_units <- get_nb_units(); // number of households in v1
+	int nb_units <- get_nb_units(); //number of households
 	int global_neighboring_distance <- 2;
 	string new_buildings_parameter;
 	bool new_buildings_order_random <- true; // TODO
-	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available.
-	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings.
+	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
+	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings TODO
 	
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
@@ -418,6 +461,7 @@ global {
 			}
 			n <- n + 1;
 		}
+		
  		// Distribute network values among the new households
 		map<string, matrix<float>> network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
 		list<string> temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
@@ -453,6 +497,7 @@ global {
 				network_socialgroup <- true;
 			}	
 		}
+		
 		ask new_households of_generic_species households where (!bool(each.family)) {
 			if flip (share_socialgroup_nonfamilies) {
 				network_socialgroup <- true;
@@ -508,8 +553,41 @@ global {
 	
 	}
 	
+	
+	
+	reflex annual_updates_technical_data {
+		if (current_date.month = 1) and (current_date.day = 1) {
+			
+			float alpha <- alphas [1,1]; // gleicher Szenario-Aufbau wie bei carbon price TODO 13.04.
+			float carbon_price <- [current_date.year - 2019, carbon_price_scenario_column]; // init value muss nicht definiert werden, da wert bereits am ersten manuell initiiert wird
+			float gas_price;
+			float oil_price;
+			float power_price;
+			float gas_emission;
+			float oil_emission;
+			float power_emission;
+	
+			float income_change_rate <- agora_45 [1,3];
+		}
+	
+	}
+		
+	reflex monthly_updates_technical_data { //TODO
+		if (current_date.day = 1) {
+			
+			int emissions_neighborhood_total; 
+			int emissions_neighborhood_heat;
+			int emissions_neighborhood_power;
+			int emissions_neighborhood_accu; 
+			int emissions_household_average;
+			int emissions_household_average_accu;
+		}	
+		
+	}
+	
+	
 	reflex calculate_modernization_status{
-		if (current_date.month = 12) and (current_date.day = 30) {
+		if (current_date.month = 12) and (current_date.day = 31) {
 			modernization_rate <- refurbished_buildings_year / unrefurbished_buildings_year;
 		}
 	}
@@ -520,6 +598,11 @@ global {
 			unrefurbished_buildings_year <- length(building where (each.mod_status = "u"));
 		}
 	}
+	
+	
+	
+	
+	
 	
 }
 
@@ -588,6 +671,8 @@ species nahwaermenetz{
 
 
 species households {
+	
+
 	float CEEK; // Climate-Energy-Environment Knowledge
 	float CEEA; // Climate-Energy-Environment Awareness
 	float EDA; // Energy-Related-Decision Awareness
@@ -608,8 +693,14 @@ species households {
 	
 	
 	
-	int income; // households income/month -> ATTENTION -> besonderer Validierungshinweis, da zufaellige Menge
+	int income; // households income/month
+	float budget <- 0.0; // TODO every household starts with zero savings?
 	string id_group; // identification which quartile within the income group the agent belongs to
+	
+	int energy_expenses; // TODO expenses a household has to pay for energy supply - heat & power
+	int emissions_household;
+	float c; // composite goods
+	float e; // energy expenses
 		
 	int age; // random mean-age of households
 	int lenght_of_residence <- 0; //years since the household moved in
@@ -894,6 +985,33 @@ species households {
         }
 	}
 	
+
+// Reihenfolge der nachfolgenden Reflexes beachten
+	
+	reflex calculate_C {
+		if (current_date.day = 1) {
+			c <- 123;
+		}
+	}
+	
+	reflex decision_making {
+		if (current_date.day = 1) {
+			
+		}
+	}
+	
+	reflex consume_energy { //calculation of energy consumption of a household TODO // muss hinter C berechnet werden, um t-1 zu repraesentieren
+		if (current_date.day = 1) {
+			e <- 123.0;
+		}
+	}
+	
+	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
+		if (current_date.day = 1) {
+			budget <- budget + ((income * income_change_rate) * alpha - energy_expenses); // TODO
+		}
+	}
+	
 	
 	
 	action update_decision_thresholds {
@@ -923,7 +1041,7 @@ species households {
 	
 	
 	reflex move_out {
-		if (current_date.month = 12) and (current_date.day = 1) {
+		if (current_date.month = 12) and (current_date.day = 15) {
 			
 			//initiation of moving-out-procedure by age
 			age <- age + 1;
@@ -1062,15 +1180,16 @@ species edge_vis {
 experiment agent_decision_making type: gui{
 	
 
- 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
+ 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "continually" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
- 	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
- 	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
+ 	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
+ 	parameter "Building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
+ 	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
   	
   	font my_font <- font("Arial", 12, #bold);
 	
