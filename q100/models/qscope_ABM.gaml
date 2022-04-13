@@ -1143,14 +1143,11 @@ experiment agent_decision_making type: gui{
 		}
 		
 		display "Modernization" {
-			chart "Rate of Modernization" type: xy {
+			chart "Rate of Modernization" type: xy y_range: {0,0.03} style: line{
 				data "Rate of Modernization" value: {current_date.year, modernization_rate}; 
-				float one_percent <- 0.01;
-				data "1% Refurbishment Rate" value: {current_date.year, one_percent};
-				//float onepointfive_percent <- 0.015; TODO
-				//data "1.5% Refurbishment Rate" value: {current_date.year, onepointfive_percent};
-				//float two_percent <- 0.02;
-				//data "2% Refurbishment Rate" value: {current_date.year, current_date.year, two_percent};
+				data "1% Refurbishment Rate" value: {current_date.year, 0.01};
+				data "1.5% Refurbishment Rate" value: {current_date.year, 0.015};
+				data "2% Refurbishment Rate" value: {current_date.year, 0.02};
 			}
 		}
 	}
