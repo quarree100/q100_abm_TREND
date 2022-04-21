@@ -502,6 +502,7 @@ species building {
 	bool built <- true;
 	string mod_status; //modernization-status
 
+
 	rgb color <- #gray;
 	geometry line;
 	
@@ -510,6 +511,7 @@ species building {
 		if self.tenants = self.units {
 			self.vacant <- false;
 		}
+		
 		return any_location_in(self);
 	}
 	action remove_tenant {
@@ -537,14 +539,18 @@ species building {
 		return inside(agents of_generic_species(households), self);
 	}
 	
+
+	
+	
 	aspect base {
 		if built {
 			draw shape color: color;
+			
 		}
 	
 	}
 	aspect threedim {
-		float height <- self.units / 10 * 25;
+		float height <- (floor(self.units / 10) + 1) * 10;
 		if self.type = "NWG" {
 			height <- 20;
 		}
@@ -952,8 +958,10 @@ species households {
 		draw circle(2) color: energy_colors[energy_type];
 		if self.invest {
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self.house);
-			draw polyline(netz, self.house);
+			list conn <- closest_points_with(netz, self.house);
+			draw polyline(conn) color: #red width: 2;
 		}
+
 	}
 	
 
