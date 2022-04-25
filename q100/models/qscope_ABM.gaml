@@ -1303,7 +1303,7 @@ experiment agent_decision_making type: gui{
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
- 	parameter "Building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
+ 	parameter "Building types source" var: attributes_source <- "Kataster_T" among: ["Kataster_A", "Kataster_T"] category: "GIS";
  	parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
  	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
  	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
