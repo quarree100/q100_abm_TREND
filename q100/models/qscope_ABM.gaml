@@ -73,7 +73,7 @@ global {
 	matrix<float> energy_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
 	matrix<float> q100_concept_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/q100_prices_emissions-dummy.csv", ",", float, true));
 	
-	float alpha <- alphas [0, alpha_column]; // share of a household's expenditures that are spent on energy - the rest are composite goods
+	float alpha <- alphas [alpha_column, 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
 	int alpha_column {
 		if  alpha_scenario = "Static_mean" { // TODO in experiment als Parameter eintragen
@@ -90,7 +90,7 @@ global {
 		}
 	}
 	
-	float carbon_price <- carbon_prices [0, carbon_price_column]; 
+	float carbon_price <- carbon_prices [carbon_price_column, 0]; 
 	string carbon_price_scenario;
 	int carbon_price_column {
 		if  carbon_price_scenario = "A - Conservative" {
@@ -110,7 +110,7 @@ global {
 		}
 	}
 	
-	float gas_price <- energy_prices_emissions [0, gas_price_column];
+	float gas_price <- energy_prices_emissions [gas_price_column, 0];
 	string energy_price_scenario;
 	int gas_price_column {
 		if  energy_price_scenario = "Prices_Project start" {
@@ -124,7 +124,7 @@ global {
 		}
 	}
 	
-	float oil_price <- energy_prices_emissions [0, oil_price_column];
+	float oil_price <- energy_prices_emissions [oil_price_column, 0];
 	int oil_price_column {
 		if  energy_price_scenario = "Prices_Project start" {
 			return 5;	
@@ -137,7 +137,7 @@ global {
 		}
 	}
 	
-	float power_price <- energy_prices_emissions [0, power_price_column];
+	float power_price <- energy_prices_emissions [power_price_column, 0];
 	int power_price_column {
 		if  energy_price_scenario = "Prices_Project start" {
 			return 9;	
@@ -150,7 +150,7 @@ global {
 		}
 	}
 	
-	float q100_price_opex <- q100_concept_prices_emissions [0, q100_price_opex_column];
+	float q100_price_opex <- q100_concept_prices_emissions [q100_price_opex_column, 0];
 	string q100_price_opex_scenario;
 	int q100_price_opex_column {
 		if  q100_price_opex_scenario = "12 ct / kWh (static)" {
@@ -161,11 +161,11 @@ global {
 		}
 	}
 
-	float gas_emissions <- energy_prices_emissions [0, 4];
-	float oil_emissions <- energy_prices_emissions [0, 8];
-	float power_emissions <- energy_prices_emissions [0, 12]; //needs to be updated
+	float gas_emissions <- energy_prices_emissions [4, 0];
+	float oil_emissions <- energy_prices_emissions [8, 0];
+	float power_emissions <- energy_prices_emissions [12, 0];
 	
-	float q100_emissions <- q100_concept_prices_emissions [0, q100_emissions_column]; //needs to be updated
+	float q100_emissions <- q100_concept_prices_emissions [q100_emissions_column, 0]; //needs to be updated
 	string q100_emissions_scenario;
 	int q100_emissions_column {
 		if  q100_emissions_scenario = "Constant_50 g / kWh" {
@@ -182,18 +182,19 @@ global {
 		}
 	}
 	
-	float income_change_rate <- agora_45 [0, 11];
+	//ebenfalls jaehrlich updaten TODO
+	float income_change_rate <- agora_45 [11, 0];
 	
-	float power_consumption_change_rate <- agora_45 [0, 12];
-	float heat_consumption_new_EFH_change_rate <- agora_45 [0, 13];
-	float heat_consumption_new_MFH_change_rate <- agora_45 [0, 14];
-	float heat_consumption_exist_EFH_change_rate <- agora_45 [0, 15];
-	float heat_consumption_exist_MFH_change_rate <- agora_45 [0, 16]; //einheiten pruefen fuer berechnung
+	float power_consumption_change_rate <- agora_45 [12, 0];
+	float heat_consumption_new_EFH_change_rate <- agora_45 [13, 0];
+	float heat_consumption_new_MFH_change_rate <- agora_45 [14, 0];
+	float heat_consumption_exist_EFH_change_rate <- agora_45 [15, 0];
+	float heat_consumption_exist_MFH_change_rate <- agora_45 [16, 0]; //einheiten pruefen fuer berechnung
 	
 	
 	//	DATA FOR DECISION MAKING
 	
-	float q100_price_capex <- [0, q100_price_capex_column];
+	float q100_price_capex <- [q100_price_capex_column, 0];
 	string q100_price_capex_scenario;
 	int q100_price_capex_column {
 		if  q100_price_capex_scenario = "1 payment" {
@@ -666,23 +667,27 @@ global {
 	reflex annual_updates_technical_data {
 		if (current_date.month = 1) and (current_date.day = 1) {
 			
-			alpha <- alphas [current_date.year - 2020, alpha_column];
-			carbon_price <- carbon_prices [current_date.year - 2020, carbon_price_column];
-			gas_price <- energy_prices_emissions [current_date.year - 2020, gas_price_column];
-			oil_price <- energy_prices_emissions [current_date.year - 2020, oil_price_column];
-			power_price <- energy_prices_emissions [current_date.year - 2020, power_price_column];
-			q100_price_opex <- q100_concept_prices_emissions [current_date.year - 2020, q100_price_opex_column];
-			power_emissions <- energy_prices_emissions [current_date.year - 2020, 12 ];
-			q100_emissions <- q100_concept_prices_emissions [current_date.year - 2020, q100_emissions_column];
-			
-			
+			alpha <- alphas [alpha_column, current_date.year - 2020];
+			carbon_price <- carbon_prices [carbon_price_column, current_date.year - 2020];
+			gas_price <- energy_prices_emissions [gas_price_column, current_date.year - 2020];
+			oil_price <- energy_prices_emissions [oil_price_column, current_date.year - 2020];
+			power_price <- energy_prices_emissions [power_price_column, current_date.year - 2020];
+			q100_price_opex <- q100_concept_prices_emissions [q100_price_opex_column, current_date.year - 2020];
+			power_emissions <- energy_prices_emissions [12, current_date.year - 2020];
+			q100_emissions <- q100_concept_prices_emissions [q100_emissions_column, current_date.year - 2020];
 	
-			income_change_rate <- agora_45 [current_date.year - 2020, 11];
+			income_change_rate <- agora_45 [11, current_date.year - 2020];
+			power_consumption_change_rate <- agora_45 [12, current_date.year - 2020];
+			heat_consumption_new_EFH_change_rate <- agora_45 [13, current_date.year - 2020];
+			heat_consumption_new_MFH_change_rate <- agora_45 [14, current_date.year - 2020];
+			heat_consumption_exist_EFH_change_rate <- agora_45 [15, current_date.year - 2020];
+			heat_consumption_exist_MFH_change_rate <- agora_45 [16, current_date.year - 2020];
+			
 		}
 	
 	}
 		
-	reflex monthly_updates_technical_data { // for GUI and decision_making algorithm TODO
+	reflex monthly_updates_technical_data { // for GUI & decision_making algorithm TODO
 		if (current_date.day = 1) {
 			
 			int emissions_neighborhood_total; 
