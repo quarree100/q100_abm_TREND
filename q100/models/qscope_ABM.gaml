@@ -23,6 +23,10 @@ global {
 	
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
+	reflex stop_simulation when: current_date.year = 2050 {
+        do pause ;
+    }
+	
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
 	
@@ -66,14 +70,29 @@ global {
 	matrix<float> agora_45 <- matrix<float>(csv_file("../includes/csv-data_technical/agora2045_modell_rates.csv", ",", float, true));
 	matrix<float> alphas <- matrix<float>(csv_file("../includes/csv-data_technical/alpha.csv", ",", float, true));
 	matrix<float> carbon_prices <- matrix<float>(csv_file("../includes/csv-data_technical/carbon-prices.csv", ",", float, true));
-	matrix<float> energy_prices <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
+	matrix<float> energy_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
 	matrix<float> q100_concept_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/q100_prices_emissions-dummy.csv", ",", float, true));
 	
-	float alpha <- alphas [1,1]; // share of a household's expenditures that are spent on energy - the rest are composite goods
-	float carbon_price <- [1, carbon_price_scenario_column]; // TODO divide payment structure by ownership_status
-	string carbon_price_scenario;
+	float alpha <- alphas [0, alpha_column]; // share of a household's expenditures that are spent on energy - the rest are composite goods
+	string alpha_scenario;
+	int alpha_column {
+		if  alpha_scenario = "Static_mean" { // TODO in experiment als Parameter eintragen
+			return 1;	
+		}
+		if  alpha_scenario = "Dynamic_moderate" {
+			return 2;	
+		}
+		if  alpha_scenario = "Dynamic_high" {
+			return 3;
+		}
+		if  alpha_scenario = "Static_high" {
+			return 4;
+		}
+	}
 	
-	int carbon_price_scenario_column {
+	float carbon_price <- carbon_prices [0, carbon_price_column]; 
+	string carbon_price_scenario;
+	int carbon_price_column {
 		if  carbon_price_scenario = "A - Conservative" {
 			return 1;	
 		}
@@ -91,14 +110,103 @@ global {
 		}
 	}
 	
-	float gas_price;
-	float oil_price;
-	float power_price;
-	float gas_emission;
-	float oil_emission;
-	float power_emission;
+	float gas_price <- energy_prices_emissions [0, gas_price_column];
+	string energy_price_scenario;
+	int gas_price_column {
+		if  energy_price_scenario = "Prices_Project start" {
+			return 1;	
+		}
+		if  energy_price_scenario = "Prices_2021" {
+			return 2;	
+		}
+		if  energy_price_scenario = "Prices_2022 1st half" {
+			return 3;	
+		}
+	}
 	
-	float income_change_rate <- agora_45 [1,3];
+	float oil_price <- energy_prices_emissions [0, oil_price_column];
+	int oil_price_column {
+		if  energy_price_scenario = "Prices_Project start" {
+			return 5;	
+		}
+		if  energy_price_scenario = "Prices_2021" {
+			return 6;	
+		}
+		if  energy_price_scenario = "Prices_2022 1st half" {
+			return 7;	
+		}
+	}
+	
+	float power_price <- energy_prices_emissions [0, power_price_column];
+	int power_price_column {
+		if  energy_price_scenario = "Prices_Project start" {
+			return 9;	
+		}
+		if  energy_price_scenario = "Prices_2021" {
+			return 10;	
+		}
+		if  energy_price_scenario = "Prices_2022 1st half" {
+			return 11;	
+		}
+	}
+	
+	float q100_price_opex <- q100_concept_prices_emissions [0, q100_price_opex_column];
+	string q100_price_opex_scenario;
+	int q100_price_opex_column {
+		if  q100_price_opex_scenario = "12 ct / kWh (static)" {
+			return 1;	
+		}
+		if  q100_price_opex_scenario = "9-15 ct / kWh (dynamic)" {
+			return 2;	
+		}
+	}
+
+	float gas_emissions <- energy_prices_emissions [0, 4];
+	float oil_emissions <- energy_prices_emissions [0, 8];
+	float power_emissions <- energy_prices_emissions [0, 12]; //needs to be updated
+	
+	float q100_emissions <- q100_concept_prices_emissions [0, q100_emissions_column]; //needs to be updated
+	string q100_emissions_scenario;
+	int q100_emissions_column {
+		if  q100_emissions_scenario = "Constant_50 g / kWh" {
+			return 6;	
+		}
+		if  q100_emissions_scenario = "Declining_Steps" {
+			return 7;	
+		}
+		if  q100_emissions_scenario = "Declining_Linear" {
+			return 8;	
+		}
+		if  q100_emissions_scenario = "Constant_Zero emissions" {
+			return 9;	
+		}
+	}
+	
+	float income_change_rate <- agora_45 [0, 11];
+	
+	float power_consumption_change_rate <- agora_45 [0, 12];
+	float heat_consumption_new_EFH_change_rate <- agora_45 [0, 13];
+	float heat_consumption_new_MFH_change_rate <- agora_45 [0, 14];
+	float heat_consumption_exist_EFH_change_rate <- agora_45 [0, 15];
+	float heat_consumption_exist_MFH_change_rate <- agora_45 [0, 16]; //einheiten pruefen fuer berechnung
+	
+	
+	//	DATA FOR DECISION MAKING
+	
+	float q100_price_capex <- [0, q100_price_capex_column];
+	string q100_price_capex_scenario;
+	int q100_price_capex_column {
+		if  q100_price_capex_scenario = "1 payment" {
+			return 3;	
+		}
+		if  q100_price_capex_scenario = "2 payments" {
+			return 4;	
+		}
+		if  q100_price_capex_scenario = "5 payments" {
+			return 5;	
+		}
+	}
+	
 	
 	
 	int emissions_neighborhood_total; // sum_of (ask agents_of_generic_species household return emissions_household);
@@ -116,7 +224,7 @@ global {
 	string new_buildings_parameter;
 	bool new_buildings_order_random <- true; // TODO
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings TODO
+	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings in percent TODO
 	
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
@@ -558,21 +666,23 @@ global {
 	reflex annual_updates_technical_data {
 		if (current_date.month = 1) and (current_date.day = 1) {
 			
-			float alpha <- alphas [1,1]; // gleicher Szenario-Aufbau wie bei carbon price TODO 13.04.
-			float carbon_price <- [current_date.year - 2019, carbon_price_scenario_column]; // init value muss nicht definiert werden, da wert bereits am ersten manuell initiiert wird
-			float gas_price;
-			float oil_price;
-			float power_price;
-			float gas_emission;
-			float oil_emission;
-			float power_emission;
+			alpha <- alphas [current_date.year - 2020, alpha_column];
+			carbon_price <- carbon_prices [current_date.year - 2020, carbon_price_column];
+			gas_price <- energy_prices_emissions [current_date.year - 2020, gas_price_column];
+			oil_price <- energy_prices_emissions [current_date.year - 2020, oil_price_column];
+			power_price <- energy_prices_emissions [current_date.year - 2020, power_price_column];
+			q100_price_opex <- q100_concept_prices_emissions [current_date.year - 2020, q100_price_opex_column];
+			power_emissions <- energy_prices_emissions [current_date.year - 2020, 12 ];
+			q100_emissions <- q100_concept_prices_emissions [current_date.year - 2020, q100_emissions_column];
+			
+			
 	
-			float income_change_rate <- agora_45 [1,3];
+			income_change_rate <- agora_45 [current_date.year - 2020, 11];
 		}
 	
 	}
 		
-	reflex monthly_updates_technical_data { //TODO
+	reflex monthly_updates_technical_data { // for GUI and decision_making algorithm TODO
 		if (current_date.day = 1) {
 			
 			int emissions_neighborhood_total; 
@@ -1189,7 +1299,12 @@ experiment agent_decision_making type: gui{
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "Building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
+ 	parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
  	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
+ 	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
+ 	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
+  	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
+  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
   	
   	font my_font <- font("Arial", 12, #bold);
 	
