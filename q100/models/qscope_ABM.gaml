@@ -455,6 +455,19 @@ global {
 		}
 		
 		
+// Power Supplier -> distributes the power supplier among households
+
+		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > 4.5) { //see documentation for references of supplier distribution; EEH is chosen by value above the median
+		 	power_supplier <- "green";
+		}
+		
+		ask (0.18 * nb_units) among agents of_generic_species households where (each.power_supplier = nil) { 
+		 	power_supplier <- "mixed";
+		}
+		
+		ask agents of_generic_species households where (each.power_supplier = nil) {
+			power_supplier <- "conventional";
+		}
 
 		
 //Network -> distributes the share of network-relations among the households. there are different network values for each employment status
@@ -567,6 +580,15 @@ global {
 					ownership <- "tenant";
 				}
 				
+				if (EEH > 4.5 and flip(0.1)) {
+					power_supplier <- "green";
+				}
+				else if flip(0.18) {
+					power_supplier <- "mixed";
+				}
+				else {
+					power_supplier <- "conventional";
+				}
 			}
 			n <- n + 1;
 		}
@@ -812,6 +834,7 @@ species households {
 	float budget <- 0.0; // TODO every household starts with zero savings?
 	string id_group; // identification which quartile within the income group the agent belongs to
 	
+	string power_supplier;
 	int energy_expenses; // TODO expenses a household has to pay for energy supply - heat & power
 	int emissions_household;
 	float c; // composite goods
@@ -1115,7 +1138,7 @@ species households {
 		}
 	}
 	
-	reflex consume_energy { //calculation of energy consumption of a household TODO // muss hinter C berechnet werden, um t-1 zu repraesentieren
+	reflex consume_energy { //calculation of energy consumption of a household TODO // muss hinter C berechnet werden, um zuvor t-1 zu repraesentieren
 		if (current_date.day = 1) {
 			e <- 123.0;
 		}
