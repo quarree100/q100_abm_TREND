@@ -292,7 +292,7 @@ global {
 	init { 		
 		
 
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8"))] { // create agents according to shapefile metadata
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster_13")), spec_power_consumption::float(read("Kataster_15"))] { // create agents according to shapefile metadata
 			vacant <- bool(units);
 			if type = "EFH" {
 				color <- #blue;
@@ -324,7 +324,7 @@ global {
 		}
 		
 
-		create building from: shape_file_new_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S"))] { // create agents according to shapefile metadata
+		create building from: shape_file_new_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster_13")), spec_power_consumption::float(read("Kataster_15"))] { // create agents according to shapefile metadata
 			vacant <- false;
 			built <- false;
 			mod_status <- "s";
@@ -467,6 +467,12 @@ global {
 		
 		ask agents of_generic_species households where (each.power_supplier = nil) {
 			power_supplier <- "conventional";
+		}
+		
+// Energy Consumption
+
+		ask agents of_generic_species households {
+			my_floor_area <- (self.house.net_floor_area / self.house.units); //TODO
 		}
 
 		
@@ -753,6 +759,9 @@ species building {
 	string street;
 	bool built <- true;
 	string mod_status; //modernization-status
+	int net_floor_area;
+	float spec_heat_consumption;
+	float spec_power_consumption;
 	
 	rgb color <- #gray;
 	geometry line;
@@ -838,6 +847,7 @@ species households {
 	int emissions_household;
 	float c; // composite goods
 	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
+	
 		
 	int age; // random mean-age of households
 	int lenght_of_residence <- 0; //years since the household moved in
@@ -859,7 +869,7 @@ species households {
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 	
 	building house; 
-	
+	int my_floor_area;
 	
 	list<households> social_contacts_direct;
 	list<households> social_contacts_street;
@@ -1137,9 +1147,11 @@ species households {
 		}
 	}
 	
-	reflex consume_energy { //calculation of energy consumption of a household TODO // muss hinter C berechnet werden, um zuvor t-1 zu repraesentieren
+	reflex consume_energy { // calculation of energy consumption of a household TODO // muss hinter C berechnet werden, um zuvor t-1 zu repraesentieren
 		if (current_date.day = 1) {
-			e <- 123.0;
+			
+			
+			
 		}
 	}
 	
