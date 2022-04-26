@@ -835,10 +835,9 @@ species households {
 	string id_group; // identification which quartile within the income group the agent belongs to
 	
 	string power_supplier;
-	int energy_expenses; // TODO expenses a household has to pay for energy supply - heat & power
 	int emissions_household;
 	float c; // composite goods
-	float e; // energy expenses
+	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
 		
 	int age; // random mean-age of households
 	int lenght_of_residence <- 0; //years since the household moved in
@@ -1126,7 +1125,7 @@ species households {
 
 // Reihenfolge der nachfolgenden Reflexes beachten
 	
-	reflex calculate_C {
+	reflex calculate_c {
 		if (current_date.day = 1) {
 			c <- 123;
 		}
@@ -1146,7 +1145,7 @@ species households {
 	
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
 		if (current_date.day = 1) {
-			budget <- budget + ((income * income_change_rate) * alpha - energy_expenses); // TODO
+			budget <- budget + ((income * income_change_rate) * alpha - e); // TODO
 		}
 	}
 	
@@ -1346,8 +1345,8 @@ experiment agent_decision_making type: gui{
 			
 			image background_map;
 			graphics "network_edges" {
-				loop e over: network.edges {
-					draw geometry(e) color: #black;
+				loop edge over: network.edges {
+					draw geometry(edge) color: #black;
 				}
 			}			
 			
