@@ -40,7 +40,7 @@ global {
 	file shape_file_new_buildings <- file("../includes/Shapefiles/Neubau Gebaeude Kataster.shp");
 	
 	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
-	string attributes_source <- attributes_possible_sources[1];
+	string attributes_source <- attributes_possible_sources[0];
 
 	matrix<float> decision_500_1000 <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_500-1000_V1.csv", ",", float, true));
 	matrix<float> decision_1000_1500 <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/decision-making_1000-1500_V1.csv", ",", float, true));
@@ -1149,7 +1149,11 @@ species households {
 	
 	reflex decision_making {
 		if (current_date.day = 1) {
+			if (self.house.type = "EFH" and self.house.mod_status = "u") {
+				
+				e <- e + 1;
 			
+			}
 		}
 	}
 	
@@ -1368,7 +1372,7 @@ experiment agent_decision_making type: gui{
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
- 	parameter "Building types source" var: attributes_source <- "Kataster_T" among: ["Kataster_A", "Kataster_T"] category: "GIS";
+ 	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
  	parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
  	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
  	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
