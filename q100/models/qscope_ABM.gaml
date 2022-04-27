@@ -209,7 +209,7 @@ global {
 	}
 	
 	
-	
+	// TODO
 	int emissions_neighborhood_total; // sum_of (ask agents_of_generic_species household return emissions_household);
 	int emissions_neighborhood_heat;
 	int emissions_neighborhood_power;
@@ -226,6 +226,7 @@ global {
 	bool new_buildings_order_random <- true; // TODO
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
 	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings in percent TODO
+	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
 	
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
@@ -779,10 +780,11 @@ species building {
 		do modernize;
 	}
 	
-	action modernize {
+	action modernize { // vielleicht besser unterscheiden nach Mieter/Vermieter als nach EFH/MFH TODO
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
-			refurbished_buildings_year <- refurbished_buildings_year +1;
+			refurbished_buildings_year <- refurbished_buildings_year + 1;
+			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate / 100);
 		}
 	}
 	
@@ -847,6 +849,10 @@ species households {
 	int emissions_household;
 	float c; // composite goods
 	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
+	bool change; // init value needs to be set for household with fitting settings
+	
+	float my_heat_consumption; // monthly heat consumption per m2
+	float my_power_consumption; // monthly power consumption per m2
 	
 		
 	int age; // random mean-age of households
@@ -1147,21 +1153,46 @@ species households {
 		}
 	}
 	
-	reflex consume_energy { // calculation of energy consumption of a household TODO // muss hinter C berechnet werden, um zuvor t-1 zu repraesentieren
+	reflex consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert
 		if (current_date.day = 1) {
 			
 			
+			// consumption divided by building type
+			
+			if (self.house.type = "EFH" and self.house.mod_status = "u") {
+				my_heat_consumption <- my_floor_area * (self.house.spec_heat_consumption * heat_consumption_exist_EFH_change_rate) / 12;	
+			}
+			if (self.house.type = "EFH" and self.house.mod_status = "s") {
+				my_heat_consumption <- my_floor_area * (self.house.spec_heat_consumption * heat_consumption_new_EFH_change_rate) / 12;	
+			}
+			if (self.house.type = "MFH" and self.house.mod_status = "u") {
+				my_heat_consumption <- my_floor_area * (self.house.spec_heat_consumption * heat_consumption_exist_MFH_change_rate) / 12;	
+			}
+			if (self.house.type = "EFH" and self.house.mod_status = "s") {
+				my_heat_consumption <- my_floor_area * (self.house.spec_heat_consumption * heat_consumption_new_MFH_change_rate) / 12;	
+			}
+			 
+			my_power_consumption <- my_floor_area * ((self.house.spec_power_consumption * power_consumption_change_rate) / 12); 
+			
+			 
+			// implementation of "change" factor on energy consumption 
+			if (change = true) {
+				my_heat_consumption <- my_heat_consumption * change_factor;
+				my_power_consumption <- my_power_consumption * change_factor;
+			}
+			
+			// prices and emissions divided by technology type -> uebertragen von technologien auf HH
 			
 		}
 	}
 	
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
 		if (current_date.day = 1) {
-			budget <- budget + ((income * income_change_rate) * alpha - e); // TODO
+			budget <- budget + ((income * income_change_rate) * alpha - e); // TODO?
 		}
 	}
 	
-	
+// ueberarbeiten - ggf stark veraltet TODO
 	
 	action update_decision_thresholds {
 		/* calculate household's current 
