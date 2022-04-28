@@ -76,7 +76,7 @@ global {
 	float alpha <- alphas [alpha_column, 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
 	int alpha_column {
-		if  alpha_scenario = "Static_mean" { // TODO in experiment als Parameter eintragen
+		if  alpha_scenario = "Static_mean" {
 			return 1;	
 		}
 		if  alpha_scenario = "Dynamic_moderate" {
@@ -165,7 +165,7 @@ global {
 	float oil_emissions <- energy_prices_emissions [8, 0];
 	float power_emissions <- energy_prices_emissions [12, 0];
 	
-	float q100_emissions <- q100_concept_prices_emissions [q100_emissions_column, 0]; //needs to be updated
+	float q100_emissions <- q100_concept_prices_emissions [q100_emissions_column, 0];
 	string q100_emissions_scenario;
 	int q100_emissions_column {
 		if  q100_emissions_scenario = "Constant_50 g / kWh" {
@@ -182,14 +182,14 @@ global {
 		}
 	}
 	
-	//ebenfalls jaehrlich updaten TODO
+	
 	float income_change_rate <- agora_45 [11, 0];
 	
 	float power_consumption_change_rate <- agora_45 [12, 0];
 	float heat_consumption_new_EFH_change_rate <- agora_45 [13, 0];
 	float heat_consumption_new_MFH_change_rate <- agora_45 [14, 0];
 	float heat_consumption_exist_EFH_change_rate <- agora_45 [15, 0];
-	float heat_consumption_exist_MFH_change_rate <- agora_45 [16, 0]; //einheiten pruefen fuer berechnung
+	float heat_consumption_exist_MFH_change_rate <- agora_45 [16, 0];
 	
 	
 	//	DATA FOR DECISION MAKING
@@ -293,7 +293,7 @@ global {
 	init { 		
 		
 
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15"))] { // create agents according to shapefile metadata
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 			vacant <- bool(units);
 			
 			if type = "EFH" {
@@ -764,6 +764,7 @@ species building {
 	int net_floor_area;
 	float spec_heat_consumption;
 	float spec_power_consumption;
+	string energy_source;
 	
 	rgb color <- #gray;
 	geometry line;
