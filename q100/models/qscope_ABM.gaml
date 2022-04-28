@@ -144,6 +144,7 @@ global {
 		
 
 		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8"))] { // create agents according to shapefile metadata
+			
 			vacant <- bool(units);
 			if type = "EFH" {
 				color <- #blue;
@@ -914,7 +915,7 @@ species households {
 			lenght_of_residence <- lenght_of_residence + 1;
 			let current_agent <- self;
 			if age >= 100 {
-				ask households(neighbors_of(network, self)) {
+				ask neighbors_of(network, self) {
 					do update_social_contacts(current_agent);
 				}
 				remove self from: network;
