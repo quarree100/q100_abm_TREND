@@ -293,8 +293,9 @@ global {
 	init { 		
 		
 
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster_13")), spec_power_consumption::float(read("Kataster_15"))] { // create agents according to shapefile metadata
+		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15"))] { // create agents according to shapefile metadata
 			vacant <- bool(units);
+			
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -325,7 +326,7 @@ global {
 		}
 		
 
-		create building from: shape_file_new_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster_13")), spec_power_consumption::float(read("Kataster_15"))] { // create agents according to shapefile metadata
+		create building from: shape_file_new_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15"))] { // create agents according to shapefile metadata
 			vacant <- false;
 			built <- false;
 			mod_status <- "s";
@@ -1147,9 +1148,10 @@ species households {
 		}
 	}
 	
-	reflex decision_making {
+	reflex decision_making { // debugging
 		if (current_date.day = 1) {
-			if (self.house.type = "EFH" and self.house.mod_status = "u") {
+			if (self.house.type = "EFH") and (self.house.mod_status = "u") {
+//			if (self.house.type = "EFH" and self.house.mod_status = "u") {
 				
 				e <- e + 1;
 			
@@ -1163,20 +1165,20 @@ species households {
 			
 			// consumption divided by building type
 			
-			if (self.house.type = "EFH" and self.house.mod_status = "u") {
-				my_heat_consumption <- my_floor_area * (self.house.spec_heat_consumption * heat_consumption_exist_EFH_change_rate) / 12;	
+			if (self.house.type = "EFH") and (self.house.mod_status = "u") {
+				my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_EFH_change_rate / 12;	
 			}
-			if (self.house.type = "EFH" and self.house.mod_status = "s") {
-				my_heat_consumption <- my_floor_area * (self.house.spec_heat_consumption * heat_consumption_new_EFH_change_rate) / 12;	
+			if (self.house.type = "EFH") and (self.house.mod_status = "s") {
+				my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_new_EFH_change_rate / 12;	
 			}
-			if (self.house.type = "MFH" and self.house.mod_status = "u") {
-				my_heat_consumption <- my_floor_area * (self.house.spec_heat_consumption * heat_consumption_exist_MFH_change_rate) / 12;	
+			if (self.house.type = "MFH") and (self.house.mod_status = "u") {
+				my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_MFH_change_rate / 12;	
 			}
-			if (self.house.type = "EFH" and self.house.mod_status = "s") {
-				my_heat_consumption <- my_floor_area * (self.house.spec_heat_consumption * heat_consumption_new_MFH_change_rate) / 12;	
+			if (self.house.type = "EFH") and (self.house.mod_status = "s") {
+				my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_new_MFH_change_rate / 12;	
 			}
 			 
-			my_power_consumption <- my_floor_area * ((self.house.spec_power_consumption * power_consumption_change_rate) / 12); 
+			my_power_consumption <- my_floor_area * self.house.spec_power_consumption * power_consumption_change_rate / 12; 
 			
 			 
 			// implementation of "change" factor on energy consumption 
