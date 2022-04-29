@@ -73,90 +73,90 @@ global {
 	matrix<float> energy_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
 	matrix<float> q100_concept_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/q100_prices_emissions-dummy.csv", ",", float, true));
 	
-	float alpha <- alphas [alpha_column, 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
+	float alpha <- alphas [alpha_column(), 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
 	int alpha_column {
-		if  alpha_scenario = "Static_mean" {
+		if alpha_scenario = "Static_mean" {
 			return 1;	
 		}
-		if  alpha_scenario = "Dynamic_moderate" {
+		else if alpha_scenario = "Dynamic_moderate" {
 			return 2;	
 		}
-		if  alpha_scenario = "Dynamic_high" {
+		else if alpha_scenario = "Dynamic_high" {
 			return 3;
 		}
-		if  alpha_scenario = "Static_high" {
+		else if alpha_scenario = "Static_high" {
 			return 4;
 		}
 	}
 	
-	float carbon_price <- carbon_prices [carbon_price_column, 0]; 
+	float carbon_price <- carbon_prices [carbon_price_column(), 0]; 
 	string carbon_price_scenario;
 	int carbon_price_column {
 		if  carbon_price_scenario = "A - Conservative" {
 			return 1;	
 		}
-		if  carbon_price_scenario = "B - Moderate" {
+		else if carbon_price_scenario = "B - Moderate" {
 			return 2;	
 		}
-		if  carbon_price_scenario = "C1 - Progressive" {
+		else if carbon_price_scenario = "C1 - Progressive" {
 			return 3;	
 		}
-		if  carbon_price_scenario = "C2 - Progressive" {
+		else if carbon_price_scenario = "C2 - Progressive" {
 			return 4;	
 		}
-		if  carbon_price_scenario = "C3 - Progressive" {
+		else if carbon_price_scenario = "C3 - Progressive" {
 			return 5;	
 		}
 	}
 	
-	float gas_price <- energy_prices_emissions [gas_price_column, 0];
+	float gas_price <- energy_prices_emissions [gas_price_column(), 0];
 	string energy_price_scenario;
 	int gas_price_column {
 		if  energy_price_scenario = "Prices_Project start" {
 			return 1;	
 		}
-		if  energy_price_scenario = "Prices_2021" {
+		else if energy_price_scenario = "Prices_2021" {
 			return 2;	
 		}
-		if  energy_price_scenario = "Prices_2022 1st half" {
+		else if energy_price_scenario = "Prices_2022 1st half" {
 			return 3;	
 		}
 	}
 	
-	float oil_price <- energy_prices_emissions [oil_price_column, 0];
+	float oil_price <- energy_prices_emissions [oil_price_column(), 0];
 	int oil_price_column {
 		if  energy_price_scenario = "Prices_Project start" {
 			return 5;	
 		}
-		if  energy_price_scenario = "Prices_2021" {
+		else if energy_price_scenario = "Prices_2021" {
 			return 6;	
 		}
-		if  energy_price_scenario = "Prices_2022 1st half" {
+		else if energy_price_scenario = "Prices_2022 1st half" {
 			return 7;	
 		}
 	}
 	
-	float power_price <- energy_prices_emissions [power_price_column, 0];
+	float power_price <- energy_prices_emissions [power_price_column(), 0];
 	int power_price_column {
 		if  energy_price_scenario = "Prices_Project start" {
 			return 9;	
 		}
-		if  energy_price_scenario = "Prices_2021" {
+		else if energy_price_scenario = "Prices_2021" {
 			return 10;	
 		}
-		if  energy_price_scenario = "Prices_2022 1st half" {
+		else if energy_price_scenario = "Prices_2022 1st half" {
 			return 11;	
 		}
 	}
 	
-	float q100_price_opex <- q100_concept_prices_emissions [q100_price_opex_column, 0];
+	float q100_price_opex <- q100_concept_prices_emissions [q100_price_opex_column(), 0];
 	string q100_price_opex_scenario;
 	int q100_price_opex_column {
 		if  q100_price_opex_scenario = "12 ct / kWh (static)" {
 			return 1;	
 		}
-		if  q100_price_opex_scenario = "9-15 ct / kWh (dynamic)" {
+		else if q100_price_opex_scenario = "9-15 ct / kWh (dynamic)" {
 			return 2;	
 		}
 	}
@@ -165,19 +165,19 @@ global {
 	float oil_emissions <- energy_prices_emissions [8, 0];
 	float power_emissions <- energy_prices_emissions [12, 0];
 	
-	float q100_emissions <- q100_concept_prices_emissions [q100_emissions_column, 0];
+	float q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), 0];
 	string q100_emissions_scenario;
 	int q100_emissions_column {
 		if  q100_emissions_scenario = "Constant_50 g / kWh" {
 			return 6;	
 		}
-		if  q100_emissions_scenario = "Declining_Steps" {
+		else if q100_emissions_scenario = "Declining_Steps" {
 			return 7;	
 		}
-		if  q100_emissions_scenario = "Declining_Linear" {
+		else if q100_emissions_scenario = "Declining_Linear" {
 			return 8;	
 		}
-		if  q100_emissions_scenario = "Constant_Zero emissions" {
+		else if q100_emissions_scenario = "Constant_Zero emissions" {
 			return 9;	
 		}
 	}
@@ -194,16 +194,16 @@ global {
 	
 	//	DATA FOR DECISION MAKING
 	
-	float q100_price_capex <- [q100_price_capex_column, 0];
+	float q100_price_capex <- [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
 	int q100_price_capex_column {
 		if  q100_price_capex_scenario = "1 payment" {
 			return 3;	
 		}
-		if  q100_price_capex_scenario = "2 payments" {
+		else if q100_price_capex_scenario = "2 payments" {
 			return 4;	
 		}
-		if  q100_price_capex_scenario = "5 payments" {
+		else if q100_price_capex_scenario = "5 payments" {
 			return 5;	
 		}
 	}
@@ -697,14 +697,14 @@ global {
 	reflex annual_updates_technical_data {
 		if (current_date.month = 1) and (current_date.day = 1) {
 			
-			alpha <- alphas [alpha_column, current_date.year - 2020];
-			carbon_price <- carbon_prices [carbon_price_column, current_date.year - 2020];
-			gas_price <- energy_prices_emissions [gas_price_column, current_date.year - 2020];
-			oil_price <- energy_prices_emissions [oil_price_column, current_date.year - 2020];
-			power_price <- energy_prices_emissions [power_price_column, current_date.year - 2020];
-			q100_price_opex <- q100_concept_prices_emissions [q100_price_opex_column, current_date.year - 2020];
+			alpha <- alphas [alpha_column(), current_date.year - 2020];
+			carbon_price <- carbon_prices [carbon_price_column(), current_date.year - 2020];
+			gas_price <- energy_prices_emissions [gas_price_column(), current_date.year - 2020];
+			oil_price <- energy_prices_emissions [oil_price_column(), current_date.year - 2020];
+			power_price <- energy_prices_emissions [power_price_column(), current_date.year - 2020];
+			q100_price_opex <- q100_concept_prices_emissions [q100_price_opex_column(), current_date.year - 2020];
 			power_emissions <- energy_prices_emissions [12, current_date.year - 2020];
-			q100_emissions <- q100_concept_prices_emissions [q100_emissions_column, current_date.year - 2020];
+			q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), current_date.year - 2020];
 	
 			income_change_rate <- agora_45 [11, current_date.year - 2020];
 			power_consumption_change_rate <- agora_45 [12, current_date.year - 2020];
@@ -1195,7 +1195,7 @@ species households {
 	
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
 		if (current_date.day = 1) {
-			budget <- budget + ((income * income_change_rate) * alpha - e); // TODO?
+			budget <- budget + (income * income_change_rate * alpha - e); // TODO?
 		}
 	}
 	
