@@ -214,9 +214,11 @@ global {
 	int global_neighboring_distance <- 2;
 	string new_buildings_parameter;
 	bool new_buildings_order_random <- true; // TODO
+
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
 	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings in percent TODO
-	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
+  float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
+	bool view_toggle <- false; // Parameter to toggle the 3D-View.
 	
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
@@ -260,7 +262,9 @@ global {
 	int get_nb_units { //Calculates the number of available units based on the Kataster-data.
 		int sum <- 0;
 		loop bldg over: (building where (each.built)) {
-			sum <- sum + bldg.units;
+			if (bldg.type != "NWG") {
+				sum <- sum + bldg.units;	
+			}
 		}
 		return sum;
 	}
@@ -291,35 +295,19 @@ global {
 		
 
 		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
+
 			vacant <- bool(units);
 			
 			if type = "EFH" {
 				color <- #blue;
 			}
 			else if type = "MFH" {
-				color <- #orange;
+				color <- #lightblue;
 			}
 			else if type = "NWG" {
-				color <- #red;
+				color <- #gray;
 			}
-			else if type = "DHH" {
-				color <- #brown;
-			}
-			else if type = "E-MG" {
-				color <- #yellow;
-			}
-			else if type = "M-MG" {
-				color <- #purple;
-			}
-			else if type = "RH" {
-				color <- #green;
-			}
-			else if type = "SON" {
-				color <- #black;
-			}
-			else if type = "SOZ" {
-				color <- #pink;
-			}
+			
 		}
 		
 
@@ -331,28 +319,10 @@ global {
 				color <- #blue;
 			}
 			else if type = "MFH" {
-				color <- #orange;
+				color <- #lightblue;
 			}
 			else if type = "NWG" {
-				color <- #red;
-			}
-			else if type = "DHH" {
-				color <- #brown;
-			}
-			else if type = "E-MG" {
-				color <- #yellow;
-			}
-			else if type = "M-MG" {
-				color <- #purple;
-			}
-			else if type = "RH" {
-				color <- #green;
-			}
-			else if type = "SON" {
-				color <- #black;
-			}
-			else if type = "SOZ" {
-				color <- #pink;
+				color <- #gray;
 			}
 		}
 		nb_units <- get_nb_units();
@@ -665,7 +635,7 @@ global {
 				}
 				nb_units <- get_nb_units(); // Updates the number of available housing units.
 			}
-			if (new_buildings_parameter = "continually"){ // Each year, two new buildings are introduced.
+			if (new_buildings_parameter = "continuously"){ // Each year, two new buildings are introduced.
 				ask 2 among (building where (!each.built)) {
 					self.built <- true;
 					self.vacant <- bool(self.units);
@@ -769,7 +739,6 @@ species building {
 	float spec_heat_consumption;
 	float spec_power_consumption;
 	string energy_source;
-	
 	rgb color <- #gray;
 	geometry line;
 	
@@ -778,6 +747,7 @@ species building {
 		if self.tenants = self.units {
 			self.vacant <- false;
 		}
+		
 		return any_location_in(self);
 	}
 	action remove_tenant {
@@ -806,18 +776,31 @@ species building {
 		return inside(agents of_generic_species(households), self);
 	}
 	
+
+	
+	
 	aspect base {
 		if built {
-		draw shape color: color;
+			draw shape color: color;
+			
 		}
 	
+	}
+	aspect threedim {
+		float height <- (floor(self.units / 10) + 1) * 10;
+		if self.type = "NWG" {
+			height <- 20;
+		}
+		if built {
+			draw shape color: color depth: height;
+		}
 	}
 }
 
 
 species nahwaermenetz{
 	
-	rgb color <- #gray;
+	rgb color <- #dimgray;
 	aspect base{
 		draw shape color: color;
 	}
@@ -885,9 +868,10 @@ species households {
 
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
-	
+	bool invest <- false;
 	building house; 
 	int my_floor_area;
+	
 	
 	list<households> social_contacts_direct;
 	list<households> social_contacts_street;
@@ -896,7 +880,7 @@ species households {
 
 
 	action find_house {
-		self.house <- any (building where (each.vacant));
+		self.house <- any (building where ((each.vacant) and (each.type != "NWG")));
 		self.location <- self.house.add_tenant();
 
 	}
@@ -1295,7 +1279,7 @@ species households {
 			length_of_residence <- length_of_residence + 1;
 			let current_agent <- self;
 			if age >= 100 {
-				ask households(neighbors_of(network, self)) {
+				ask neighbors_of(network, self) {
 					do update_social_contacts(current_agent);
 				}
 				remove self from: network;
@@ -1331,6 +1315,18 @@ species households {
 		if (self.age >= 64) and (self.employment != "pensioner") {
 			self.employment <- "pensioner";
 		}
+	}
+	
+	aspect by_energy {
+		map energy_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
+		string energy_type; //placeholder to be defined as attribute!
+		draw circle(2) color: energy_colors[energy_type];
+		if self.invest {
+			nahwaermenetz netz <- closest_to(nahwaermenetz, self.house);
+			list conn <- closest_points_with(netz, self.house);
+			draw polyline(conn) color: #red width: 2;
+		}
+
 	}
 	
 
@@ -1430,19 +1426,20 @@ experiment agent_decision_making type: gui{
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
-	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Welcher Wert ist voreingestellt?
-	parameter "New Buildings" var: new_buildings_parameter <- "continually" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
+	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
+	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
- 	parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
+ 	parameter "3D-View" var: view_toggle category: "GIS";
+  parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
  	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
  	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
-  	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
-  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
+  parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
+  parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
+  parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
   	
   	font my_font <- font("Arial", 12, #bold);
 	
@@ -1455,16 +1452,18 @@ experiment agent_decision_making type: gui{
 			
 			
 			image background_map;
-			graphics "network_edges" {
-				loop edge over: network.edges {
-					draw geometry(edge) color: #black;
-				}
-			}			
+//merge conflict:
+
+//			graphics "network_edges" {
+//				loop edge over: network.edges {
+//					draw geometry(edge) color: #black;
+//				}
+//			}			
 			
 			species building aspect: base;
 			species nahwaermenetz aspect: base;
 			
-			species households_500_1000 aspect: base;
+			species households_500_1000 aspect: by_energy;
 			species households_1000_1500 aspect: base;
 			species households_1500_2000 aspect: base;
 			species households_2000_3000 aspect: base;
@@ -1481,27 +1480,29 @@ experiment agent_decision_making type: gui{
 
 			}
 			
-		}			
-	
-		display "households_income_bar" {
-			chart "households_income" type: histogram {
-				data "households_500-1000" value: length (households_500_1000) color:#darkblue;
-				data "households_1000-1500" value: length (households_1000_1500) color:#darkcyan;
-				data "households_1500-2000" value: length (households_1500_2000) color:#darkgoldenrod;
-				data "households_2000-3000" value: length (households_2000_3000) color:#darkgray;
-				data "households_3000-4000" value: length (households_3000_4000) color:#darkgreen;
-				data "households_>4000" value: length (households_4000etc) color:#darkkhaki;
-				data "total" value: sum (length (households_500_1000), length (households_1000_1500),length (households_1500_2000), length (households_2000_3000), length (households_3000_4000), length (households_4000etc)) color:#darkmagenta;
-			}
-			
 		}
 		
+					
+	
+//		display "households_income_bar" {
+//			chart "households_income" type: histogram {
+//				data "households_500-1000" value: length (households_500_1000) color:#darkblue;
+//				data "households_1000-1500" value: length (households_1000_1500) color:#darkcyan;
+//				data "households_1500-2000" value: length (households_1500_2000) color:#darkgoldenrod;
+//				data "households_2000-3000" value: length (households_2000_3000) color:#darkgray;
+//				data "households_3000-4000" value: length (households_3000_4000) color:#darkgreen;
+//				data "households_>4000" value: length (households_4000etc) color:#darkkhaki;
+//				data "total" value: sum (length (households_500_1000), length (households_1000_1500),length (households_1500_2000), length (households_2000_3000), length (households_3000_4000), length (households_4000etc)) color:#darkmagenta;
+//			}
+//			
+//		}
+//		
 		display "households_employment_pie" type: java2D {
 			chart "households_employment" type: pie {
 				data "student" value: length (agents of_generic_species households where (each.employment = "student")) color: #lightblue;
 				data "employed" value: length (agents of_generic_species households where (each.employment = "employed")) color: #lightcoral;
 				data "self_employed" value: length (agents of_generic_species households where (each.employment = "self_employed")) color: #lightcyan;
-				data "un_employed" value: length (agents of_generic_species households where (each.employment = "un_employed")) color: #lightgoldenrodyellow;
+				data "unemployed" value: length (agents of_generic_species households where (each.employment = "unemployed")) color: #lightgoldenrodyellow;
 				data "pensioner" value: length (agents of_generic_species households where (each.employment = "pensioner")) color: #lightgray;
 			}
 		}
@@ -1515,14 +1516,92 @@ experiment agent_decision_making type: gui{
 		}
 		
 		display "Modernization" {
-			chart "Rate of Modernization" type: xy {
+			chart "Rate of Modernization" type: xy y_range: {0,0.03} style: line{
 				data "Rate of Modernization" value: {current_date.year, modernization_rate}; 
-				float one_percent <- 0.01;
-				data "1% Refurbishment Rate" value: {current_date.year, one_percent};
-				//float onepointfive_percent <- 0.015; TODO
-				//data "1.5% Refurbishment Rate" value: {current_date.year, onepointfive_percent};
-				//float two_percent <- 0.02;
-				//data "2% Refurbishment Rate" value: {current_date.year, current_date.year, two_percent};
+				data "1% Refurbishment Rate" value: {current_date.year, 0.01};
+				data "1.5% Refurbishment Rate" value: {current_date.year, 0.015};
+				data "2% Refurbishment Rate" value: {current_date.year, 0.02};
+			}
+		}
+	}
+}
+
+experiment agent_decision_making_3d type: gui{
+	
+
+ 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
+ 	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
+	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
+	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
+	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
+ 	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
+ 	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
+ 	parameter "3D-View" var: view_toggle category: "GIS";
+  	
+  	font my_font <- font("Arial", 12, #bold);
+	
+	output {
+//		monitor date value: current_date refresh: every(1#cycle);		
+		
+		
+		layout #split;
+		
+		display neighborhood3d type: opengl{
+			
+			image background_map;
+			
+			
+			species building aspect: threedim;
+			species nahwaermenetz aspect: base;
+			
+			species households_500_1000 aspect: base;
+			species households_1000_1500 aspect: base;
+			species households_1500_2000 aspect: base;
+			species households_2000_3000 aspect: base;
+			species households_3000_4000 aspect: base;
+			species households_4000etc aspect: base;
+			species edge_vis aspect: base;
+		}			
+	
+//		display "households_income_bar" {
+//			chart "households_income" type: histogram {
+//				data "households_500-1000" value: length (households_500_1000) color:#darkblue;
+//				data "households_1000-1500" value: length (households_1000_1500) color:#darkcyan;
+//				data "households_1500-2000" value: length (households_1500_2000) color:#darkgoldenrod;
+//				data "households_2000-3000" value: length (households_2000_3000) color:#darkgray;
+//				data "households_3000-4000" value: length (households_3000_4000) color:#darkgreen;
+//				data "households_>4000" value: length (households_4000etc) color:#darkkhaki;
+//				data "total" value: sum (length (households_500_1000), length (households_1000_1500),length (households_1500_2000), length (households_2000_3000), length (households_3000_4000), length (households_4000etc)) color:#darkmagenta;
+//			}
+//			
+//		}
+//		
+		display "households_employment_pie" type: java2D {
+			chart "households_employment" type: pie {
+				data "student" value: length (agents of_generic_species households where (each.employment = "student")) color: #lightblue;
+				data "employed" value: length (agents of_generic_species households where (each.employment = "employed")) color: #lightcoral;
+				data "self_employed" value: length (agents of_generic_species households where (each.employment = "self_employed")) color: #lightcyan;
+				data "unemployed" value: length (agents of_generic_species households where (each.employment = "unemployed")) color: #lightgoldenrodyellow;
+				data "pensioner" value: length (agents of_generic_species households where (each.employment = "pensioner")) color: #lightgray;
+			}
+		}
+		
+		display "Charts" {
+			chart "Average of decision-variables" type: series {
+				data "CEEA" value: sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
+				data "EDA" value: sum_of(agents of_generic_species households, each.EDA) / length(agents of_generic_species households);
+				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
+			}
+		}
+		
+		display "Modernization" {
+			chart "Rate of Modernization" type: xy y_range: {0,0.03} style: line{
+				data "Rate of Modernization" value: {current_date.year, modernization_rate}; 
+				data "1% Refurbishment Rate" value: {current_date.year, 0.01};
+				data "1.5% Refurbishment Rate" value: {current_date.year, 0.015};
+				data "2% Refurbishment Rate" value: {current_date.year, 0.02};
 			}
 		}
 		
@@ -1543,4 +1622,5 @@ experiment agent_decision_making type: gui{
 		}
 	}
 }
+
 experiment debug type:gui {}
