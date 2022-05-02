@@ -61,8 +61,8 @@ global {
 	
 	
 	matrix<float> share_age_buildings_existing <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
-	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average lenght of residence for different age-groups including people who never moved
-	matrix<float> average_lor_exclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups ecluding people who never moved
+	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups including people who never moved
+	matrix<float> average_lor_exclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups excluding people who never moved
 
 
 
@@ -90,6 +90,7 @@ global {
 		}
 	}
 	
+	bool carbon_price_on_off <- false;
 	float carbon_price <- carbon_prices [carbon_price_column(), 0]; 
 	string carbon_price_scenario;
 	int carbon_price_column {
@@ -160,7 +161,7 @@ global {
 			return 2;	
 		}
 	}
-
+	
 	float gas_emissions <- energy_prices_emissions [4, 0];
 	float oil_emissions <- energy_prices_emissions [8, 0];
 	float power_emissions <- energy_prices_emissions [12, 0];
@@ -192,9 +193,9 @@ global {
 	float heat_consumption_exist_MFH_change_rate <- agora_45 [16, 0];
 	
 	
-	//	DATA FOR DECISION MAKING
+	//	DATA FOR DECISION MAKING INVEST
 	
-	float q100_price_capex <- [q100_price_capex_column(), 0];
+	float q100_price_capex <- q100_concept_prices_emissions [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
 	int q100_price_capex_column {
 		if  q100_price_capex_scenario = "1 payment" {
@@ -204,21 +205,10 @@ global {
 			return 4;	
 		}
 		else if q100_price_capex_scenario = "5 payments" {
-			return 5;	
+			return 5;	 
 		}
 	}
-	
-	
-	// TODO
-	int emissions_neighborhood_total; // sum_of (ask agents_of_generic_species household return emissions_household);
-	int emissions_neighborhood_heat;
-	int emissions_neighborhood_power;
-	int emissions_neighborhood_accu; // accumulated emissions of the neighborhood
-	int emissions_household_average;
-	int emissions_household_average_accu; // accumulated emissions of the average household
-	
-	
-	
+		
 
 	int nb_units <- get_nb_units(); //number of households
 	int global_neighboring_distance <- 2;
@@ -231,6 +221,13 @@ global {
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
 	float modernization_rate; // yearly rate of modernization
+	
+	int emissions_neighborhood_total; // total annual energy emissions of q100 neighborhood
+	int emissions_neighborhood_heat; // total annual heat emissions of q100 neighborhood
+	int emissions_neighborhood_power; // total annual power emissions of q100 neighborhood
+	int emissions_neighborhood_accu; // accumulated energy emissions of the q100 neighborhood
+	int emissions_household_average; // annual energy emissions of an average household within the q100 neighborhood
+	int emissions_household_average_accu; // accumulated energy emissions of an average household within the q100 neighborhood
 	
 	float share_families <- 0.17; // share of families in whole neighborhood
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
@@ -463,7 +460,7 @@ global {
 		 	power_supplier <- "green";
 		}
 		
-		ask (0.18 * nb_units) among agents of_generic_species households where (each.power_supplier = nil) { 
+		ask (0.08 * nb_units) among agents of_generic_species households where (each.power_supplier = nil) { 
 		 	power_supplier <- "mixed";
 		}
 		
@@ -471,10 +468,10 @@ global {
 			power_supplier <- "conventional";
 		}
 		
-// Energy Consumption
+// Floor area
 
 		ask agents of_generic_species households {
-			my_floor_area <- (self.house.net_floor_area / self.house.units); //TODO
+			my_floor_area <- (self.house.net_floor_area / self.house.units);
 		}
 
 		
@@ -591,12 +588,13 @@ global {
 				if (EEH > 4.5 and flip(0.1)) {
 					power_supplier <- "green";
 				}
-				else if flip(0.18) {
+				else if flip(0.08) {
 					power_supplier <- "mixed";
 				}
 				else {
 					power_supplier <- "conventional";
 				}
+				my_floor_area <- (self.house.net_floor_area / self.house.units);
 			}
 			n <- n + 1;
 		}
@@ -716,16 +714,22 @@ global {
 		}
 	
 	}
-		
-	reflex monthly_updates_technical_data { // for GUI & decision_making algorithm TODO
+	
+	reflex reset_technical_data { // resets technical data before new calculation starts
 		if (current_date.day = 1) {
+			emissions_neighborhood_total <- 0;
+			emissions_household_average <- 0;
+		}
+	}
+		
+	reflex monthly_updates_technical_data { // for GUI & decision_making algorithm // on day 2 to update after emission calculation & reset
+		if (current_date.day = 2) {
 			
-			int emissions_neighborhood_total; 
-			int emissions_neighborhood_heat;
-			int emissions_neighborhood_power;
-			int emissions_neighborhood_accu; 
-			int emissions_household_average;
-			int emissions_household_average_accu;
+			emissions_neighborhood_total <- emissions_neighborhood_heat + emissions_neighborhood_power; 
+			emissions_neighborhood_accu <- emissions_neighborhood_accu + emissions_neighborhood_total;
+			
+			emissions_household_average <- emissions_neighborhood_total / nb_units;
+			emissions_household_average_accu <- emissions_household_average_accu + emissions_household_average;
 		}	
 		
 	}
@@ -848,19 +852,25 @@ species households {
 	string id_group; // identification which quartile within the income group the agent belongs to
 	
 	string power_supplier;
-	int emissions_household;
-	float c; // composite goods
+	float c; // TODO composite goods
 	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
 	bool change; // init value needs to be set for household with fitting settings
 	
-	float my_heat_consumption; // monthly heat consumption per m2
-	float my_power_consumption; // monthly power consumption per m2
+	float my_heat_consumption; // monthly heat consumption in kWh
+	float my_power_consumption; // monthly power consumption in kWh
+	float my_heat_expenses; // monthly expenses for heat
+	float my_power_expenses; // monthly expsenses for power
+	float my_heat_emissions; // monthly emissions of heat consumption
+	float my_power_emissions; // monthly emissions of power consumption
+	float my_energy_emissions; // monthly emissions of totalg energy consumption
+	
+	float cost_benefit_invest; //costs or benefits of the investment action (aktuelle nur bestehend aus Investitionskosten /CapEx
 	
 		
 	int age; // random mean-age of households
-	int lenght_of_residence <- 0; //years since the household moved in
+	int length_of_residence <- 0; //years since the household moved in
 	string ownership; // type of ownership status of households
-	string employment; // employment status of households !!!
+	string employment; // employment status of households
 		
 
 
@@ -1143,55 +1153,105 @@ species households {
 
 // Reihenfolge der nachfolgenden Reflexes beachten
 	
-	reflex calculate_c {
+	reflex calculate_c { // calculation of c is used for decision making
 		if (current_date.day = 1) {
-			c <- 123;
+			cost_benefit_invest <- q100_price_capex;
+			c <- income - (e + cost_benefit_invest);
 		}
 	}
 	
-	reflex decision_making { // debugging
+	reflex decision_making { 
 		if (current_date.day = 1) {
-			if (self.house.type = "EFH") and (self.house.mod_status = "u") {
-//			if (self.house.type = "EFH" and self.house.mod_status = "u") {
-				
-				e <- e + 1;
 			
-			}
 		}
 	}
 	
 	reflex consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert
 		if (current_date.day = 1) {
+			do calculate_consumption;
+			do calculate_heat_expenses;
+			do calculate_power_expenses;
+			do calculate_emissions;
 			
+			e <- my_heat_expenses + my_power_expenses;
+			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
+			emissions_neighborhood_power <- emissions_neighborhood_power + my_power_emissions;
+		}
+	}		
+		
 			
-			// consumption divided by building type
-			
-			if (self.house.type = "EFH") and (self.house.mod_status = "u") {
-				my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_EFH_change_rate / 12;	
-			}
-			if (self.house.type = "EFH") and (self.house.mod_status = "s") {
-				my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_new_EFH_change_rate / 12;	
-			}
-			if (self.house.type = "MFH") and (self.house.mod_status = "u") {
-				my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_MFH_change_rate / 12;	
-			}
-			if (self.house.type = "EFH") and (self.house.mod_status = "s") {
-				my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_new_MFH_change_rate / 12;	
-			}
-			 
-			my_power_consumption <- my_floor_area * self.house.spec_power_consumption * power_consumption_change_rate / 12; 
-			
-			 
-			// implementation of "change" factor on energy consumption 
-			if (change = true) {
-				my_heat_consumption <- my_heat_consumption * change_factor;
-				my_power_consumption <- my_power_consumption * change_factor;
-			}
-			
-			// prices and emissions divided by technology type -> uebertragen von technologien auf HH
-			
+	
+	action calculate_consumption { // consumption divided by building type
+	
+		if (self.house.type = "EFH") and (self.house.mod_status = "u") {
+			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_EFH_change_rate / 12;	
+		}
+		else if (self.house.type = "EFH") and (self.house.mod_status = "s") {
+			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_new_EFH_change_rate / 12;	
+		}
+		else if (self.house.type = "MFH") and (self.house.mod_status = "u") {
+			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_MFH_change_rate / 12;	
+		}
+		else if (self.house.type = "EFH") and (self.house.mod_status = "s") {
+			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_new_MFH_change_rate / 12;	
+		}
+		my_power_consumption <- my_floor_area * self.house.spec_power_consumption * power_consumption_change_rate / 12; // tatsaechlich kwh/qm spez stromverbrauch?
+		
+		// implementation of "change" factor on energy consumption 
+		if (change = true) {
+			my_heat_consumption <- my_heat_consumption * change_factor;
+			my_power_consumption <- my_power_consumption * change_factor;
 		}
 	}
+	
+	action calculate_heat_expenses { // TODO co2-Preis einfach draufrechnen?
+		if (self.house.energy_source = "gas") {
+			my_heat_expenses <- my_heat_consumption * gas_price / 100;
+		}
+		else if (self.house.energy_source = "oil") {
+			my_heat_expenses <- my_heat_consumption * oil_price / 100;
+		}
+		else { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
+			my_heat_expenses <- my_heat_consumption * q100_price_opex / 100;
+		}
+	}
+	
+	action calculate_power_expenses { // TODO co2-Preis einfach draufrechnen?
+		if (power_supplier = "green") {
+			my_power_expenses <- my_power_consumption * (power_price + 10) / 100; // es stellt sich die Frage, ob Ökostrom immer teurer bleibt; bzw. es ein "höherklassiges" Angebot geben wird;; ggf Szenario einrichten mit 30 % und 10 ct
+		}
+		else {
+			my_power_expenses <- my_power_consumption * power_price / 100;
+		}
+	}
+			
+	action calculate_emissions { // emissions in g of CO2 eq
+		if (self.house.energy_source = "gas") {
+			my_heat_emissions <- my_heat_consumption * gas_emissions;
+		}
+		else if (self.house.energy_source = "oil") {
+			my_heat_emissions <- my_heat_consumption * oil_emissions;
+		}
+		else { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
+			my_heat_emissions <- my_heat_consumption * q100_emissions;
+		}
+		
+		
+		if (power_supplier = "green") {
+			my_power_emissions <- 0; // Emissionen tatsaechlich al 0 annehmen?
+		}
+		else if (power_supplier = "mixed") {
+			my_power_emissions <- my_power_consumption * power_emissions * 0.5;
+		}
+		else if (power_supplier = "conventional") {
+			my_power_emissions <- my_power_consumption * power_emissions;
+		}
+		
+		my_energy_emissions <- my_heat_emissions + my_power_emissions;
+	}	
+			
+			
+	
 	
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
 		if (current_date.day = 1) {
@@ -1232,7 +1292,7 @@ species households {
 			
 			//initiation of moving-out-procedure by age
 			age <- age + 1;
-			lenght_of_residence <- lenght_of_residence + 1;
+			length_of_residence <- length_of_residence + 1;
 			let current_agent <- self;
 			if age >= 100 {
 				ask households(neighbors_of(network, self)) {
@@ -1370,7 +1430,7 @@ experiment agent_decision_making type: gui{
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
-	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
+	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Welcher Wert ist voreingestellt?
 	parameter "New Buildings" var: new_buildings_parameter <- "continually" among: ["at_once", "continually", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
@@ -1382,6 +1442,7 @@ experiment agent_decision_making type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
   	
   	font my_font <- font("Arial", 12, #bold);
 	
@@ -1462,6 +1523,22 @@ experiment agent_decision_making type: gui{
 				//data "1.5% Refurbishment Rate" value: {current_date.year, onepointfive_percent};
 				//float two_percent <- 0.02;
 				//data "2% Refurbishment Rate" value: {current_date.year, current_date.year, two_percent};
+			}
+		}
+		
+		display "Emissions per year" { // TODO
+			chart "Emissions per year within the neighborhood" type: series {
+				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_total;
+				data "Total heat emissions of neighborhood per year" value: emissions_neighborhood_heat; 
+				data "Total power emissions of neighborhood per year" value: emissions_neighborhood_power; 
+				data "Average energy emissions of a household per year" value: emissions_household_average; 
+			}
+		}
+		
+		display "Emissions cumulative" { // TODO
+			chart "Cumulative emissions of the neighborhood" type: series {
+				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_accu;
+				data "Total heat emissions of neighborhood per year" value: emissions_household_average_accu;
 			}
 		}
 	}
