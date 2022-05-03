@@ -800,7 +800,7 @@ species building {
 
 species nahwaermenetz{
 	
-	rgb color <- #dimgray;
+	rgb color <- #indianred;
 	aspect base{
 		draw shape color: color;
 	}
@@ -1430,7 +1430,7 @@ experiment agent_decision_making type: gui{
 	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
- 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 1 step: 0.05;
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
  	parameter "3D-View" var: view_toggle category: "GIS";
@@ -1553,7 +1553,7 @@ experiment agent_decision_making_3d type: gui{
 	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
- 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 1 step: 0.05;
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
  	parameter "3D-View" var: view_toggle category: "GIS";
