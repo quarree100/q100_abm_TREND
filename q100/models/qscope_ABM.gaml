@@ -216,8 +216,8 @@ global {
 	bool new_buildings_order_random <- true; // TODO
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	int energy_saving_rate <- 50; // Energy-Saving of modernized buildings in percent TODO
-  float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
+	float energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings in percent TODO
+  	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
 	bool view_toggle <- false; // Parameter to toggle the 3D-View.
 	
 	int refurbished_buildings_year; // sum of buildings refurbished this year
@@ -760,7 +760,7 @@ species building {
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
 			refurbished_buildings_year <- refurbished_buildings_year + 1;
-			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate / 100);
+			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 		}
 	}
 	
@@ -800,7 +800,7 @@ species building {
 
 species nahwaermenetz{
 	
-	rgb color <- #dimgray;
+	rgb color <- #indianred;
 	aspect base{
 		draw shape color: color;
 	}
@@ -1238,8 +1238,9 @@ species households {
 	
 	
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
-		if (current_date.day = 1) {
-			budget <- budget + (income * income_change_rate * alpha - e); // TODO?
+		float budget_calc <- income * income_change_rate * alpha - e;
+		if (current_date.day = 1) and (budget_calc > 0) {
+			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
 		}
 	}
 	
@@ -1429,17 +1430,17 @@ experiment agent_decision_making type: gui{
 	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
- 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
  	parameter "3D-View" var: view_toggle category: "GIS";
-  parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
+  	parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
  	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
  	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
-  parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
-  parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
+  	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
+  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
   	
   	font my_font <- font("Arial", 12, #bold);
 	
@@ -1452,6 +1453,7 @@ experiment agent_decision_making type: gui{
 			
 			
 			image background_map;
+			
 //merge conflict:
 
 //			graphics "network_edges" {
@@ -1523,22 +1525,45 @@ experiment agent_decision_making type: gui{
 				data "2% Refurbishment Rate" value: {current_date.year, 0.02};
 			}
 		}
+		
+				display "Emissions per year" { // TODO
+			chart "Emissions per year within the neighborhood" type: series {
+				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_total;
+				data "Total heat emissions of neighborhood per year" value: emissions_neighborhood_heat; 
+				data "Total power emissions of neighborhood per year" value: emissions_neighborhood_power; 
+				data "Average energy emissions of a household per year" value: emissions_household_average; 
+			}
+		}
+		
+		display "Emissions cumulative" { // TODO
+			chart "Cumulative emissions of the neighborhood" type: series {
+				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_accu;
+				data "Total heat emissions of neighborhood per year" value: emissions_household_average_accu;
+			}
+		}
 	}
 }
 
 experiment agent_decision_making_3d type: gui{
 	
 
- 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "decision making"; 	
+ 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
-	parameter "Memory" var: communication_memory among: [true, false] category: "Communication";
+	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
- 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0 max: 100 step: 5;
- 	parameter "shapefile for buildings:" var: shape_file_buildings category: "GIS";
- 	parameter "building types source" var: attributes_source among: attributes_possible_sources category: "GIS";
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
+ 	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
+ 	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
  	parameter "3D-View" var: view_toggle category: "GIS";
+  	parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
+ 	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
+ 	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
+ 	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
+  	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
+  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
   	
   	font my_font <- font("Arial", 12, #bold);
 	
