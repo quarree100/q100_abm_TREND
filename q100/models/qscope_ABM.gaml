@@ -692,7 +692,7 @@ global {
 		}
 	}
 		
-	reflex monthly_updates_technical_data { // for GUI & decision_making algorithm // on day 2 to update after emission calculation & reset
+	reflex monthly_updates_emissions { // for GUI & decision_making algorithm // on day 2 to update after emission calculation & reset
 		if (current_date.day = 2) {
 			
 			emissions_neighborhood_total <- emissions_neighborhood_heat + emissions_neighborhood_power; 
@@ -1526,19 +1526,19 @@ experiment agent_decision_making type: gui{
 			}
 		}
 		
-				display "Emissions per year" { // TODO
-			chart "Emissions per year within the neighborhood" type: series {
+				display "Emissions neighborhood" { // TODO
+			chart "Emissions of the neighborhood" type: series {
 				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_total;
 				data "Total heat emissions of neighborhood per year" value: emissions_neighborhood_heat; 
 				data "Total power emissions of neighborhood per year" value: emissions_neighborhood_power; 
-				data "Average energy emissions of a household per year" value: emissions_household_average; 
+				data "Cumulative energy emissions of neighborhood per year" value: emissions_neighborhood_accu; 
 			}
 		}
 		
-		display "Emissions cumulative" { // TODO
-			chart "Cumulative emissions of the neighborhood" type: series {
-				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_accu;
-				data "Total heat emissions of neighborhood per year" value: emissions_household_average_accu;
+		display "Emissions households" { // TODO
+			chart "Emissions of the households" type: series {
+				data "Average energy emissions of a household per year" value: emissions_household_average;
+				data "Cumulative energy emissions of an average householde per year" value: emissions_household_average_accu;
 			}
 		}
 	}
@@ -1641,8 +1641,8 @@ experiment agent_decision_making_3d type: gui{
 		
 		display "Emissions cumulative" { // TODO
 			chart "Cumulative emissions of the neighborhood" type: series {
-				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_accu;
-				data "Total heat emissions of neighborhood per year" value: emissions_household_average_accu;
+				data "Cumulative energy emissions of neighborhood per year" value: emissions_neighborhood_accu;
+				data "Cumulative energy emissions of an average householde per year" value: emissions_household_average_accu;
 			}
 		}
 	}
