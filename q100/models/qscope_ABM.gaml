@@ -789,6 +789,7 @@ species building {
 	}
 	aspect threedim {
 		float height <- (floor(self.units / 10) + 1) * 10;
+		
 		if self.type = "NWG" {
 			height <- 20;
 		}
@@ -1319,11 +1320,10 @@ species households {
 		}
 	}
 	
-	aspect by_energy {
-		map energy_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
-		string energy_type; //placeholder to be defined as attribute!
-		draw circle(2) color: energy_colors[energy_type];
-		if self.invest {
+	aspect by_power {
+		map power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
+		draw circle(2) color: power_colors[power_supplier];
+		if (self.invest) or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self.house);
 			list conn <- closest_points_with(netz, self.house);
 			draw polyline(conn) color: #red width: 2;
@@ -1337,67 +1337,37 @@ species households {
 
 species households_500_1000 parent: households {
 	
-	aspect base {
-		draw circle(1) color: #green; // test-darstellung
-	}
-	
 	int income <- rnd(500, 1000);
-	
 	
 }
 
 species households_1000_1500 parent: households {
-	
-	aspect base {
-		draw circle(1) color: #red; // test-darstellung
-	}
 
-	int income <- rnd(1000, 1500);
-	
+	int income <- rnd(1000, 1500);	
 	
 }
 
 species households_1500_2000 parent: households {
 	
-	aspect base {
-		draw circle(1) color: #blue; // test-darstellung
-	}
-
 	int income <- rnd(1500, 2000);
 
-	
 }
 
 species households_2000_3000 parent: households {
-	
-	aspect base {
-		draw circle(1) color: #yellow; // test-darstellung
-	}
 
 	int income <- rnd(2000, 3000);
 
-	
 }
 
 species households_3000_4000 parent: households {
 	
-	aspect base {
-		draw circle(1) color: #purple; // test-darstellung
-	}
-	
 	int income <- rnd(3000, 4000);
-	
 	
 }
 
 species households_4000etc parent: households {
 	
-	aspect base {
-		draw circle(1) color: #grey; // test-darstellung
-	}
-	
 	int income <- rnd(4000, 10000); // max income / month = 10.000
-	
 	
 }
 
@@ -1415,7 +1385,7 @@ species edge_vis {
 	}
 	
 	aspect base {
-		draw geometry(my_edge) color: #green;
+		draw geometry(my_edge) color: #lightgreen;
 	}
 }
 
@@ -1427,8 +1397,8 @@ experiment agent_decision_making type: gui{
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
-	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
-	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
+	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
@@ -1441,7 +1411,7 @@ experiment agent_decision_making type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
   	
   	font my_font <- font("Arial", 12, #bold);
 	
@@ -1463,17 +1433,18 @@ experiment agent_decision_making type: gui{
 //				}
 //			}			
 			
+			species edge_vis aspect: base;
+			
 			species building aspect: base;
 			species nahwaermenetz aspect: base;
 			
-			species households_500_1000 aspect: by_energy;
-			species households_1000_1500 aspect: base;
-			species households_1500_2000 aspect: base;
-			species households_2000_3000 aspect: base;
-			species households_3000_4000 aspect: base;
-			species households_4000etc aspect: base;
-			species edge_vis aspect: base;
-			
+			species households_500_1000 aspect: by_power;
+			species households_1000_1500 aspect: by_power;
+			species households_1500_2000 aspect: by_power;
+			species households_2000_3000 aspect: by_power;
+			species households_3000_4000 aspect: by_power;
+			species households_4000etc aspect: by_power;
+						
 			graphics Strings {
 				draw string ("Date") at: {600, 0} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {600, 50} anchor: #top_left color: #black font: my_font;
@@ -1550,8 +1521,8 @@ experiment agent_decision_making_3d type: gui{
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
-	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
-	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
+	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
@@ -1564,7 +1535,7 @@ experiment agent_decision_making_3d type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
   	
   	font my_font <- font("Arial", 12, #bold);
 	
@@ -1578,16 +1549,16 @@ experiment agent_decision_making_3d type: gui{
 			
 			image background_map;
 			
-			
-			species building aspect: threedim;
+			species households_500_1000 aspect: by_power;
+			species households_1000_1500 aspect: by_power;
+			species households_1500_2000 aspect: by_power;
+			species households_2000_3000 aspect: by_power;
+			species households_3000_4000 aspect: by_power;
+			species households_4000etc aspect: by_power;
+				
+			species building aspect: threedim transparency: 0.8;
 			species nahwaermenetz aspect: base;
-			
-			species households_500_1000 aspect: base;
-			species households_1000_1500 aspect: base;
-			species households_1500_2000 aspect: base;
-			species households_2000_3000 aspect: base;
-			species households_3000_4000 aspect: base;
-			species households_4000etc aspect: base;
+
 			species edge_vis aspect: base;
 		}			
 	
