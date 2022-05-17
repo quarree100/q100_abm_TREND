@@ -219,6 +219,7 @@ global {
 	float energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings in percent TODO
   	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
 	bool view_toggle <- false; // Parameter to toggle the 3D-View.
+	bool keep_seed <- false; // When true, the simulation seed will not change.
 	
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
@@ -1432,6 +1433,7 @@ experiment agent_decision_making type: gui{
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
+  	parameter "Seed" var: seed <- seed;
   	
   	font my_font <- font("Arial", 12, #bold);
 	
