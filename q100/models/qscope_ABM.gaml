@@ -687,6 +687,7 @@ global {
 	
 	}
 	
+
 //	reflex reset_technical_data { // resets technical data before new calculation starts
 //		if (current_date.day = 1) {
 //			emissions_neighborhood_heat <- 0;
@@ -705,6 +706,7 @@ global {
 //		}	
 //		
 //	}
+
 	
 	
 	reflex calculate_modernization_status{
@@ -1513,6 +1515,7 @@ experiment agent_decision_making type: gui{
 			}
 		}
 		
+
 		display "Emissions per year" { // TODO
 			chart "Emissions per year within the neighborhood" type: series {
 				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
@@ -1526,6 +1529,7 @@ experiment agent_decision_making type: gui{
 			chart "Cumulative emissions of the neighborhood" type: series {
 				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_accu;
 				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_household_average_accu;
+
 			}
 		}
 	}
@@ -1628,8 +1632,10 @@ experiment agent_decision_making_3d type: gui{
 		
 		display "Emissions cumulative" { // TODO
 			chart "Cumulative emissions of the neighborhood" type: series {
+
 				data "Accumulated energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_accu;
 				data "Average accumulated energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_household_average_accu;
+
 			}
 		}
 	}
