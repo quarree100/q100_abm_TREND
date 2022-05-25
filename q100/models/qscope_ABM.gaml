@@ -219,17 +219,18 @@ global {
 	float energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings in percent TODO
   	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
 	bool view_toggle <- false; // Parameter to toggle the 3D-View.
+	bool keep_seed <- false; // When true, the simulation seed will not change.
 	
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
 	float modernization_rate; // yearly rate of modernization
 	
-	int emissions_neighborhood_total; // total annual energy emissions of q100 neighborhood
-	int emissions_neighborhood_heat; // total annual heat emissions of q100 neighborhood
-	int emissions_neighborhood_power; // total annual power emissions of q100 neighborhood
-	int emissions_neighborhood_accu; // accumulated energy emissions of the q100 neighborhood
-	int emissions_household_average; // annual energy emissions of an average household within the q100 neighborhood
-	int emissions_household_average_accu; // accumulated energy emissions of an average household within the q100 neighborhood
+//	int emissions_neighborhood_total; // total annual energy emissions of q100 neighborhood
+//	int emissions_neighborhood_heat; // total annual heat emissions of q100 neighborhood
+//	int emissions_neighborhood_power; // total annual power emissions of q100 neighborhood
+//	int emissions_neighborhood_accu; // accumulated energy emissions of the q100 neighborhood
+//	int emissions_household_average; // annual energy emissions of an average household within the q100 neighborhood
+//	int emissions_household_average_accu; // accumulated energy emissions of an average household within the q100 neighborhood
 	
 	float share_families <- 0.17; // share of families in whole neighborhood
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
@@ -293,8 +294,9 @@ global {
 	
 	init { 		
 		
-
-		create building from: shape_file_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
+		create technical_data_calculator number: 1;
+		
+		create building from: shape_file_buildings with: [code::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
 			vacant <- bool(units);
 			
@@ -311,7 +313,7 @@ global {
 		}
 		
 
-		create building from: shape_file_new_buildings with: [type:: string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15"))] { // create agents according to shapefile metadata
+		create building from: shape_file_new_buildings with: [code::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15"))] { // create agents according to shapefile metadata
 			vacant <- false;
 			built <- false;
 			mod_status <- "s";
@@ -685,24 +687,26 @@ global {
 	
 	}
 	
-	reflex reset_technical_data { // resets technical data before new calculation starts
-		if (current_date.day = 1) {
-			emissions_neighborhood_total <- 0;
-			emissions_household_average <- 0;
-		}
-	}
-		
-	reflex monthly_updates_emissions { // for GUI & decision_making algorithm // on day 2 to update after emission calculation & reset
-		if (current_date.day = 2) {
-			
-			emissions_neighborhood_total <- emissions_neighborhood_heat + emissions_neighborhood_power; 
-			emissions_neighborhood_accu <- emissions_neighborhood_accu + emissions_neighborhood_total;
-			
-			emissions_household_average <- emissions_neighborhood_total / nb_units;
-			emissions_household_average_accu <- emissions_household_average_accu + emissions_household_average;
-		}	
-		
-	}
+
+//	reflex reset_technical_data { // resets technical data before new calculation starts
+//		if (current_date.day = 1) {
+//			emissions_neighborhood_heat <- 0;
+//			emissions_neighborhood_power <- 0;
+//		}
+//	}
+//		
+//	reflex monthly_updates_technical_data { // for GUI & decision_making algorithm // on day 2 to update after emission calculation & reset
+//		if (current_date.day = 2) {
+//			
+//			emissions_neighborhood_total <- emissions_neighborhood_heat + emissions_neighborhood_power; 
+//			emissions_neighborhood_accu <- emissions_neighborhood_accu + emissions_neighborhood_total;
+//			
+//			emissions_household_average <- emissions_neighborhood_total / nb_units;
+//			emissions_household_average_accu <- emissions_household_average_accu + emissions_household_average;
+//		}	
+//		
+//	}
+
 	
 	
 	reflex calculate_modernization_status{
@@ -725,7 +729,26 @@ global {
 	
 }
 
-
+species technical_data_calculator {
+	float emissions_neighborhood_heat;
+	float emissions_neighborhood_power;
+	float emissions_neighborhood_total;
+	float emissions_neighborhood_accu;
+	float emissions_household_average;
+	float emissions_household_average_accu;
+	
+	reflex monthly_updates_technical_data {
+		if (current_date.day = 2) {
+			list<households> household_list <- agents of_generic_species households;
+			self.emissions_neighborhood_heat <- sum_of(household_list, each.my_heat_emissions);
+			self.emissions_neighborhood_power <- sum_of(household_list, each.my_power_emissions);
+			self.emissions_neighborhood_total <- self.emissions_neighborhood_heat + self.emissions_neighborhood_power;
+			self.emissions_neighborhood_accu <- self.emissions_neighborhood_accu + self.emissions_neighborhood_total;
+			self.emissions_household_average <- self.emissions_neighborhood_total / nb_units;
+			self.emissions_household_average_accu <- self.emissions_household_average_accu + self.emissions_household_average;
+		}
+	}
+}
 		
 species building {
 	string type;
@@ -741,6 +764,7 @@ species building {
 	string energy_source;
 	rgb color <- #gray;
 	geometry line;
+	string code;
 	
 	action add_tenant {
 		self.tenants <- self.tenants + 1;
@@ -788,6 +812,7 @@ species building {
 	}
 	aspect threedim {
 		float height <- (floor(self.units / 10) + 1) * 10;
+		
 		if self.type = "NWG" {
 			height <- 20;
 		}
@@ -1158,8 +1183,8 @@ species households {
 			do calculate_emissions;
 			
 			e <- my_heat_expenses + my_power_expenses;
-			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
-			emissions_neighborhood_power <- emissions_neighborhood_power + my_power_emissions;
+//			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
+//			emissions_neighborhood_power <- emissions_neighborhood_power + my_power_emissions;
 		}
 	}		
 		
@@ -1318,13 +1343,12 @@ species households {
 		}
 	}
 	
-	aspect by_energy {
-		map energy_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
-		string energy_type; //placeholder to be defined as attribute!
-		draw circle(2) color: energy_colors[energy_type];
-		if self.invest {
-			nahwaermenetz netz <- closest_to(nahwaermenetz, self.house);
-			list conn <- closest_points_with(netz, self.house);
+	aspect by_power {
+		map power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
+		draw circle(2) color: power_colors[power_supplier];
+		if (self.invest) { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen
+			nahwaermenetz netz <- closest_to(nahwaermenetz, self);
+			list conn <- closest_points_with(netz, self);
 			draw polyline(conn) color: #red width: 2;
 		}
 
@@ -1336,67 +1360,37 @@ species households {
 
 species households_500_1000 parent: households {
 	
-	aspect base {
-		draw circle(1) color: #green; // test-darstellung
-	}
-	
 	int income <- rnd(500, 1000);
-	
 	
 }
 
 species households_1000_1500 parent: households {
-	
-	aspect base {
-		draw circle(1) color: #red; // test-darstellung
-	}
 
-	int income <- rnd(1000, 1500);
-	
+	int income <- rnd(1000, 1500);	
 	
 }
 
 species households_1500_2000 parent: households {
 	
-	aspect base {
-		draw circle(1) color: #blue; // test-darstellung
-	}
-
 	int income <- rnd(1500, 2000);
 
-	
 }
 
 species households_2000_3000 parent: households {
-	
-	aspect base {
-		draw circle(1) color: #yellow; // test-darstellung
-	}
 
 	int income <- rnd(2000, 3000);
 
-	
 }
 
 species households_3000_4000 parent: households {
 	
-	aspect base {
-		draw circle(1) color: #purple; // test-darstellung
-	}
-	
 	int income <- rnd(3000, 4000);
-	
 	
 }
 
 species households_4000etc parent: households {
 	
-	aspect base {
-		draw circle(1) color: #grey; // test-darstellung
-	}
-	
 	int income <- rnd(4000, 10000); // max income / month = 10.000
-	
 	
 }
 
@@ -1414,7 +1408,7 @@ species edge_vis {
 	}
 	
 	aspect base {
-		draw geometry(my_edge) color: #green;
+		draw geometry(my_edge) color: #lightgreen;
 	}
 }
 
@@ -1426,8 +1420,8 @@ experiment agent_decision_making type: gui{
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
-	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
-	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
+	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
@@ -1440,7 +1434,8 @@ experiment agent_decision_making type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
+  	parameter "Seed" var: seed <- seed;
   	
   	font my_font <- font("Arial", 12, #bold);
 	
@@ -1453,26 +1448,20 @@ experiment agent_decision_making type: gui{
 			
 			
 			image background_map;
+						
 			
-//merge conflict:
-
-//			graphics "network_edges" {
-//				loop edge over: network.edges {
-//					draw geometry(edge) color: #black;
-//				}
-//			}			
+			species edge_vis aspect: base;
 			
 			species building aspect: base;
 			species nahwaermenetz aspect: base;
 			
-			species households_500_1000 aspect: by_energy;
-			species households_1000_1500 aspect: base;
-			species households_1500_2000 aspect: base;
-			species households_2000_3000 aspect: base;
-			species households_3000_4000 aspect: base;
-			species households_4000etc aspect: base;
-			species edge_vis aspect: base;
-			
+			species households_500_1000 aspect: by_power;
+			species households_1000_1500 aspect: by_power;
+			species households_1500_2000 aspect: by_power;
+			species households_2000_3000 aspect: by_power;
+			species households_3000_4000 aspect: by_power;
+			species households_4000etc aspect: by_power;
+						
 			graphics Strings {
 				draw string ("Date") at: {600, 0} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {600, 50} anchor: #top_left color: #black font: my_font;
@@ -1526,19 +1515,21 @@ experiment agent_decision_making type: gui{
 			}
 		}
 		
-				display "Emissions neighborhood" { // TODO
-			chart "Emissions of the neighborhood" type: series {
-				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_total;
-				data "Total heat emissions of neighborhood per year" value: emissions_neighborhood_heat; 
-				data "Total power emissions of neighborhood per year" value: emissions_neighborhood_power; 
-				data "Cumulative energy emissions of neighborhood per year" value: emissions_neighborhood_accu; 
+
+		display "Emissions per year" { // TODO
+			chart "Emissions per year within the neighborhood" type: series {
+				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
+				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat; 
+				data "Total power emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_power; 
+				data "Average energy emissions of a household per year" value: technical_data_calculator[0].emissions_household_average; 
 			}
 		}
 		
-		display "Emissions households" { // TODO
-			chart "Emissions of the households" type: series {
-				data "Average energy emissions of a household per year" value: emissions_household_average;
-				data "Cumulative energy emissions of an average householde per year" value: emissions_household_average_accu;
+		display "Emissions cumulative" { // TODO
+			chart "Cumulative emissions of the neighborhood" type: series {
+				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_accu;
+				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_household_average_accu;
+
 			}
 		}
 	}
@@ -1549,8 +1540,8 @@ experiment agent_decision_making_3d type: gui{
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
-	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";	
-	parameter "Memory" var: communication_memory among: [true, false] category: "Communication"; // Was ist default?
+	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
@@ -1563,7 +1554,7 @@ experiment agent_decision_making_3d type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Communication";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
   	
   	font my_font <- font("Arial", 12, #bold);
 	
@@ -1577,16 +1568,16 @@ experiment agent_decision_making_3d type: gui{
 			
 			image background_map;
 			
-			
-			species building aspect: threedim;
+			species households_500_1000 aspect: by_power;
+			species households_1000_1500 aspect: by_power;
+			species households_1500_2000 aspect: by_power;
+			species households_2000_3000 aspect: by_power;
+			species households_3000_4000 aspect: by_power;
+			species households_4000etc aspect: by_power;
+				
+			species building aspect: threedim transparency: 0.8;
 			species nahwaermenetz aspect: base;
-			
-			species households_500_1000 aspect: base;
-			species households_1000_1500 aspect: base;
-			species households_1500_2000 aspect: base;
-			species households_2000_3000 aspect: base;
-			species households_3000_4000 aspect: base;
-			species households_4000etc aspect: base;
+
 			species edge_vis aspect: base;
 		}			
 	
@@ -1632,17 +1623,19 @@ experiment agent_decision_making_3d type: gui{
 		
 		display "Emissions per year" { // TODO
 			chart "Emissions per year within the neighborhood" type: series {
-				data "Total energy emissions of neighborhood per year" value: emissions_neighborhood_total;
-				data "Total heat emissions of neighborhood per year" value: emissions_neighborhood_heat; 
-				data "Total power emissions of neighborhood per year" value: emissions_neighborhood_power; 
-				data "Average energy emissions of a household per year" value: emissions_household_average; 
+				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
+				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat; 
+				data "Total power emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_power; 
+				data "Average energy emissions of a household per year" value: technical_data_calculator[0].emissions_household_average; 
 			}
 		}
 		
 		display "Emissions cumulative" { // TODO
 			chart "Cumulative emissions of the neighborhood" type: series {
-				data "Cumulative energy emissions of neighborhood per year" value: emissions_neighborhood_accu;
-				data "Cumulative energy emissions of an average householde per year" value: emissions_household_average_accu;
+
+				data "Accumulated energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_accu;
+				data "Average accumulated energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_household_average_accu;
+
 			}
 		}
 	}
