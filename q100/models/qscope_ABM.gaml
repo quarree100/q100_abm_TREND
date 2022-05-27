@@ -1462,15 +1462,21 @@ experiment agent_decision_making type: gui{
 			species households_3000_4000 aspect: by_power;
 			species households_4000etc aspect: by_power;
 						
-			overlay position: { 5, 5 } size: { 150#px, 100#px } background: # black transparency: 0.5 border: #black rounded: true {
+			overlay position: { 5, 5 } size: { 150#px, 170#px } background: # black transparency: 0.5 border: #black rounded: true {
 				draw string ("Date") at: {0, 0} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {0, 25#px} anchor: #top_left color: #black font: my_font;
 				draw string ("Transformation level") at: {0,50#px} anchor: #top_left color: #black font: my_font;
 				int percentage <- (length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw string ("" + percentage + " %") at: {0,75#px} anchor: #top_left color: #black font: my_font;
+				draw square(10#px) at: { 20#px, 100#px } color: #blue border: #white;
+				draw string ("EFH") at: { 40#px, 100#px + 4#px } color: #black font: my_font;
+				draw square(10#px) at: { 20#px, 125#px } color: #lightblue border: #white;
+				draw string ("MFH") at: { 40#px, 125#px + 4#px } color: #black font: my_font;
+				draw square(10#px) at: { 20#px, 150#px } color: #gray border: #white;
+				draw string ("NWG") at: { 40#px, 150#px + 4#px } color: #black font: my_font;
+				}
 				
 
-			}
 			
 		}
 		
