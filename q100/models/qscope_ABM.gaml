@@ -1346,7 +1346,7 @@ species households {
 	aspect by_power {
 		map power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
-		if (self.invest) { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen
+		if (self.invest) or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self);
 			list conn <- closest_points_with(netz, self);
 			draw polyline(conn) color: #red width: 2;
@@ -1462,12 +1462,13 @@ experiment agent_decision_making type: gui{
 			species households_3000_4000 aspect: by_power;
 			species households_4000etc aspect: by_power;
 						
-			graphics Strings {
-				draw string ("Date") at: {600, 0} anchor: #top_left color: #black font: my_font;
-				draw string (current_date) at: {600, 50} anchor: #top_left color: #black font: my_font;
-				draw string ("Transformation level") at: {450, 100} anchor: #top_left color: #black font: my_font;
+			overlay position: { 5, 5 } size: { 150#px, 100#px } background: # black transparency: 0.5 border: #black rounded: true {
+				draw string ("Date") at: {0, 0} anchor: #top_left color: #black font: my_font;
+				draw string (current_date) at: {0, 25#px} anchor: #top_left color: #black font: my_font;
+				draw string ("Transformation level") at: {0,50#px} anchor: #top_left color: #black font: my_font;
 				int percentage <- (length(building where (each.mod_status = "s")) / length(building) * 100);
-				draw string ("" + percentage + " %") at: {600, 150} anchor: #top_left color: #black font: my_font;
+				draw string ("" + percentage + " %") at: {0,75#px} anchor: #top_left color: #black font: my_font;
+				
 
 			}
 			
