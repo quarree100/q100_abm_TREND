@@ -647,7 +647,7 @@ global {
 			if (new_buildings_parameter = "linear2030") and (current_date.year < 2030){ // The number of buildings grows linearly with a rate that ensures, all buildings are introduced by year 2030.
 				int remaining_buildings <- length(building where (!each.built));
 				write remaining_buildings;
-				int rate <- remaining_buildings / (2030 - current_date.year) + 1; // + 1 rounds the rate up to the next integer.
+				int rate <- int(remaining_buildings / (2030 - current_date.year) + 1); // + 1 rounds the rate up to the next integer.
 				write rate;
 				ask rate among (building where (!each.built)) {
 					self.built <- true;
@@ -814,7 +814,7 @@ species building {
 		float height <- (floor(self.units / 10) + 1) * 10;
 		
 		if self.type = "NWG" {
-			height <- 20;
+			height <- 20.0;
 		}
 		if built {
 			draw shape color: color depth: height;
@@ -1462,18 +1462,18 @@ experiment agent_decision_making type: gui{
 			species households_3000_4000 aspect: by_power;
 			species households_4000etc aspect: by_power;
 						
-			overlay position: { 5, 5 } size: { 150#px, 170#px } background: # black transparency: 0.5 border: #black rounded: true {
-				draw string ("Date") at: {0, 0} anchor: #top_left color: #black font: my_font;
-				draw string (current_date) at: {0, 25#px} anchor: #top_left color: #black font: my_font;
-				draw string ("Transformation level") at: {0,50#px} anchor: #top_left color: #black font: my_font;
-				int percentage <- (length(building where (each.mod_status = "s")) / length(building) * 100);
-				draw string ("" + percentage + " %") at: {0,75#px} anchor: #top_left color: #black font: my_font;
-				draw square(10#px) at: { 20#px, 100#px } color: #blue border: #white;
-				draw string ("EFH") at: { 40#px, 100#px + 4#px } color: #black font: my_font;
-				draw square(10#px) at: { 20#px, 125#px } color: #lightblue border: #white;
-				draw string ("MFH") at: { 40#px, 125#px + 4#px } color: #black font: my_font;
-				draw square(10#px) at: { 20#px, 150#px } color: #gray border: #white;
-				draw string ("NWG") at: { 40#px, 150#px + 4#px } color: #black font: my_font;
+			overlay position: { 5, 5 } size: { 1/3, 1/4 } background: # black transparency: 0.5 border: #black rounded: true {
+				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
+				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
+				draw string ("Transformation level") at: {5#px,42#px} anchor: #top_left color: #black font: my_font;
+				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
+				draw string ("" + percentage + " %") at: {5#px,54#px} anchor: #top_left color: #black font: my_font;
+				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
+				draw string ("EFH") at: { 20#px, 74#px} color: #black font: my_font anchor: #left_center;
+				draw square(10#px) at: { 10#px, 94#px } color: #lightblue border: #white ;
+				draw string ("MFH") at: { 20#px, 94#px} color: #black font: my_font anchor: #left_center;
+				draw square(10#px) at: { 10#px, 114#px } color: #gray border: #white ;
+				draw string ("NWG") at: { 20#px, 114#px} color: #black font: my_font anchor: #left_center;
 				}
 				
 
