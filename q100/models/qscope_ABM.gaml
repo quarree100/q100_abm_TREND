@@ -1439,6 +1439,16 @@ experiment agent_decision_making type: gui{
   	
   	font my_font <- font("Arial", 12, #bold);
 	
+	
+	
+	//frontend test
+		reflex save_results_test {
+		
+		save [cycle, current_date, (length(building where (each.mod_status = "s")) / length(building) * 100)]
+		to: "csv_export_test.csv" type: csv rewrite: false;
+	}
+	
+	
 	output {
 //		monitor date value: current_date refresh: every(1#cycle);		
 		
