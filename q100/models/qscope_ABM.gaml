@@ -504,7 +504,9 @@ global {
 		
 	}
 
-					
+	reflex end_simulation when: current_date.year = 2046{
+    	do pause;
+    }
 
 	reflex new_household { //creates new households to keep the total number of households constant.
 		let new_households of: households <- [];
