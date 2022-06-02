@@ -1441,6 +1441,27 @@ experiment agent_decision_making type: gui{
 	
 	
 	
+//frontend test
+		reflex save_results_test {
+		
+		save [cycle, current_date, (length(building where (each.mod_status = "s")) / length(building) * 100)]
+		to: "csv_export_test.csv" type: csv rewrite: false;
+	}
+	
+	//option 2
+	
+//		reflex save_csv {
+//			save (agents of_generic_species households) to: "../output/households.csv" type: "csv" rewrite: false header: true;
+//			save building to: "../output/buildings.csv" type: "csv" rewrite: false header: true;
+//			//Examples of global variables.
+//			float avg_CEEA <- sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
+//			int nb_employed <- length (agents of_generic_species households where (each.employment = "employed"));
+//			save [cycle, avg_CEEA, nb_employed] to: "../output/globals.csv" type: "csv" rewrite: false header: true;
+//		
+//	}
+	
+	
+	
 	output {
 //		monitor date value: current_date refresh: every(1#cycle);		
 		
