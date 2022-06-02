@@ -1445,7 +1445,7 @@ experiment agent_decision_making type: gui{
 		reflex save_results_test {
 		
 		save [cycle, current_date, (length(building where (each.mod_status = "s")) / length(building) * 100)]
-		to: "csv_export_test.csv" type: csv rewrite: false;
+		to: "../includes/csv_export/csv_export_test.csv" type: csv rewrite: false;
 	}
 	
 	//option 2
