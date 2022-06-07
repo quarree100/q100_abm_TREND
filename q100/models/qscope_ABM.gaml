@@ -23,7 +23,7 @@ global {
 	
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
-	reflex end_simulation when: current_date.year = 2046{
+	reflex end_simulation when: (current_date.year = 2045) and (current_date.month = 12) and (current_date.day = 31){
     	do pause;
     }
 	
@@ -296,7 +296,7 @@ global {
 		
 		create technical_data_calculator number: 1;
 		
-		create building from: shape_file_buildings with: [code::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
+		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
 			vacant <- bool(units);
 			
@@ -313,7 +313,7 @@ global {
 		}
 		
 
-		create building from: shape_file_new_buildings with: [code::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15"))] { // create agents according to shapefile metadata
+		create building from: shape_file_new_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15"))] { // create agents according to shapefile metadata
 			vacant <- false;
 			built <- false;
 			mod_status <- "s";
@@ -763,7 +763,7 @@ species building {
 	string energy_source;
 	rgb color <- #gray;
 	geometry line;
-	string code;
+	string id;
 	
 	action add_tenant {
 		self.tenants <- self.tenants + 1;
