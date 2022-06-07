@@ -1437,7 +1437,9 @@ experiment agent_decision_making type: gui{
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
-  	parameter "Seed" var: seed <- seed;
+  	parameter "Seed" var: seed <- seed category: "Simulation";
+  	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
+  	
   	
   	font my_font <- font("Arial", 12, #bold);
 	
