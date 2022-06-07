@@ -1443,7 +1443,8 @@ experiment agent_decision_making type: gui{
 	
 	
 	
-//frontend test
+//csv_export for frontend test TODO
+
 		reflex save_results_test {
 		
 		save [cycle, current_date, (length(building where (each.mod_status = "s")) / length(building) * 100)]
