@@ -23,8 +23,8 @@ global {
 	
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
-	reflex stop_simulation when: current_date.year = 2050 {
-        do pause ;
+	reflex end_simulation when: current_date.year = 2046{
+    	do pause;
     }
 	
 	graph network <- graph([]);
@@ -504,9 +504,6 @@ global {
 		
 	}
 
-	reflex end_simulation when: current_date.year = 2046{
-    	do pause;
-    }
 
 	reflex new_household { //creates new households to keep the total number of households constant.
 		let new_households of: households <- [];
