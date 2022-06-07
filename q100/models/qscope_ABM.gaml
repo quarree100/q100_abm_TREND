@@ -647,7 +647,7 @@ global {
 			if (new_buildings_parameter = "linear2030") and (current_date.year < 2030){ // The number of buildings grows linearly with a rate that ensures, all buildings are introduced by year 2030.
 				int remaining_buildings <- length(building where (!each.built));
 				write remaining_buildings;
-				int rate <- remaining_buildings / (2030 - current_date.year) + 1; // + 1 rounds the rate up to the next integer.
+				int rate <- int(remaining_buildings / (2030 - current_date.year) + 1); // + 1 rounds the rate up to the next integer.
 				write rate;
 				ask rate among (building where (!each.built)) {
 					self.built <- true;
@@ -814,7 +814,7 @@ species building {
 		float height <- (floor(self.units / 10) + 1) * 10;
 		
 		if self.type = "NWG" {
-			height <- 20;
+			height <- 20.0;
 		}
 		if built {
 			draw shape color: color depth: height;
@@ -902,6 +902,8 @@ species households {
 	list<households> social_contacts_street;
 	list<households> social_contacts_neighborhood;
 	list<households> social_contacts;
+	
+	
 
 
 	action find_house {
@@ -1344,9 +1346,9 @@ species households {
 	}
 	
 	aspect by_power {
-		map power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
+		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
-		if (self.invest) { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen
+		if (self.invest) or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self);
 			list conn <- closest_points_with(netz, self);
 			draw polyline(conn) color: #red width: 2;
@@ -1435,7 +1437,9 @@ experiment agent_decision_making type: gui{
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
-  	parameter "Seed" var: seed <- seed;
+  	parameter "Seed" var: seed <- seed category: "Simulation";
+  	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
+  	
   	
   	font my_font <- font("Arial", 12, #bold);
 	
@@ -1464,14 +1468,29 @@ experiment agent_decision_making type: gui{
 			species households_3000_4000 aspect: by_power;
 			species households_4000etc aspect: by_power;
 						
-			graphics Strings {
-				draw string ("Date") at: {600, 0} anchor: #top_left color: #black font: my_font;
-				draw string (current_date) at: {600, 50} anchor: #top_left color: #black font: my_font;
-				draw string ("Transformation level") at: {450, 100} anchor: #top_left color: #black font: my_font;
-				int percentage <- (length(building where (each.mod_status = "s")) / length(building) * 100);
-				draw string ("" + percentage + " %") at: {600, 150} anchor: #top_left color: #black font: my_font;
+			overlay position: { 5, 5 } size: { 140#px, 190#px } background: # black transparency: 0.5 border: #black rounded: true {
+				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
+				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
+				draw string ("Transformation level") at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
+				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
+				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
+				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
+				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
+				draw string ("EFH") at: { 20#px, 74#px} color: #black font: my_font anchor: #left_center;
+				draw square(10#px) at: { 10#px, 94#px } color: #lightblue border: #white ;
+				draw string ("MFH") at: { 20#px, 94#px} color: #black font: my_font anchor: #left_center;
+				draw square(10#px) at: { 10#px, 114#px } color: #gray border: #white ;
+				draw string ("NWG") at: { 20#px, 114#px} color: #black font: my_font anchor: #left_center;
+				map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
+				int i <- 1;
+				draw line([{5,5} + {0#px, 124#px}, {5,5}+{139#px, 124#px}]) color: #black;
+				loop powertype over: power_colors.keys {
+					draw square(10#px) at: { 10#px, 114#px + (i * 20)#px } color: power_colors[powertype] border: #white ;
+					draw string (powertype) at: { 20#px, 114#px + (i * 20)#px} color: #black font: my_font anchor: #left_center;
+					i <- i + 1;
+				}
+			}				
 
-			}
 			
 		}
 		
@@ -1581,6 +1600,29 @@ experiment agent_decision_making_3d type: gui{
 			species nahwaermenetz aspect: base;
 
 			species edge_vis aspect: base;
+			
+			overlay position: { 5, 5 } size: { 140#px, 190#px } background: # black transparency: 0.5 border: #black rounded: true {
+				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
+				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
+				draw string ("Transformation level") at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
+				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
+				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
+				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
+				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
+				draw string ("EFH") at: { 20#px, 74#px} color: #black font: my_font anchor: #left_center;
+				draw square(10#px) at: { 10#px, 94#px } color: #lightblue border: #white ;
+				draw string ("MFH") at: { 20#px, 94#px} color: #black font: my_font anchor: #left_center;
+				draw square(10#px) at: { 10#px, 114#px } color: #gray border: #white ;
+				draw string ("NWG") at: { 20#px, 114#px} color: #black font: my_font anchor: #left_center;
+				map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
+				int i <- 1;
+				draw line([{5,5} + {0#px, 124#px}, {5,5}+{139#px, 124#px}]) color: #black;
+				loop powertype over: power_colors.keys {
+					draw square(10#px) at: { 10#px, 114#px + (i * 20)#px } color: power_colors[powertype] border: #white ;
+					draw string (powertype) at: { 20#px, 114#px + (i * 20)#px} color: #black font: my_font anchor: #left_center;
+					i <- i + 1;
+				}
+			}
 		}			
 	
 //		display "households_income_bar" {
