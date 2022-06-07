@@ -1221,7 +1221,7 @@ species households {
 		else if (self.house.energy_source = "oil") {
 			my_heat_expenses <- my_heat_consumption * oil_price / 100;
 		}
-		else { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
+		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
 			my_heat_expenses <- my_heat_consumption * q100_price_opex / 100;
 		}
 	}
@@ -1242,7 +1242,7 @@ species households {
 		else if (self.house.energy_source = "oil") {
 			my_heat_emissions <- my_heat_consumption * oil_emissions;
 		}
-		else { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
+		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
 			my_heat_emissions <- my_heat_consumption * q100_emissions;
 		}
 		
@@ -1270,7 +1270,7 @@ species households {
 		}
 	}
 	
-// ueberarbeiten - ggf stark veraltet TODO
+// ueberarbeiten - stark veraltet TODO
 	
 	action update_decision_thresholds {
 		/* calculate household's current 
@@ -1344,10 +1344,11 @@ species households {
 		}
 	}
 	
-	aspect by_power {
+	aspect by_energy {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
-		if (self.invest) or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen
+		if (self.house.energy_source = "q100") or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen TODO
+		// wenn invest entscheidung getroffen wird, nimmt diese einfluss auf parameter "energy_source" einfluss
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self);
 			list conn <- closest_points_with(netz, self);
 			draw polyline(conn) color: #red width: 2;
@@ -1482,12 +1483,12 @@ experiment agent_decision_making type: gui{
 			species building aspect: base;
 			species nahwaermenetz aspect: base;
 			
-			species households_500_1000 aspect: by_power;
-			species households_1000_1500 aspect: by_power;
-			species households_1500_2000 aspect: by_power;
-			species households_2000_3000 aspect: by_power;
-			species households_3000_4000 aspect: by_power;
-			species households_4000etc aspect: by_power;
+			species households_500_1000 aspect: by_energy;
+			species households_1000_1500 aspect: by_energy;
+			species households_1500_2000 aspect: by_energy;
+			species households_2000_3000 aspect: by_energy;
+			species households_3000_4000 aspect: by_energy;
+			species households_4000etc aspect: by_energy;
 						
 			overlay position: { 5, 5 } size: { 140#px, 190#px } background: # black transparency: 0.5 border: #black rounded: true {
 				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
@@ -1610,12 +1611,12 @@ experiment agent_decision_making_3d type: gui{
 			
 			image background_map;
 			
-			species households_500_1000 aspect: by_power;
-			species households_1000_1500 aspect: by_power;
-			species households_1500_2000 aspect: by_power;
-			species households_2000_3000 aspect: by_power;
-			species households_3000_4000 aspect: by_power;
-			species households_4000etc aspect: by_power;
+			species households_500_1000 aspect: by_energy;
+			species households_1000_1500 aspect: by_energy;
+			species households_1500_2000 aspect: by_energy;
+			species households_2000_3000 aspect: by_energy;
+			species households_3000_4000 aspect: by_energy;
+			species households_4000etc aspect: by_energy;
 				
 			species building aspect: threedim transparency: 0.8;
 			species nahwaermenetz aspect: base;
