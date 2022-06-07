@@ -1598,6 +1598,29 @@ experiment agent_decision_making_3d type: gui{
 			species nahwaermenetz aspect: base;
 
 			species edge_vis aspect: base;
+			
+			overlay position: { 5, 5 } size: { 140#px, 190#px } background: # black transparency: 0.5 border: #black rounded: true {
+				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
+				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
+				draw string ("Transformation level") at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
+				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
+				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
+				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
+				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
+				draw string ("EFH") at: { 20#px, 74#px} color: #black font: my_font anchor: #left_center;
+				draw square(10#px) at: { 10#px, 94#px } color: #lightblue border: #white ;
+				draw string ("MFH") at: { 20#px, 94#px} color: #black font: my_font anchor: #left_center;
+				draw square(10#px) at: { 10#px, 114#px } color: #gray border: #white ;
+				draw string ("NWG") at: { 20#px, 114#px} color: #black font: my_font anchor: #left_center;
+				map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
+				int i <- 1;
+				draw line([{5,5} + {0#px, 124#px}, {5,5}+{139#px, 124#px}]) color: #black;
+				loop powertype over: power_colors.keys {
+					draw square(10#px) at: { 10#px, 114#px + (i * 20)#px } color: power_colors[powertype] border: #white ;
+					draw string (powertype) at: { 20#px, 114#px + (i * 20)#px} color: #black font: my_font anchor: #left_center;
+					i <- i + 1;
+				}
+			}
 		}			
 	
 //		display "households_income_bar" {
