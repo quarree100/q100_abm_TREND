@@ -752,10 +752,6 @@ global {
 	}
 	
 	
-	
-	
-	
-	
 }
 
 species technical_data_calculator {
@@ -880,18 +876,20 @@ species households {
 	float N_PBC_I; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Invest
 	float N_PBC_C; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Change
 	float N_PBC_S; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Switch
-	float EEH; // Energy Efficient Habits
+	float EEH; // Energy Efficient Habits TODO
 	
 	
 	
 	int income; // households income/month
 	float budget <- 0.0; // TODO every household starts with zero savings?
 	string id_group; // identification which quartile within the income group the agent belongs to
-	
-	string power_supplier;
+
 	float c; // TODO composite goods
 	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
-	bool change; // init value needs to be set for household with fitting settings
+	bool change; // init value needs to be set for household with fitting settings TODO
+	bool invest <- false;
+	string power_supplier;
+	
 	
 	float my_heat_consumption; // monthly heat consumption in kWh
 	float my_power_consumption; // monthly power consumption in kWh
@@ -922,7 +920,6 @@ species households {
 
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
-	bool invest <- false;
 	building house; 
 	int my_floor_area;
 	
@@ -1278,7 +1275,7 @@ species households {
 		
 		
 		if (power_supplier = "green") {
-			my_power_emissions <- 0; // Emissionen tatsaechlich al 0 annehmen?
+			my_power_emissions <- 0; // Emissionen tatsaechlich als 0 annehmen?
 		}
 		else if (power_supplier = "mixed") {
 			my_power_emissions <- my_power_consumption * power_emissions * 0.5;
