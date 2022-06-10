@@ -29,7 +29,7 @@ global {
 	
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
-	
+	list<string> months <- ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 	// load shapefiles
 	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
@@ -295,7 +295,6 @@ global {
 	init { 		
 		
 		create technical_data_calculator number: 1;
-		
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
 			vacant <- bool(units);
@@ -735,6 +734,7 @@ species technical_data_calculator {
 	float emissions_neighborhood_accu;
 	float emissions_household_average;
 	float emissions_household_average_accu;
+	int month_counter <- 1;
 	
 	reflex monthly_updates_technical_data {
 		if (current_date.day = 2) {
@@ -745,6 +745,7 @@ species technical_data_calculator {
 			self.emissions_neighborhood_accu <- self.emissions_neighborhood_accu + self.emissions_neighborhood_total;
 			self.emissions_household_average <- self.emissions_neighborhood_total / nb_units;
 			self.emissions_household_average_accu <- self.emissions_household_average_accu + self.emissions_household_average;
+			self.month_counter <- self.month_counter + 1;
 		}
 	}
 }
@@ -1560,20 +1561,33 @@ experiment agent_decision_making type: gui{
 		
 
 		display "Emissions per year" { // TODO
-			chart "Emissions per year within the neighborhood" type: series {
+			chart "Emissions per year within the neighborhood" 
+			type: series 
+			y_label: "g of CO2 eq"
+			{
 				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
 				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat; 
 				data "Total power emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_power; 
-				data "Average energy emissions of a household per year" value: technical_data_calculator[0].emissions_household_average; 
+				//data "Average energy emissions of a household per year" value: technical_data_calculator[0].emissions_household_average; 
 			}
 		}
 		
 		display "Emissions cumulative" { // TODO
-			chart "Cumulative emissions of the neighborhood" type: series {
-				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_accu;
-				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_household_average_accu;
+			chart "Cumulative emissions of the neighborhood" type: xy x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]{
+				data "Total energy emissions of neighborhood per year" value: {technical_data_calculator[0].month_counter, technical_data_calculator[0].emissions_neighborhood_accu};
+				data "Accumulated Average energy emissions of a household" value: {technical_data_calculator[0].month_counter,technical_data_calculator[0].emissions_household_average_accu};
 
 			}
+		}
+		
+		display "Average Emissions" {
+			chart "Average Emissions per Household" type: xy {
+				data "Average energy emissions of a household" value: {technical_data_calculator[0].month_counter, technical_data_calculator[0].emissions_household_average};
+			}
+
+			
+			
+			
 		}
 	}
 }
@@ -1687,8 +1701,8 @@ experiment agent_decision_making_3d type: gui{
 			}
 		}
 		
-		display "Emissions per year" { // TODO
-			chart "Emissions per year within the neighborhood" type: series {
+		display "Monthly Emissions" refresh: (current_date.day = 1){ // TODO
+			chart "Emissions per month within the neighborhood" type: series {
 				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
 				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat; 
 				data "Total power emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_power; 
