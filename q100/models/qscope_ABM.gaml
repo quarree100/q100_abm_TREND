@@ -29,7 +29,7 @@ global {
 	
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
-	list<string> months <- ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 	// load shapefiles
 	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
@@ -745,7 +745,10 @@ species technical_data_calculator {
 			self.emissions_neighborhood_accu <- self.emissions_neighborhood_accu + self.emissions_neighborhood_total;
 			self.emissions_household_average <- self.emissions_neighborhood_total / nb_units;
 			self.emissions_household_average_accu <- self.emissions_household_average_accu + self.emissions_household_average;
-			self.month_counter <- self.month_counter + 1;
+			if cycle > 10 {
+				self.month_counter <- self.month_counter + 1;
+				
+			}
 		}
 	}
 }
@@ -1237,10 +1240,10 @@ species households {
 	}
 			
 	action calculate_emissions { // emissions in g of CO2 eq
-		if (self.house.energy_source = "gas") {
+		if (self.house.energy_source = "Gas") {
 			my_heat_emissions <- my_heat_consumption * gas_emissions;
 		}
-		else if (self.house.energy_source = "oil") {
+		else if (self.house.energy_source = "Öl") {
 			my_heat_emissions <- my_heat_consumption * oil_emissions;
 		}
 		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
@@ -1469,7 +1472,7 @@ experiment agent_decision_making type: gui{
 	
 	
 	output {
-//		monitor date value: current_date refresh: every(1#cycle);		
+		//monitor monat value: ((technical_data_calculator[0].month_counter - 1) mod 12) ;		
 		
 		
 		layout #split;
@@ -1543,7 +1546,11 @@ experiment agent_decision_making type: gui{
 		}
 		
 		display "Charts" {
-			chart "Average of decision-variables" type: series {
+			chart "Average of decision-variables" 
+			type: series
+			x_label: "Day"
+			
+			{
 				data "CEEA" value: sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
 				data "EDA" value: sum_of(agents of_generic_species households, each.EDA) / length(agents of_generic_species households);
 				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
@@ -1551,38 +1558,78 @@ experiment agent_decision_making type: gui{
 		}
 		
 		display "Modernization" {
-			chart "Rate of Modernization" type: xy y_range: {0,0.03} style: line{
-				data "Rate of Modernization" value: {current_date.year, modernization_rate}; 
-				data "1% Refurbishment Rate" value: {current_date.year, 0.01};
-				data "1.5% Refurbishment Rate" value: {current_date.year, 0.015};
-				data "2% Refurbishment Rate" value: {current_date.year, 0.02};
+			chart "Rate of Modernization" 
+			type: series 
+			//y_range: {0,0.03} 
+			style: line
+			x_label: "Year"
+			x_serie: [current_date.year]
+			x_serie_labels: string(current_date.year)
+			y_label: "Rate of Modernization"
+			{
+				data "Rate of Modernization" 
+				value: modernization_rate; 
+				data "1% Refurbishment Rate" 
+				value: 0.01
+				marker: false;
+				data "1.5% Refurbishment Rate" 
+				value: 0.015
+				marker: false;
+				data "2% Refurbishment Rate" 
+				value: 0.02
+				marker: false;
 			}
 		}
 		
 
-		display "Emissions per year" { // TODO
-			chart "Emissions per year within the neighborhood" 
+		display "Monthly Emissions" { // TODO
+			chart "Emissions per month within the neighborhood" 
 			type: series 
+			x_label: "Month"
 			y_label: "g of CO2 eq"
+			x_serie: [technical_data_calculator[0].month_counter]
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
 			{
-				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
-				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat; 
-				data "Total power emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_power; 
-				//data "Average energy emissions of a household per year" value: technical_data_calculator[0].emissions_household_average; 
+				data "Total energy emissions of neighborhood per month" 
+				value: technical_data_calculator[0].emissions_neighborhood_total;
+				
+				data "Total heat emissions of neighborhood per month" 
+				value: technical_data_calculator[0].emissions_neighborhood_heat; 
+				
+				data "Total power emissions of neighborhood per month" 
+				value: technical_data_calculator[0].emissions_neighborhood_power; 
+				//data "Average energy emissions of a household per month" value: technical_data_calculator[0].emissions_household_average; 
 			}
 		}
 		
 		display "Emissions cumulative" { // TODO
-			chart "Cumulative emissions of the neighborhood" type: xy x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]{
-				data "Total energy emissions of neighborhood per year" value: {technical_data_calculator[0].month_counter, technical_data_calculator[0].emissions_neighborhood_accu};
-				data "Accumulated Average energy emissions of a household" value: {technical_data_calculator[0].month_counter,technical_data_calculator[0].emissions_household_average_accu};
+			chart "Cumulative emissions of the neighborhood" 
+			type: series 
+			x_label: "Month"
+			y_label: "g of CO2 eq"
+			x_serie: [technical_data_calculator[0].month_counter] 
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] {
+				data "Total energy emissions of neighborhood per year" 
+				value: technical_data_calculator[0].emissions_neighborhood_accu
+				;
+				
+				data "Accumulated Average energy emissions of a household" 
+				value: technical_data_calculator[0].emissions_household_average_accu
+				;
 
 			}
 		}
 		
 		display "Average Emissions" {
-			chart "Average Emissions per Household" type: xy {
-				data "Average energy emissions of a household" value: {technical_data_calculator[0].month_counter, technical_data_calculator[0].emissions_household_average};
+			chart "Average Emissions per Household" 
+			type: series 
+			x_serie: [technical_data_calculator[0].month_counter]
+			x_label: "Month" 
+			y_label: "g of CO2 eq"
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
+			{
+				data "Average energy emissions of a household" 
+				value: technical_data_calculator[0].emissions_household_average;
 			}
 
 			
