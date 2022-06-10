@@ -36,7 +36,6 @@ global {
 	file shape_file_typologiezonen <- file("../includes/Shapefiles/Typologiezonen.shp");
 	file nahwaerme <- file("../includes/Shapefiles/Nahwaermenetz.shp");
 	file background_map <- file("../includes/Shapefiles/ruesdorfer_kamp_osm.png");
-
 	file shape_file_new_buildings <- file("../includes/Shapefiles/Neubau Gebaeude Kataster.shp");
 	
 	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
@@ -64,14 +63,17 @@ global {
 	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups including people who never moved
 	matrix<float> average_lor_exclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups excluding people who never moved
 
-
-
 	
 	matrix<float> agora_45 <- matrix<float>(csv_file("../includes/csv-data_technical/agora2045_modell_rates.csv", ",", float, true));
 	matrix<float> alphas <- matrix<float>(csv_file("../includes/csv-data_technical/alpha.csv", ",", float, true));
 	matrix<float> carbon_prices <- matrix<float>(csv_file("../includes/csv-data_technical/carbon-prices.csv", ",", float, true));
 	matrix<float> energy_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
 	matrix<float> q100_concept_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/q100_prices_emissions-dummy.csv", ",", float, true));
+	
+	
+	matrix<string> qscope_interchange_matrix <- matrix<string>(csv_file("../includes/csv_qscope/buildings_clusters.csv", ",", string, true));
+	
+	
 	
 	float alpha <- alphas [alpha_column(), 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
@@ -225,6 +227,8 @@ global {
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
 	float modernization_rate; // yearly rate of modernization
 	
+	
+	// TODO
 //	int emissions_neighborhood_total; // total annual energy emissions of q100 neighborhood
 //	int emissions_neighborhood_heat; // total annual heat emissions of q100 neighborhood
 //	int emissions_neighborhood_power; // total annual power emissions of q100 neighborhood
@@ -328,6 +332,32 @@ global {
 			}
 		}
 		nb_units <- get_nb_units();
+		
+		
+		
+
+		int row_interchange <- 0;
+		loop qscope_interchange over: qscope_interchange_matrix column_at 0 { // integrates individually made changes on qscope by users for buildings of the GAMA model
+			ask (building where (each.id = qscope_interchange)) {
+				if (qscope_interchange_matrix[5,row_interchange] = "True") {
+					energy_source <- "q100";
+				}
+				else {
+					energy_source <- qscope_interchange_matrix[3,row_interchange];
+				}
+				if (qscope_interchange_matrix[6,row_interchange] = "True") {
+					mod_status <- "s";
+				}
+				else {
+					mod_status <- "u";
+				}
+//				write energy_source; //debug
+//				write mod_status; //debug
+			}
+			row_interchange <- row_interchange + 1;
+		}			
+	
+	
 
 	
 		create nahwaermenetz from: nahwaerme;
@@ -1348,7 +1378,7 @@ species households {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
 		if (self.house.energy_source = "q100") or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen TODO
-		// wenn invest entscheidung getroffen wird, nimmt diese einfluss auf parameter "energy_source" einfluss
+		// wenn invest entscheidung getroffen wird, nimmt diese einfluss auf parameter "energy_source" einfluss //  Unterscheidung Mieter/Vermieter
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self);
 			list conn <- closest_points_with(netz, self);
 			draw polyline(conn) color: #red width: 2;
