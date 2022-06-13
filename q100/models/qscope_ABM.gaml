@@ -866,7 +866,7 @@ species households {
 	float KA; // ---Decision-Threshold---: Knowledge & Awareness
 	float PN; // Personal Norms
 	float SN; // Subjective Norms
-	float PSN; // ---Decicision-Threshold---: Personal & Subjective Norms
+	float N; // ---Decicision-Threshold---: Norms
 	float PBC_I; // Perceived-Behavioral-Control Invest
 	float PBC_C; // Perceived-Behavioral-Control Change
 	float PBC_S; // Perceived-Behavioral-Control Switch	
@@ -878,13 +878,22 @@ species households {
 	float N_PBC_S; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Switch
 	float EEH; // Energy Efficient Habits TODO
 	
+	string U; // Utility value that is selected in decision phase
+	float U_current;
+	float U_i;
+	float U_c;
+	float U_s;
+	
 	
 	
 	int income; // households income/month
 	float budget <- 0.0; // TODO every household starts with zero savings?
 	string id_group; // identification which quartile within the income group the agent belongs to
 
-	float c; // TODO composite goods
+	float c_current; // TODO composite goods
+	float c_invest;
+	float c_change;
+	float c_switch;
 	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
 	bool change; // init value needs to be set for household with fitting settings TODO
 	bool invest <- false;
@@ -899,7 +908,7 @@ species households {
 	float my_power_emissions; // monthly emissions of power consumption
 	float my_energy_emissions; // monthly emissions of totalg energy consumption
 	
-	float cost_benefit_invest; //costs or benefits of the investment action (aktuelle nur bestehend aus Investitionskosten /CapEx
+	float cost_benefit_invest; //costs or benefits of the investment action (aktuelle nur bestehend aus Investitionskosten /CapEx TODO
 	
 		
 	int age; // random mean-age of households
@@ -1193,12 +1202,36 @@ species households {
 	reflex calculate_c { // calculation of c is used for decision making
 		if (current_date.day = 1) {
 			cost_benefit_invest <- q100_price_capex;
-			c <- income - (e + cost_benefit_invest);
+			c_current <- income - (e);
+			c_invest <- income - (e + cost_benefit_invest); // hier koennte validierungsarbeit anfallen, da bisher cost_benefit nur aus Kosten für Investition besteht; monetaere Beruecksichtigung von switch & change fehlt bzw. langfristige Vorteile des Investments
+			c_change <- income - (e);
+			c_switch <- income - (e);
 		}
 	}
 	
 	reflex decision_making { 
 		if (current_date.day = 1) {
+			do update_decision_thresholds;
+			do calculate_utility_current;
+			do calculate_utility_invest;
+			do calculate_utility_change;
+			do calculate_utility_switch;
+			
+			U <- max ([U_current, U_i, U_c, U_s]); // Ausnahmebedingungen formulieren, falls bereits alle decisions getroffen worden sind
+			if U = U_i {
+				invest <- true;
+			}
+			else if U = U_c { // TODO -> e muss sich aendern, im Falle eines switches, da in zukuenftigem Schritt die monatlichen Kosten steigen! --> Unterscheidung zwischen e für Berechnung Verbrauch und e_hypo für decision-making
+				change <- true;
+			}
+			else if U = U_s { // TODO -> e muss sich aendern, im Falle eines switches, da in zukuenftigem Schritt die monatlichen Kosten steigen! --> Unterscheidung zwischen e für Berechnung Verbrauch und e_hypo für decision-making
+				if power_supplier = "conventional" {
+					power_supplier <- "mixed";
+				}
+				else if power_supplier = "mixed" {
+					power_supplier <- "green";
+				}
+			}
 			
 		}
 	}
@@ -1216,7 +1249,36 @@ species households {
 		}
 	}		
 		
-			
+	// TODO --> Normieren!
+	
+	action update_decision_thresholds {
+		/* calculate household's current 
+		Attitude (0 <= KA <= 1),
+		Norms (0 <= N <= 1) and
+		Perceived behavioral control (0 <= PBC <= 1) */ 
+		KA <- mean(CEEK, CEEA, EDA) / 7;
+		N <- mean(SN) / 7;
+		PBC_I_7 <- mean(PBC_I) / 7;
+		PBC_C_7 <- mean(PBC_C) / 7;
+		PBC_S_7 <- mean(PBC_S) / 7;
+	}
+	
+	action calculate_utility_current {
+		// wie ist "nichtstun" umzusetzen? Einfach ohne PBC und invest-kosten?
+	}
+	
+	action calculate_utility_invest {
+		U_i <- alpha * e + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
+	}
+	
+	action calculate_utility_change {
+		U_i <- alpha * e + (1 - alpha) * c_change + (KA + N + PBC_C_7);
+	}
+	action calculate_utility_switch {
+		U_i <- alpha * e + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
+	}
+	
+	
 	
 	action calculate_consumption { // consumption divided by building type
 	
@@ -1295,32 +1357,6 @@ species households {
 		if (current_date.day = 1) and (budget_calc > 0) {
 			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
 		}
-	}
-	
-// ueberarbeiten - stark veraltet TODO
-	
-	action update_decision_thresholds {
-		/* calculate household's current 
-		knowledge & awareness (0 <= KA <= 1),
-		personal & subjective norms (0 <= PSN <= 1) and
-		perceived behavioral control (0 <= N_PBC <= 1) */ 
-		KA <- mean(CEEK, CEEA, EDA) / 7;
-		PSN <- mean(PN, SN) / 7;
-		PBC_I_7 <- mean(PBC_I) / 7;
-		PBC_C_7 <- mean(PBC_C) / 7;
-		PBC_S_7 <- mean(PBC_S) / 7;
-	}
-	
-	action update_decision_thresholds_subjectivenorm { // gives subjective norms a higher weight in an agent's decision making process
-		/* calculate household's current 
-		knowledge & awareness (0 <= KA <= 1),
-		personal & subjective norms (0 <= PSN <= 1) and
-		normative perceived behavioral control (0 <= N_PBC <= 1) */ 
-		KA <- mean(CEEK, CEEA, EDA, SN) / 7;
-		PSN <- mean(PN, SN) / 7;
-		N_PBC_I <- mean(PBC_I, SN) / 7;
-		N_PBC_C <- mean(PBC_C, SN) / 7;
-		N_PBC_S <- mean(PBC_S, SN) / 7;
 	}
 	
 	
