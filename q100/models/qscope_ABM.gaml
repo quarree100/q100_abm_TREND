@@ -895,6 +895,9 @@ species households {
 	float c_change;
 	float c_switch;
 	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
+	float e_invest;
+	float e_change;
+	float e_switch;
 	bool change; // init value needs to be set for household with fitting settings TODO
 	bool invest <- false;
 	string power_supplier;
@@ -1210,15 +1213,16 @@ species households {
 	}
 	
 	reflex decision_making { 
+		
 		if (current_date.day = 1) {
 			do update_decision_thresholds;
-			do calculate_utility_current;
-			do calculate_utility_invest;
-			do calculate_utility_change;
-			do calculate_utility_switch;
+			do calculate_hypo_e;
+			do calculate_utility;
 			
-			U <- max ([U_current, U_i, U_c, U_s]); // Ausnahmebedingungen formulieren, falls bereits alle decisions getroffen worden sind
-			if U = U_i {
+			
+			U <- max ([U_current, U_i, U_c, U_s]); // Ausnahmebedingungen formulieren, falls bereits alle decisions getroffen worden sind TODO
+			
+			if U = U_i  { // and q100_price_capex <= budget +++ Aufteilung auf mehrere Jahre implementieren
 				invest <- true;
 			}
 			else if U = U_c { // TODO -> e muss sich aendern, im Falle eines switches, da in zukuenftigem Schritt die monatlichen Kosten steigen! --> Unterscheidung zwischen e für Berechnung Verbrauch und e_hypo für decision-making
@@ -1232,11 +1236,10 @@ species households {
 					power_supplier <- "green";
 				}
 			}
-			
 		}
 	}
 	
-	reflex consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert
+	reflex consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
 		if (current_date.day = 1) {
 			do calculate_consumption;
 			do calculate_heat_expenses;
@@ -1246,6 +1249,7 @@ species households {
 			e <- my_heat_expenses + my_power_expenses;
 //			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
 //			emissions_neighborhood_power <- emissions_neighborhood_power + my_power_emissions;
+
 		}
 	}		
 		
@@ -1263,22 +1267,23 @@ species households {
 		PBC_S_7 <- mean(PBC_S) / 7;
 	}
 	
-	action calculate_utility_current {
-		// wie ist "nichtstun" umzusetzen? Einfach ohne PBC und invest-kosten?
+	action calculate_hypo_e {
+		e_invest <- (my_heat_consumption * q100_price_opex / 100) + my_power_expenses;
+		e_change <- my_heat_expenses * change_factor + my_power_expenses * change_factor;
+		if power_supplier = "mixed" {
+			e_switch <- my_power_consumption * (power_price + 10) / 100;
+		}
 	}
 	
-	action calculate_utility_invest {
-		U_i <- alpha * e + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
-	}
+	action calculate_utility {
+		U_current <- alpha * e + (1 - alpha) * c_current + (KA + N); // wie ist PBC bei nichtstun??? TODO
 	
-	action calculate_utility_change {
-		U_i <- alpha * e + (1 - alpha) * c_change + (KA + N + PBC_C_7);
-	}
-	action calculate_utility_switch {
-		U_i <- alpha * e + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
-	}
+		U_i <- alpha * e_invest + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
 	
+		U_c <- alpha * e_change + (1 - alpha) * c_change + (KA + N + PBC_C_7);
 	
+		U_s <- alpha * e_switch + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
+	}
 	
 	action calculate_consumption { // consumption divided by building type
 	
