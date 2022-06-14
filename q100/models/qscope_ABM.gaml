@@ -220,6 +220,7 @@ global {
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
 	float energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings in percent TODO
   	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
+  	float change_threshold <- 4.75; // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
 	bool view_toggle <- false; // Parameter to toggle the 3D-View.
 	bool keep_seed <- false; // When true, the simulation seed will not change.
 	
@@ -469,6 +470,13 @@ global {
 		ask agents of_generic_species households where (each.power_supplier = nil) {
 			power_supplier <- "conventional";
 		}
+		
+// Distribution of change values among households based on EEH // share needs to be validated!!! TODO
+
+		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold)	{
+			change <- true;
+		}	
+		
 		
 // Floor area
 
@@ -1220,15 +1228,15 @@ species households {
 			do calculate_utility;
 			
 			
-			U <- max ([U_current, U_i, U_c, U_s]); // Ausnahmebedingungen formulieren, falls bereits alle decisions getroffen worden sind TODO
+			U <- max ([U_current, U_i, U_c, U_s]);
 			
-			if U = U_i  { // and q100_price_capex <= budget +++ Aufteilung auf mehrere Jahre implementieren
+			if U = U_i and q100_price_capex <= budget { // Aufteilung auf mehrere Jahre implementieren
 				invest <- true;
 			}
-			else if U = U_c { // TODO -> e muss sich aendern, im Falle eines switches, da in zukuenftigem Schritt die monatlichen Kosten steigen! --> Unterscheidung zwischen e für Berechnung Verbrauch und e_hypo für decision-making
+			else if U = U_c and EEH > change_threshold { 
 				change <- true;
 			}
-			else if U = U_s { // TODO -> e muss sich aendern, im Falle eines switches, da in zukuenftigem Schritt die monatlichen Kosten steigen! --> Unterscheidung zwischen e für Berechnung Verbrauch und e_hypo für decision-making
+			else if U = U_s { 
 				if power_supplier = "conventional" {
 					power_supplier <- "mixed";
 				}
@@ -1280,11 +1288,26 @@ species households {
 	action calculate_utility {
 		U_current <- alpha * e + (1 - alpha) * c_current + (KA + N); // wie ist PBC bei nichtstun??? TODO
 	
-		U_i <- alpha * e_invest + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
-	
-		U_c <- alpha * e_change + (1 - alpha) * c_change + (KA + N + PBC_C_7);
-	
-		U_s <- alpha * e_switch + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
+		if invest = true {
+			U_i <- 0;
+		}
+		else {
+			U_i <- alpha * e_invest + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
+		}
+		
+		if change = true {
+			U_c <- 0;
+		}
+		else {
+			U_c <- alpha * e_change + (1 - alpha) * c_change + (KA + N + PBC_C_7);
+		}
+		
+		if power_supplier = "green" {
+			U_s <- 0;
+		}
+		else {
+			U_s <- alpha * e_switch + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
+		}
 	}
 	
 	action calculate_consumption { // consumption divided by building type
@@ -1496,7 +1519,8 @@ species edge_vis {
 experiment agent_decision_making type: gui{
 	
 
- 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
+ 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
+ 	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
@@ -1512,7 +1536,7 @@ experiment agent_decision_making type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
   	
@@ -1657,7 +1681,8 @@ experiment agent_decision_making type: gui{
 experiment agent_decision_making_3d type: gui{
 	
 
- 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making"; 	
+ 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
+ 	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
@@ -1673,7 +1698,7 @@ experiment agent_decision_making_3d type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
   	
   	font my_font <- font("Arial", 12, #bold);
 	
