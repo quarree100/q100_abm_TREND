@@ -644,9 +644,7 @@ global {
 			}
 			if (new_buildings_parameter = "linear2030") and (current_date.year < 2030){ // The number of buildings grows linearly with a rate that ensures, all buildings are introduced by year 2030.
 				int remaining_buildings <- length(building where (!each.built));
-				write remaining_buildings;
 				int rate <- int(remaining_buildings / (2030 - current_date.year) + 1); // + 1 rounds the rate up to the next integer.
-				write rate;
 				ask rate among (building where (!each.built)) {
 					self.built <- true;
 					self.vacant <- bool(self.units);
@@ -1252,7 +1250,7 @@ species households {
 		
 		
 		if (power_supplier = "green") {
-			my_power_emissions <- 0; // Emissionen tatsaechlich al 0 annehmen?
+			my_power_emissions <- 0.0; // Emissionen tatsaechlich al 0 annehmen?
 		}
 		else if (power_supplier = "mixed") {
 			my_power_emissions <- my_power_consumption * power_emissions * 0.5;
@@ -1495,9 +1493,9 @@ experiment agent_decision_making type: gui{
 			species households_4000etc aspect: by_energy;
 						
 			overlay position: { 5, 5 } size: { 140#px, 190#px } background: # black transparency: 0.5 border: #black rounded: true {
-				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
+				draw "Date" at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
-				draw string ("Transformation level") at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
+				draw "Transformation level" at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
 				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
 				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
@@ -1568,21 +1566,28 @@ experiment agent_decision_making type: gui{
 			y_label: "Rate of Modernization"
 			{
 				data "Rate of Modernization" 
-				value: modernization_rate; 
+				value: modernization_rate
+				color: #gold; 
 				data "1% Refurbishment Rate" 
 				value: 0.01
-				marker: false;
+				marker: false
+				thickness: 2.0
+				color: #red;
 				data "1.5% Refurbishment Rate" 
 				value: 0.015
-				marker: false;
+				marker: false
+				thickness: 2.0
+				color: #darkblue;
 				data "2% Refurbishment Rate" 
 				value: 0.02
-				marker: false;
+				marker: false
+				thickness: 2.0
+				color: #darkgreen;
 			}
 		}
 		
 
-		display "Monthly Emissions" { // TODO
+		display "Monthly Emissions"{ // TODO
 			chart "Emissions per month within the neighborhood" 
 			type: series 
 			x_label: "Month"
@@ -1612,7 +1617,15 @@ experiment agent_decision_making type: gui{
 				data "Total energy emissions of neighborhood per year" 
 				value: technical_data_calculator[0].emissions_neighborhood_accu
 				;
-				
+			}
+		}
+		display "Average Emissions Cumulative" { // TODO
+			chart "Average cumulative emissions of the neighborhood" 
+			type: series 
+			x_label: "Month"
+			y_label: "g of CO2 eq"
+			x_serie: [technical_data_calculator[0].month_counter] 
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] {
 				data "Accumulated Average energy emissions of a household" 
 				value: technical_data_calculator[0].emissions_household_average_accu
 				;
@@ -1620,7 +1633,7 @@ experiment agent_decision_making type: gui{
 			}
 		}
 		
-		display "Average Emissions" {
+		display "Average Emissions"{
 			chart "Average Emissions per Household" 
 			type: series 
 			x_serie: [technical_data_calculator[0].month_counter]
