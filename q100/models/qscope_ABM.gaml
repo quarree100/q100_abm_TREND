@@ -1242,9 +1242,10 @@ species households {
 	reflex consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
 		if (current_date.day = 1) {
 			do calculate_consumption;
+			do calculate_emissions;
 			do calculate_heat_expenses;
 			do calculate_power_expenses;
-			do calculate_emissions;
+
 			
 			e <- my_heat_expenses + my_power_expenses;
 //			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
@@ -1268,10 +1269,11 @@ species households {
 	}
 	
 	action calculate_hypo_e {
-		e_invest <- (my_heat_consumption * q100_price_opex / 100) + my_power_expenses;
+		float hypo_q100_carbon_exp <- my_heat_consumption * q100_emissions * carbon_price * int(carbon_price_on_off);
+		e_invest <- (my_heat_consumption * q100_price_opex / 100) + hypo_q100_carbon_exp + my_power_expenses;
 		e_change <- my_heat_expenses * change_factor + my_power_expenses * change_factor;
 		if power_supplier = "mixed" {
-			e_switch <- my_power_consumption * (power_price + 10) / 100;
+			e_switch <- my_power_consumption * (power_price + 10) / 100 + my_heat_expenses;
 		}
 	}
 	
@@ -1318,6 +1320,9 @@ species households {
 		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
 			my_heat_expenses <- my_heat_consumption * q100_price_opex / 100;
 		}
+		if carbon_price_on_off {
+			my_heat_expenses <- my_heat_expenses + my_heat_emissions * carbon_price;
+		}
 	}
 	
 	action calculate_power_expenses { // TODO co2-Preis einfach draufrechnen?
@@ -1326,6 +1331,9 @@ species households {
 		}
 		else {
 			my_power_expenses <- my_power_consumption * power_price / 100;
+		}
+		if carbon_price_on_off {
+			my_power_expenses <- my_power_expenses + my_power_emissions * carbon_price;
 		}
 	}
 			
