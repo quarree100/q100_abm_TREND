@@ -221,6 +221,9 @@ global {
 	float energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings in percent TODO
   	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
   	float change_threshold <- 4.75; // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- 0.9; // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made
+  	float MFH_connection_threshold <- 0.8; // TODO share of MFH flats that made decision invest to connect to heat_network
+  	
 	bool view_toggle <- false; // Parameter to toggle the 3D-View.
 	bool keep_seed <- false; // When true, the simulation seed will not change.
 	
@@ -322,6 +325,7 @@ global {
 			vacant <- false;
 			built <- false;
 			mod_status <- "s";
+			energy_source <- "q100"; // TODO davon ausgehend, dass alle Neubauten sich an das q100-Netz anschliessen
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -459,7 +463,7 @@ global {
 		
 // Power Supplier -> distributes the power supplier among households
 
-		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > 4.5) { //see documentation for references of supplier distribution; EEH is chosen by value above the median
+		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold) { //see documentation for references of supplier distribution; EEH is chosen by value above the median // change_threshold als Bedingung passend?
 		 	power_supplier <- "green";
 		}
 		
@@ -471,7 +475,7 @@ global {
 			power_supplier <- "conventional";
 		}
 		
-// Distribution of change values among households based on EEH // share needs to be validated!!! TODO
+// Distribution of change values among households based on EEH 								// share needs to be validated!!! TODO
 
 		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold)	{
 			change <- true;
@@ -816,6 +820,7 @@ species building {
 	action modernize { // vielleicht besser unterscheiden nach Mieter/Vermieter als nach EFH/MFH TODO
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
+			self.energy_source <- "q100";
 			refurbished_buildings_year <- refurbished_buildings_year + 1;
 			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 		}
@@ -906,7 +911,7 @@ species households {
 	float e_invest;
 	float e_change;
 	float e_switch;
-	bool change; // init value needs to be set for household with fitting settings TODO
+	bool change <- false; // init value needs to be set for household with fitting settings TODO
 	bool invest <- false;
 	string power_supplier;
 	
@@ -1228,14 +1233,29 @@ species households {
 			do calculate_utility;
 			
 			
-			U <- max ([U_current, U_i, U_c, U_s]);
+			U <- max ([U_current, U_i, U_c, U_s]); // rueckkopplung nach entscheidung implementieren
 			
-			if U = U_i and q100_price_capex <= budget { // Aufteilung auf mehrere Jahre implementieren
+			if (U = U_i) and (q100_price_capex <= budget) { // Aufteilung der investitionskosten auf mehrere Jahre ergaenzen
 				invest <- true;
+			//	int test <- length(self.house.get_tenants() where (each.invest = true)); /////////////////////////////////////////////////////////////////// TODO 2022-06-22 /////////////////////////////////////////////////////////////////////////// 
+				int test1 <- length(self.house.get_tenants());
+				if (ownership = "owner") and (self.house.type = "EFH") { 
+					self.house.energy_source <- "q100";
+					budget <- budget - q100_price_capex;
+				}
+				else if (ownership = "tenant") and (self.house.type = "EFH") and (flip (landlord_prop)) { // ---> where do the CapEx appear??? TODO
+					self.house.energy_source <- "q100";
+				}
+
+				else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (test1 / test1)) { // U_current = dummy -> (test / test1)
+					self.house.energy_source <- "q100";
+				}
 			}
-			else if U = U_c and EEH > change_threshold { 
+			
+			else if (U = U_c) and (EEH > change_threshold) { 
 				change <- true;
 			}
+			
 			else if U = U_s { 
 				if power_supplier = "conventional" {
 					power_supplier <- "mixed";
@@ -1256,13 +1276,15 @@ species households {
 
 			
 			e <- my_heat_expenses + my_power_expenses;
+			
+// veraltet - loeschbar?			
 //			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
 //			emissions_neighborhood_power <- emissions_neighborhood_power + my_power_emissions;
 
 		}
 	}		
 		
-	// TODO --> Normieren!
+	// TODO --> Normieren! --> gilt für alpha*e & 1-alpha*c --> vgl Niamir?
 	
 	action update_decision_thresholds {
 		/* calculate household's current 
@@ -1286,9 +1308,9 @@ species households {
 	}
 	
 	action calculate_utility {
-		U_current <- alpha * e + (1 - alpha) * c_current + (KA + N); // wie ist PBC bei nichtstun??? TODO
+		U_current <- alpha * e + (1 - alpha) * c_current + (KA + N + 1.0); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
 	
-		if invest = true {
+		if (invest = true) or (self.house.energy_source = "q100") {
 			U_i <- 0;
 		}
 		else {
@@ -1309,6 +1331,7 @@ species households {
 			U_s <- alpha * e_switch + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
 		}
 	}
+	
 	
 	action calculate_consumption { // consumption divided by building type
 	
@@ -1446,7 +1469,7 @@ species households {
 	aspect by_energy {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
-		if (self.house.energy_source = "q100") or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen TODO
+		if (self.house.energy_source = "q100") or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> Stand Basismodell Ja TODO
 		// wenn invest entscheidung getroffen wird, nimmt diese einfluss auf parameter "energy_source" einfluss //  Unterscheidung Mieter/Vermieter
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self);
 			list conn <- closest_points_with(netz, self);
@@ -1521,6 +1544,7 @@ experiment agent_decision_making type: gui{
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
+ 	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
@@ -1683,6 +1707,8 @@ experiment agent_decision_making_3d type: gui{
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
+ 	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
+ 	parameter "Share of MFH units that is needed to connect to Q100 heat_network" var: MFH_connection_threshold category: "Decision making";
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
