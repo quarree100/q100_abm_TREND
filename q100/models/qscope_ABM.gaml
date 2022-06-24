@@ -834,7 +834,7 @@ species building {
 		return neighbors;
 	}
 	
-	list get_tenants { // returns a list of all households that are living in the building.
+	list<households> get_tenants { // returns a list of all households that are living in the building.
 		return inside(agents of_generic_species(households), self);
 	}
 	
@@ -1237,7 +1237,7 @@ species households {
 			
 			if (U = U_i) and (q100_price_capex <= budget) { // Aufteilung der investitionskosten auf mehrere Jahre ergaenzen
 				invest <- true;
-			//	int test <- length(self.house.get_tenants() where (each.invest = true)); /////////////////////////////////////////////////////////////////// TODO 2022-06-22 /////////////////////////////////////////////////////////////////////////// 
+				int test <- length(self.house.get_tenants() where (each.invest = true)); /////////////////////////////////////////////////////////////////// TODO 2022-06-22 /////////////////////////////////////////////////////////////////////////// 
 				int test1 <- length(self.house.get_tenants());
 				if (ownership = "owner") and (self.house.type = "EFH") { 
 					self.house.energy_source <- "q100";
