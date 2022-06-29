@@ -795,6 +795,7 @@ species building {
 	string street;
 	bool built <- true;
 	string mod_status; //modernization-status
+	date mod_date;
 	int net_floor_area;
 	float spec_heat_consumption;
 	float spec_power_consumption;
@@ -802,6 +803,27 @@ species building {
 	rgb color <- #gray;
 	geometry line;
 	string id;
+	int invest_counter;
+	
+	
+	action invoke_investment {
+		if self.mod_status = "s" {}
+		else {
+			self.mod_status <- "s";
+			self.mod_date <- current_date;
+			self.energy_source <- "q100";
+			if q100_price_capex_scenario = "1 payment" {
+				self.invest_counter <- 1;
+			}
+			else if q100_price_capex_scenario = "2 payments" {
+				self.invest_counter <- 2;
+			}
+			else if q100_price_capex_scenario = "5 payments" {
+				self.invest_counter <- 5;
+			}
+			
+		}
+	} 
 	
 	action add_tenant {
 		self.tenants <- self.tenants + 1;
@@ -823,6 +845,17 @@ species building {
 			self.energy_source <- "q100";
 			refurbished_buildings_year <- refurbished_buildings_year + 1;
 			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
+		}
+	}
+	
+	reflex investment_costs {
+		if self.invest_counter > 0 and current_date.month = mod_date.month and current_date.day = mod_date.day {
+			ask self.get_tenants() {
+				if self.ownership = "owner" {
+					self.budget <- self.budget - q100_price_capex;
+				}
+			}
+			self.invest_counter <- self.invest_counter - 1;
 		}
 	}
 	
@@ -1240,15 +1273,20 @@ species households {
 				int test <- length(self.house.get_tenants() where (each.invest = true)); /////////////////////////////////////////////////////////////////// TODO 2022-06-22 /////////////////////////////////////////////////////////////////////////// 
 				int test1 <- length(self.house.get_tenants());
 				if (ownership = "owner") and (self.house.type = "EFH") { 
-					self.house.energy_source <- "q100";
-					budget <- budget - q100_price_capex;
+					ask self.house {
+						do invoke_investment;
+					}
+					
 				}
-				else if (ownership = "tenant") and (self.house.type = "EFH") and (flip (landlord_prop)) { // ---> where do the CapEx appear??? TODO
-					self.house.energy_source <- "q100";
-				}
+//				else if (ownership = "tenant") and (self.house.type = "EFH") and (flip (landlord_prop)) { // ---> where do the CapEx appear??? TODO
+//					self.house.energy_source <- "q100";
+//					budget <- budget - q100_price_capex;
+//				}
 
-				else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (test1 / test1)) { // U_current = dummy -> (test / test1)
-					self.house.energy_source <- "q100";
+				else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (test / test1)) { // U_current = dummy -> (test / test1)
+					ask self.house {
+						do invoke_investment;
+					}
 				}
 			}
 			
