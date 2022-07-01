@@ -57,7 +57,7 @@ global {
 	matrix<float> share_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-income_V1.csv",  ",", float, true)); // share of households in neighborhood sorted by income
 	matrix<float> share_employment_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true)); // distribution of employment status of households in neighborhood sorted by income
 	matrix<float> share_ownership_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
-	
+	list<float> savings_rates <- list(csv_file("../includes/csv-data_socio/2022-07-01/sparquote_einkommen.csv", ",", float));
 	
 	matrix<float> share_age_buildings_existing <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
 	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups including people who never moved
@@ -77,6 +77,7 @@ global {
 	
 	float alpha <- alphas [alpha_column(), 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
+	
 	int alpha_column {
 		if alpha_scenario = "Static_mean" {
 			return 1;	
@@ -95,6 +96,7 @@ global {
 	bool carbon_price_on_off <- false;
 	float carbon_price <- carbon_prices [carbon_price_column(), 0]; 
 	string carbon_price_scenario;
+	
 	int carbon_price_column {
 		if  carbon_price_scenario = "A - Conservative" {
 			return 1;	
@@ -277,27 +279,45 @@ global {
 		}
 		return sum;
 	}
+	
+	list<agent> get_all_instances(species<agent> spec) {
+        return spec.population + spec.subspecies accumulate (get_all_instances(each));
+    }
 
-	list<list<households>> random_groups(list<households> input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
+
+	list<list> random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
 		int len <- length(input);
 		if len = 0 {
 			return range(n - 1) accumulate [[]];
 		}
 		else if len = 1 {
-			list<list<households>> output <- range(n - 2) accumulate [[]];
+			list<list> output <- range(n - 2) accumulate [[]];
 			add input to: output;
 			return shuffle(output);
 		}
 		else {
 			list shuffled_input <- shuffle(input);
 			list inds <- split_in(range(len - 1), n);
-			list<list<households>> output;
+			list<list> output;
 			loop group over: inds {
 				add shuffled_input where (index_of(shuffled_input, each) in group) to: output;
 			}
 			return shuffle(output);
 		}
 	
+	}
+	action distribute_budget { // assigns each household a budget based on their income and their age.
+//		list<households> household_list <- get_all_instances(households);
+//		household_list <- sort_by(household_list, (each.income)); // list of households is sorted by income to split them into deciles.
+//		int n <- length(household_list);
+//		loop h over: household_list {
+//				int i <- floor(index_of(household_list, h) / n * 10); // Calculates income decile of the current household.
+//				ask h {
+//					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
+//				}
+//			}
+//			
+//		
 	}
 	
 	init { 		
@@ -485,7 +505,7 @@ global {
 // Floor area
 
 		ask agents of_generic_species households {
-			my_floor_area <- (self.house.net_floor_area / self.house.units);
+			my_floor_area <- int(self.house.net_floor_area / self.house.units);
 		}
 
 		
@@ -543,6 +563,8 @@ global {
 				}
 			}
 		}
+		
+		do distribute_budget;
 		
 	}
 
@@ -687,9 +709,7 @@ global {
 			}
 			if (new_buildings_parameter = "linear2030") and (current_date.year < 2030){ // The number of buildings grows linearly with a rate that ensures, all buildings are introduced by year 2030.
 				int remaining_buildings <- length(building where (!each.built));
-				write remaining_buildings;
 				int rate <- int(remaining_buildings / (2030 - current_date.year) + 1); // + 1 rounds the rate up to the next integer.
-				write rate;
 				ask rate among (building where (!each.built)) {
 					self.built <- true;
 					self.vacant <- bool(self.units);
@@ -804,9 +824,10 @@ species building {
 	geometry line;
 	string id;
 	int invest_counter;
+	float investment_cost;
 	
 	
-	action invoke_investment {
+	action invoke_investment { // Gets called when the tenants decide to invest in a refurbishment of the house. The invest_counter is set depending on the selected payment scenario.
 		if self.mod_status = "s" {}
 		else {
 			self.mod_status <- "s";
@@ -814,12 +835,15 @@ species building {
 			self.energy_source <- "q100";
 			if q100_price_capex_scenario = "1 payment" {
 				self.invest_counter <- 1;
+				self.investment_cost <- q100_price_capex;
 			}
 			else if q100_price_capex_scenario = "2 payments" {
 				self.invest_counter <- 2;
+				self.investment_cost <- q100_price_capex / 2;
 			}
 			else if q100_price_capex_scenario = "5 payments" {
 				self.invest_counter <- 5;
+				self.investment_cost <- q100_price_capex / 5;
 			}
 			
 		}
@@ -848,11 +872,11 @@ species building {
 		}
 	}
 	
-	reflex investment_costs {
+	reflex investment_costs { // When self.invest_counter is set to a value > 0, the tenants of the building will be charged with the costs of the home refurbishment.
 		if self.invest_counter > 0 and current_date.month = mod_date.month and current_date.day = mod_date.day {
 			ask self.get_tenants() {
 				if self.ownership = "owner" {
-					self.budget <- self.budget - q100_price_capex;
+					self.budget <- self.budget - myself.investment_cost;
 				}
 			}
 			self.invest_counter <- self.invest_counter - 1;
@@ -924,7 +948,7 @@ species households {
 	float N_PBC_S; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Switch
 	float EEH; // Energy Efficient Habits TODO
 	
-	string U; // Utility value that is selected in decision phase
+	float U; // Utility value that is selected in decision phase
 	float U_current;
 	float U_i;
 	float U_c;
@@ -1451,6 +1475,7 @@ species households {
 	
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
 		float budget_calc <- income * income_change_rate * alpha - e;
+		write budget_calc;
 		if (current_date.day = 1) and (budget_calc > 0) {
 			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
 		}
@@ -1872,4 +1897,6 @@ experiment agent_decision_making_3d type: gui{
 	}
 }
 
-experiment debug type:gui {}
+experiment debug type:gui {
+
+}
