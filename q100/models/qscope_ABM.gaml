@@ -91,6 +91,9 @@ global {
 		else if alpha_scenario = "Static_high" {
 			return 4;
 		}
+		else {
+			return 0;
+		}		
 	}
 	
 	bool carbon_price_on_off <- false;
@@ -113,6 +116,7 @@ global {
 		else if carbon_price_scenario = "C3 - Progressive" {
 			return 5;	
 		}
+
 	}
 	
 	float gas_price <- energy_prices_emissions [gas_price_column(), 0];
@@ -306,18 +310,18 @@ global {
 		}
 	
 	}
-	action distribute_budget { // assigns each household a budget based on their income and their age.
-//		list<households> household_list <- get_all_instances(households);
-//		household_list <- sort_by(household_list, (each.income)); // list of households is sorted by income to split them into deciles.
-//		int n <- length(household_list);
-//		loop h over: household_list {
-//				int i <- floor(index_of(household_list, h) / n * 10); // Calculates income decile of the current household.
-//				ask h {
-//					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
-//				}
-//			}
-//			
-//		
+	action distribute_budget(list household_list) { // assigns each household in the input list a budget based on their income and their age.
+		list<households> all_households <- get_all_instances(households);
+		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
+		int n <- length(all_households);
+		loop h over: household_list {
+				int i <- floor(index_of(all_households, h) / n * 10); // Calculates income decile of the current household.
+				ask h as households{
+					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
+				}
+			}
+			
+		
 	}
 	
 	init { 		
@@ -564,7 +568,7 @@ global {
 			}
 		}
 		
-		do distribute_budget;
+		do distribute_budget(get_all_instances(households));
 		
 	}
 
@@ -686,6 +690,7 @@ global {
 					}
 			}
 		}
+		do distribute_budget(new_households);
 		if sum_of(new_households of_generic_species households, length(each.social_contacts)) > 0 { 
 		}
 	
@@ -824,7 +829,6 @@ species building {
 	geometry line;
 	string id;
 	int invest_counter;
-	float investment_cost;
 	
 	
 	action invoke_investment { // Gets called when the tenants decide to invest in a refurbishment of the house. The invest_counter is set depending on the selected payment scenario.
@@ -835,15 +839,15 @@ species building {
 			self.energy_source <- "q100";
 			if q100_price_capex_scenario = "1 payment" {
 				self.invest_counter <- 1;
-				self.investment_cost <- q100_price_capex;
+
 			}
 			else if q100_price_capex_scenario = "2 payments" {
 				self.invest_counter <- 2;
-				self.investment_cost <- q100_price_capex / 2;
+
 			}
 			else if q100_price_capex_scenario = "5 payments" {
 				self.invest_counter <- 5;
-				self.investment_cost <- q100_price_capex / 5;
+
 			}
 			
 		}
@@ -876,7 +880,7 @@ species building {
 		if self.invest_counter > 0 and current_date.month = mod_date.month and current_date.day = mod_date.day {
 			ask self.get_tenants() {
 				if self.ownership = "owner" {
-					self.budget <- self.budget - myself.investment_cost;
+					self.budget <- self.budget - q100_price_capex;
 				}
 			}
 			self.invest_counter <- self.invest_counter - 1;
@@ -1419,10 +1423,10 @@ species households {
 	}
 	
 	action calculate_heat_expenses { // TODO co2-Preis einfach draufrechnen?
-		if (self.house.energy_source = "gas") {
+		if (self.house.energy_source = "Gas") {
 			my_heat_expenses <- my_heat_consumption * gas_price / 100;
 		}
-		else if (self.house.energy_source = "oil") {
+		else if (self.house.energy_source = "Öl") {
 			my_heat_expenses <- my_heat_consumption * oil_price / 100;
 		}
 		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
@@ -1446,10 +1450,10 @@ species households {
 	}
 			
 	action calculate_emissions { // emissions in g of CO2 eq
-		if (self.house.energy_source = "gas") {
+		if (self.house.energy_source = "Gas") {
 			my_heat_emissions <- my_heat_consumption * gas_emissions;
 		}
-		else if (self.house.energy_source = "oil") {
+		else if (self.house.energy_source = "Öl") {
 			my_heat_emissions <- my_heat_consumption * oil_emissions;
 		}
 		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
@@ -1475,7 +1479,6 @@ species households {
 	
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
 		float budget_calc <- income * income_change_rate * alpha - e;
-		write budget_calc;
 		if (current_date.day = 1) and (budget_calc > 0) {
 			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
 		}
@@ -1898,5 +1901,25 @@ experiment agent_decision_making_3d type: gui{
 }
 
 experiment debug type:gui {
-
+	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
+ 	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
+ 	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
+ 	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
+	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
+	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
+	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
+ 	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
+ 	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
+ 	parameter "3D-View" var: view_toggle category: "GIS";
+  	parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
+ 	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
+ 	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
+ 	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
+  	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
+  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
+  	parameter "Seed" var: seed <- seed category: "Simulation";
+  	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
 }
