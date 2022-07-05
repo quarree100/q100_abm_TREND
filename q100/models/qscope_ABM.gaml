@@ -97,6 +97,8 @@ global {
 	}
 	
 	bool carbon_price_on_off <- false;
+	bool delta_on_off <- false;
+	bool pbc_do_nothing <- true;
 	float carbon_price <- carbon_prices [carbon_price_column(), 0]; 
 	string carbon_price_scenario;
 	
@@ -968,13 +970,14 @@ species households {
 	float c_invest;
 	float c_change;
 	float c_switch;
-	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
+	float e_current; // TODO total energy expenses a household has to pay for energy supply - heat & power
 	float e_invest;
 	float e_change;
 	float e_switch;
 	bool change <- false; // init value needs to be set for household with fitting settings TODO
 	bool invest <- false;
 	string power_supplier;
+	float delta;
 	
 	
 	float my_heat_consumption; // monthly heat consumption in kWh
@@ -985,8 +988,7 @@ species households {
 	float my_power_emissions; // monthly emissions of power consumption
 	float my_energy_emissions; // monthly emissions of totalg energy consumption
 	
-	float cost_benefit_invest; //costs or benefits of the investment action (aktuelle nur bestehend aus Investitionskosten /CapEx TODO
-	
+
 		
 	int age; // random mean-age of households
 	int length_of_residence <- 0; //years since the household moved in
@@ -1278,11 +1280,10 @@ species households {
 	
 	reflex calculate_c { // calculation of c is used for decision making
 		if (current_date.day = 1) {
-			cost_benefit_invest <- q100_price_capex;
-			c_current <- income - (e);
-			c_invest <- income - (e + cost_benefit_invest); // hier koennte validierungsarbeit anfallen, da bisher cost_benefit nur aus Kosten für Investition besteht; monetaere Beruecksichtigung von switch & change fehlt bzw. langfristige Vorteile des Investments
-			c_change <- income - (e);
-			c_switch <- income - (e);
+			c_current <- income - (e_current);
+			c_invest <- income - (e_invest + q100_price_capex); // langfristige Vorteile des Investments müssen evtl noch bedacht werden??
+			c_change <- income - (e_change);
+			c_switch <- income - (e_switch);
 		}
 	}
 	
@@ -1298,7 +1299,7 @@ species households {
 			
 			if (U = U_i) and (q100_price_capex <= budget) { // Aufteilung der investitionskosten auf mehrere Jahre ergaenzen
 				invest <- true;
-				int test <- length(self.house.get_tenants() where (each.invest = true)); /////////////////////////////////////////////////////////////////// TODO 2022-06-22 /////////////////////////////////////////////////////////////////////////// 
+				int test <- length(self.house.get_tenants() where (each.invest = true)); 
 				int test1 <- length(self.house.get_tenants());
 				if (ownership = "owner") and (self.house.type = "EFH") { 
 					ask self.house {
@@ -1341,7 +1342,7 @@ species households {
 			do calculate_power_expenses;
 
 			
-			e <- my_heat_expenses + my_power_expenses;
+			e_current <- my_heat_expenses + my_power_expenses;
 			
 // veraltet - loeschbar?			
 //			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
@@ -1374,27 +1375,47 @@ species households {
 	}
 	
 	action calculate_utility {
-		U_current <- alpha * e + (1 - alpha) * c_current + (KA + N + 1.0); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
+		U_current <- alpha * e_current + (1 - alpha) * c_current + (KA + N + int(pbc_do_nothing)); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
 	
 		if (invest = true) or (self.house.energy_source = "q100") {
 			U_i <- 0;
 		}
 		else {
-			U_i <- alpha * e_invest + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
+			if delta_on_off {
+				self.delta <- self.PBC_I / 7 * int(self.ownership = "owner");
+				U_i <- (1 - self.delta) * (alpha * e_invest + (1 - alpha) * c_invest) + self.delta *(KA + N + PBC_I_7);
+			}
+			else {
+				U_i <- alpha * e_invest + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
+			}
+			
 		}
 		
 		if change = true {
 			U_c <- 0;
 		}
 		else {
-			U_c <- alpha * e_change + (1 - alpha) * c_change + (KA + N + PBC_C_7);
+			if delta_on_off {
+				self.delta <- self.PBC_C / 7;
+				U_c <- (1 + self.delta) * (alpha * e_change + (1 - alpha) * c_change) + self.delta * (KA + N + PBC_C_7);
+			}
+			else {
+				U_c <- alpha * e_change + (1 - alpha) * c_change + (KA + N + PBC_C_7);
+			}
+		
 		}
 		
 		if power_supplier = "green" {
 			U_s <- 0;
 		}
 		else {
-			U_s <- alpha * e_switch + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
+			if delta_on_off {
+				self.delta <- self.PBC_S / 7;
+				U_s <- (1 - self.delta) * (alpha * e_switch + (1 - alpha) * c_switch) + self.delta * (KA + N + PBC_S_7);
+			}
+			else {
+				U_s <- alpha * e_switch + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
+			}
 		}
 	}
 	
@@ -1478,7 +1499,7 @@ species households {
 	
 	
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
-		float budget_calc <- income * income_change_rate * alpha - e;
+		float budget_calc <- income * income_change_rate * alpha - e_current;
 		if (current_date.day = 1) and (budget_calc > 0) {
 			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
 		}
@@ -1611,6 +1632,8 @@ experiment agent_decision_making type: gui{
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
+ 	parameter "Use delta in utility calculation" var: delta_on_off category: "Decision making";
+ 	parameter "Include PBC-Value in the current utility" var: pbc_do_nothing category: "Decision making";
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
