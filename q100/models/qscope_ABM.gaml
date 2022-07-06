@@ -338,6 +338,8 @@ global {
 		int row_interchange <- 0;
 		loop qscope_interchange over: qscope_interchange_matrix column_at 0 { // integrates individually made changes on qscope by users for buildings of the GAMA model
 			ask (building where (each.id = qscope_interchange)) {
+				qscope_interchange_flag <- true;
+				
 				if (qscope_interchange_matrix[5,row_interchange] = "True") {
 					energy_source <- "q100";
 				}
@@ -755,7 +757,7 @@ global {
 	
 }
 
-species technical_data_calculator {
+species technical_data_calculator { 
 	float emissions_neighborhood_heat;
 	float emissions_neighborhood_power;
 	float emissions_neighborhood_total;
@@ -796,6 +798,8 @@ species building {
 	rgb color <- #gray;
 	geometry line;
 	string id;
+	bool qscope_interchange_flag <- false;
+	float building_emissions;
 	
 	action add_tenant {
 		self.tenants <- self.tenants + 1;
@@ -851,6 +855,15 @@ species building {
 			draw shape color: color depth: height;
 		}
 	}
+	
+	reflex monthly_updates_technical_data {
+		if (current_date.day = 2) {
+		
+			building_emissions <- sum_of(get_tenants.my_emissions);
+			
+		}
+	}
+	
 }
 
 
@@ -1477,13 +1490,25 @@ experiment agent_decision_making type: gui{
 	
 	
 	
-//csv_export for frontend test TODO
+//csv_export for frontend test
 
-		reflex save_results_test {
+	reflex save_results_test {
 		
 		save [cycle, current_date, (length(building where (each.mod_status = "s")) / length(building) * 100)]
 		to: "../includes/csv_export/csv_export_test.csv" type: csv rewrite: false;
 	}
+	
+//csv_export for output test - line graph infoscreen	
+	
+	reflex save_results_co2_graph_test {
+		
+		if current_date.day = 1 {
+			
+			save [cycle, current_date, technical_data_calculator[0].emissions_neighborhood_total, (building where (each.qscope_interchange_flag = true), sum_of(each.get_tenants.my_emissions))] //so oder so ähnlich
+			to: "../includes/csv_export/csv_export_co2_graph_test.csv" type: csv rewrite: false;
+		}
+	}
+	
 	
 	//option 2
 	
