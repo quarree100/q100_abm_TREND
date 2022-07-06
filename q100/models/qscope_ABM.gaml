@@ -29,7 +29,7 @@ global {
 	
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
-	
+	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 	// load shapefiles
 	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
@@ -299,7 +299,6 @@ global {
 	init { 		
 		
 		create technical_data_calculator number: 1;
-		
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
 			vacant <- bool(units);
@@ -675,9 +674,7 @@ global {
 			}
 			if (new_buildings_parameter = "linear2030") and (current_date.year < 2030){ // The number of buildings grows linearly with a rate that ensures, all buildings are introduced by year 2030.
 				int remaining_buildings <- length(building where (!each.built));
-				write remaining_buildings;
 				int rate <- int(remaining_buildings / (2030 - current_date.year) + 1); // + 1 rounds the rate up to the next integer.
-				write rate;
 				ask rate among (building where (!each.built)) {
 					self.built <- true;
 					self.vacant <- bool(self.units);
@@ -765,6 +762,7 @@ species technical_data_calculator {
 	float emissions_neighborhood_accu;
 	float emissions_household_average;
 	float emissions_household_average_accu;
+	int month_counter <- 1;
 	
 	reflex monthly_updates_technical_data {
 		if (current_date.day = 2) {
@@ -775,6 +773,10 @@ species technical_data_calculator {
 			self.emissions_neighborhood_accu <- self.emissions_neighborhood_accu + self.emissions_neighborhood_total;
 			self.emissions_household_average <- self.emissions_neighborhood_total / nb_units;
 			self.emissions_household_average_accu <- self.emissions_household_average_accu + self.emissions_household_average;
+			if cycle > 10 {
+				self.month_counter <- self.month_counter + 1;
+				
+			}
 		}
 	}
 }
@@ -1266,10 +1268,10 @@ species households {
 	}
 			
 	action calculate_emissions { // emissions in g of CO2 eq
-		if (self.house.energy_source = "gas") {
+		if (self.house.energy_source = "Gas") {
 			my_heat_emissions <- my_heat_consumption * gas_emissions;
 		}
-		else if (self.house.energy_source = "oil") {
+		else if (self.house.energy_source = "Öl") {
 			my_heat_emissions <- my_heat_consumption * oil_emissions;
 		}
 		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
@@ -1278,7 +1280,7 @@ species households {
 		
 		
 		if (power_supplier = "green") {
-			my_power_emissions <- 0; // Emissionen tatsaechlich al 0 annehmen?
+			my_power_emissions <- 0.0; // Emissionen tatsaechlich al 0 annehmen?
 		}
 		else if (power_supplier = "mixed") {
 			my_power_emissions <- my_power_consumption * power_emissions * 0.5;
@@ -1498,7 +1500,7 @@ experiment agent_decision_making type: gui{
 	
 	
 	output {
-//		monitor date value: current_date refresh: every(1#cycle);		
+		//monitor monat value: ((technical_data_calculator[0].month_counter - 1) mod 12) ;		
 		
 		
 		layout #split;
@@ -1521,9 +1523,9 @@ experiment agent_decision_making type: gui{
 			species households_4000etc aspect: by_energy;
 						
 			overlay position: { 5, 5 } size: { 140#px, 190#px } background: # black transparency: 0.5 border: #black rounded: true {
-				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
+				draw "Date" at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
-				draw string ("Transformation level") at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
+				draw "Transformation level" at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
 				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
 				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
@@ -1572,7 +1574,11 @@ experiment agent_decision_making type: gui{
 		}
 		
 		display "Charts" {
-			chart "Average of decision-variables" type: series {
+			chart "Average of decision-variables" 
+			type: series
+			x_label: "Day"
+			
+			{
 				data "CEEA" value: sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
 				data "EDA" value: sum_of(agents of_generic_species households, each.EDA) / length(agents of_generic_species households);
 				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
@@ -1580,30 +1586,98 @@ experiment agent_decision_making type: gui{
 		}
 		
 		display "Modernization" {
-			chart "Rate of Modernization" type: xy y_range: {0,0.03} style: line{
-				data "Rate of Modernization" value: {current_date.year, modernization_rate}; 
-				data "1% Refurbishment Rate" value: {current_date.year, 0.01};
-				data "1.5% Refurbishment Rate" value: {current_date.year, 0.015};
-				data "2% Refurbishment Rate" value: {current_date.year, 0.02};
+			chart "Rate of Modernization" 
+			type: series 
+			//y_range: {0,0.03} 
+			style: line
+			x_label: "Year"
+			x_serie: [current_date.year]
+			x_serie_labels: string(current_date.year)
+			y_label: "Rate of Modernization"
+			{
+				data "Rate of Modernization" 
+				value: modernization_rate
+				color: #gold; 
+				data "1% Refurbishment Rate" 
+				value: 0.01
+				marker: false
+				thickness: 2.0
+				color: #red;
+				data "1.5% Refurbishment Rate" 
+				value: 0.015
+				marker: false
+				thickness: 2.0
+				color: #darkblue;
+				data "2% Refurbishment Rate" 
+				value: 0.02
+				marker: false
+				thickness: 2.0
+				color: #darkgreen;
 			}
 		}
 		
 
-		display "Emissions per year" { // TODO
-			chart "Emissions per year within the neighborhood" type: series {
-				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
-				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat; 
-				data "Total power emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_power; 
-				data "Average energy emissions of a household per year" value: technical_data_calculator[0].emissions_household_average; 
+		display "Monthly Emissions"{ // TODO
+			chart "Emissions per month within the neighborhood" 
+			type: series 
+			x_label: "Month"
+			y_label: "g of CO2 eq"
+			x_serie: [technical_data_calculator[0].month_counter]
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
+			{
+				data "Total energy emissions of neighborhood per month" 
+				value: technical_data_calculator[0].emissions_neighborhood_total;
+				
+				data "Total heat emissions of neighborhood per month" 
+				value: technical_data_calculator[0].emissions_neighborhood_heat; 
+				
+				data "Total power emissions of neighborhood per month" 
+				value: technical_data_calculator[0].emissions_neighborhood_power; 
+				//data "Average energy emissions of a household per month" value: technical_data_calculator[0].emissions_household_average; 
 			}
 		}
 		
 		display "Emissions cumulative" { // TODO
-			chart "Cumulative emissions of the neighborhood" type: series {
-				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_accu;
-				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_household_average_accu;
+			chart "Cumulative emissions of the neighborhood" 
+			type: series 
+			x_label: "Month"
+			y_label: "g of CO2 eq"
+			x_serie: [technical_data_calculator[0].month_counter] 
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] {
+				data "Total energy emissions of neighborhood per year" 
+				value: technical_data_calculator[0].emissions_neighborhood_accu
+				;
+			}
+		}
+		display "Average Emissions Cumulative" { // TODO
+			chart "Average cumulative emissions of the neighborhood" 
+			type: series 
+			x_label: "Month"
+			y_label: "g of CO2 eq"
+			x_serie: [technical_data_calculator[0].month_counter] 
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] {
+				data "Accumulated Average energy emissions of a household" 
+				value: technical_data_calculator[0].emissions_household_average_accu
+				;
 
 			}
+		}
+		
+		display "Average Emissions"{
+			chart "Average Emissions per Household" 
+			type: series 
+			x_serie: [technical_data_calculator[0].month_counter]
+			x_label: "Month" 
+			y_label: "g of CO2 eq"
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
+			{
+				data "Average energy emissions of a household" 
+				value: technical_data_calculator[0].emissions_household_average;
+			}
+
+			
+			
+			
 		}
 	}
 }
@@ -1717,8 +1791,8 @@ experiment agent_decision_making_3d type: gui{
 			}
 		}
 		
-		display "Emissions per year" { // TODO
-			chart "Emissions per year within the neighborhood" type: series {
+		display "Monthly Emissions" refresh: (current_date.day = 1){ // TODO
+			chart "Emissions per month within the neighborhood" type: series {
 				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
 				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat; 
 				data "Total power emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_power; 
