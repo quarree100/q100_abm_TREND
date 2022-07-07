@@ -298,6 +298,7 @@ global {
 	
 	init { 		
 		
+		bool delete_csv_export <- delete_file("../includes/csv_export/csv_export_co2_graph_test.csv");
 		create technical_data_calculator number: 1;
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
@@ -862,7 +863,6 @@ species building {
 			ask self.get_tenants() {
 				house.building_emissions <- house.building_emissions + self.my_energy_emissions;
 			}
-			write building_emissions;
 		}
 	}
 	
@@ -1502,14 +1502,14 @@ experiment agent_decision_making type: gui{
 	
 //csv_export for output test - line graph infoscreen	
 	
-	reflex save_results_co2_graph_test { ///////////////TODO STAND 06.07. //////////////////
+	reflex save_results_co2_graph_test { 
 		
 		if current_date.day = 3 {
-			
-			//list<building> interchange_buildings <- (building where (each.qscope_interchange_flag = true));
-			//save [cycle, current_date, technical_data_calculator[0].emissions_neighborhood_total]
-			save [building where (each.qscope_interchange_flag = true)]
-			to: "../includes/csv_export/csv_export_co2_graph_test.csv" type: csv rewrite: false header: true;
+
+			ask building where (each.qscope_interchange_flag = true) {
+				save [cycle, current_date,id, building_emissions]
+				to: "../includes/csv_export/csv_export_co2_graph_test.csv" type: csv rewrite: false header: true;
+			}
 		}
 	}
 	
