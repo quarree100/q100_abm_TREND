@@ -1495,8 +1495,8 @@ experiment agent_decision_making type: gui{
 //csv_export for frontend test
 
 	reflex save_results_test {
-		
-		save [cycle, current_date, (length(building where (each.mod_status = "s")) / length(building) * 100)]
+		float value <- (length(building where (each.mod_status = "s")) / length(building) * 100);
+		save [cycle, current_date, value]
 		to: "../includes/csv_export/test/csv_export_test.csv" type: csv rewrite: false;
 	}
 	
