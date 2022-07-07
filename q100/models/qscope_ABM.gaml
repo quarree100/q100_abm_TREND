@@ -831,7 +831,7 @@ species building {
 		return neighbors;
 	}
 	
-	list get_tenants { // returns a list of all households that are living in the building.
+	list<households> get_tenants { // returns a list of all households that are living in the building.
 		return inside(agents of_generic_species(households), self);
 	}
 	
@@ -856,11 +856,13 @@ species building {
 		}
 	}
 	
-	reflex monthly_updates_technical_data {
+	reflex monthly_updates_emissions { //to validate! TODO
 		if (current_date.day = 2) {
-		
-			building_emissions <- sum_of(get_tenants.my_emissions);
-			
+			building_emissions <- 0;
+			ask self.get_tenants() {
+				house.building_emissions <- house.building_emissions + self.my_energy_emissions;
+			}
+			write building_emissions;
 		}
 	}
 	
@@ -1500,12 +1502,14 @@ experiment agent_decision_making type: gui{
 	
 //csv_export for output test - line graph infoscreen	
 	
-	reflex save_results_co2_graph_test {
+	reflex save_results_co2_graph_test { ///////////////TODO STAND 06.07. //////////////////
 		
-		if current_date.day = 1 {
+		if current_date.day = 3 {
 			
-			save [cycle, current_date, technical_data_calculator[0].emissions_neighborhood_total, (building where (each.qscope_interchange_flag = true), sum_of(each.get_tenants.my_emissions))] //so oder so ähnlich
-			to: "../includes/csv_export/csv_export_co2_graph_test.csv" type: csv rewrite: false;
+			//list<building> interchange_buildings <- (building where (each.qscope_interchange_flag = true));
+			//save [cycle, current_date, technical_data_calculator[0].emissions_neighborhood_total]
+			save [building where (each.qscope_interchange_flag = true)]
+			to: "../includes/csv_export/csv_export_co2_graph_test.csv" type: csv rewrite: false header: true;
 		}
 	}
 	
