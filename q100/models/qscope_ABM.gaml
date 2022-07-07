@@ -205,6 +205,30 @@ global {
 	
 	//	DATA FOR DECISION MAKING INVEST
 	
+	// MAX E AND C VALUES FOR NORMALIZATION // TODO NUR ZUM TESTEN!!
+	float e_current_max <- 1; 
+	float e_invest_max <- 1;
+	float e_change_max <- 1;
+	float e_switch_max <- 1;
+	float c_current_max <- 1;
+	float c_invest_max <- 1;
+	float c_change_max <- 1;
+	float c_switch_max <- 1;
+	
+	reflex update_max_values {
+		if current_date.day = 4 {
+			e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
+			e_invest_max <- max((agents of_generic_species households) accumulate (each.e_invest));
+			e_change_max <- max((agents of_generic_species households) accumulate (each.e_change));
+			e_switch_max <- max((agents of_generic_species households) accumulate (each.e_switch));
+			c_current_max <- max((agents of_generic_species households) accumulate (each.c_current));
+			c_invest_max <- max((agents of_generic_species households) accumulate (each.c_invest));
+			c_change_max <- max((agents of_generic_species households) accumulate (each.c_change));
+			c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
+		}
+	}
+	// MAX E AND C VALUES FOR NORMALIZATION //
+	
 	float q100_price_capex <- q100_concept_prices_emissions [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
 	int q100_price_capex_column {
@@ -399,13 +423,13 @@ global {
 				create income_group number: share_income_map[income_group] * nb_units * 0.25 {
 					float decision_500_1000_CEEK_min <- decision_map[income_group][1,i];
 					float decision_500_1000_CEEK_1st <- decision_map[income_group][1,i+1];
-					CEEK <- rnd (decision_500_1000_CEEK_min, decision_500_1000_CEEK_1st);
+					A_k <- rnd (decision_500_1000_CEEK_min, decision_500_1000_CEEK_1st);
 					float decision_500_1000_CEEA_min <- decision_map[income_group][2,i];
 					float decision_500_1000_CEEA_1st <- decision_map[income_group][2,i+1];
-					CEEA <- rnd (decision_500_1000_CEEA_min, decision_500_1000_CEEA_1st);
+					A_e <- rnd (decision_500_1000_CEEA_min, decision_500_1000_CEEA_1st);
 					float decision_500_1000_EDA_min <- decision_map[income_group][3,i];
 					float decision_500_1000_EDA_1st <- decision_map[income_group][3,i+1];
-					EDA <- rnd (decision_500_1000_EDA_min, decision_500_1000_EDA_1st);
+					A_d <- rnd (decision_500_1000_EDA_min, decision_500_1000_EDA_1st);
 					float decision_500_1000_PN_min <- decision_map[income_group][4,i];
 					float decision_500_1000_PN_1st <- decision_map[income_group][4,i+1];
 					PN <- rnd (decision_500_1000_PN_min, decision_500_1000_PN_1st);
@@ -417,13 +441,13 @@ global {
 					EEH <- rnd (decision_500_1000_EEH_min, decision_500_1000_EEH_1st);
 					float decision_500_1000_PBC_I_min <- decision_map[income_group][7,i];
 					float decision_500_1000_PBC_I_1st <- decision_map[income_group][7,i+1];
-					PBC_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
+					B_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
 					float decision_500_1000_PBC_C_min <- decision_map[income_group][8,i];
 					float decision_500_1000_PBC_C_1st <- decision_map[income_group][8,i+1];
-					PBC_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
+					B_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
 					float decision_500_1000_PBC_S_min <- decision_map[income_group][9,i];
 					float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
-					PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
+					B_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 					id_group <- string(income_group) + "_" + letters[i]; 			
 					
 					do find_house; //Locate household in a random building.
@@ -572,6 +596,14 @@ global {
 		
 		do distribute_budget(get_all_instances(households));
 		
+		// NUR ZUM TESTEN TODO: BEI UMSTRUKTURIERUNG ÄNDERN!!
+		ask agents of_generic_species households {
+			do calculate_consumption;
+			do calculate_emissions;
+			do calculate_heat_expenses;
+			do calculate_power_expenses;
+		}
+		// NUR ZUM TESTEN
 	}
 
 
@@ -592,13 +624,13 @@ global {
 				family <- flip(share_families_21_40);
 				float decision_500_1000_CEEK_min <- decision_map[income_group][1,i];
 				float decision_500_1000_CEEK_1st <- decision_map[income_group][1,i+1];
-				CEEK <- rnd (decision_500_1000_CEEK_min, decision_500_1000_CEEK_1st);
+				A_k <- rnd (decision_500_1000_CEEK_min, decision_500_1000_CEEK_1st);
 				float decision_500_1000_CEEA_min <- decision_map[income_group][2,i];
 				float decision_500_1000_CEEA_1st <- decision_map[income_group][2,i+1];
-				CEEA <- rnd (decision_500_1000_CEEA_min, decision_500_1000_CEEA_1st);
+				A_e <- rnd (decision_500_1000_CEEA_min, decision_500_1000_CEEA_1st);
 				float decision_500_1000_EDA_min <- decision_map[income_group][3,i];
 				float decision_500_1000_EDA_1st <- decision_map[income_group][3,i+1];
-				EDA <- rnd (decision_500_1000_EDA_min, decision_500_1000_EDA_1st);
+				A_d <- rnd (decision_500_1000_EDA_min, decision_500_1000_EDA_1st);
 				float decision_500_1000_PN_min <- decision_map[income_group][4,i];
 				float decision_500_1000_PN_1st <- decision_map[income_group][4,i+1];
 				PN <- rnd (decision_500_1000_PN_min, decision_500_1000_PN_1st);
@@ -610,13 +642,13 @@ global {
 				EEH <- rnd (decision_500_1000_EEH_min, decision_500_1000_EEH_1st);
 				float decision_500_1000_PBC_I_min <- decision_map[income_group][7,i];
 				float decision_500_1000_PBC_I_1st <- decision_map[income_group][7,i+1];
-				PBC_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
+				B_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
 				float decision_500_1000_PBC_C_min <- decision_map[income_group][8,i];
 				float decision_500_1000_PBC_C_1st <- decision_map[income_group][8,i+1];
-				PBC_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
+				B_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
 				float decision_500_1000_PBC_S_min <- decision_map[income_group][9,i];
 				float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
-				PBC_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
+				B_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 				id_group <- string(income_group) + "_" + ["a", "b", "c", "d"][i];
 				employment <- sample(employment_status_list, 1, false)[0];
 				if flip(share_owner_map[income_group]) {
@@ -936,19 +968,19 @@ species nahwaermenetz{
 species households {
 	
 
-	float CEEK; // Climate-Energy-Environment Knowledge
-	float CEEA; // Climate-Energy-Environment Awareness
-	float EDA; // Energy-Related-Decision Awareness
-	float KA; // ---Decision-Threshold---: Knowledge & Awareness
+	float A_k; // Climate-Energy-Environment Knowledge
+	float A_e; // Climate-Energy-Environment Awareness
+	float A_d; // Energy-Related-Decision Awareness
+	float A; // ---Decision-Threshold---: Knowledge & Awareness
 	float PN; // Personal Norms
 	float SN; // Subjective Norms
 	float N; // ---Decicision-Threshold---: Norms
-	float PBC_I; // Perceived-Behavioral-Control Invest
-	float PBC_C; // Perceived-Behavioral-Control Change
-	float PBC_S; // Perceived-Behavioral-Control Switch	
-	float PBC_I_7; // Perceived-Behavioral-Control Invest divided by 7
-	float PBC_C_7; // Perceived-Behavioral-Control Change divided by 7
-	float PBC_S_7; // Perceived-Behavioral-Control Switch divided by 7	
+	float B_I; // Perceived-Behavioral-Control Invest
+	float B_C; // Perceived-Behavioral-Control Change
+	float B_S; // Perceived-Behavioral-Control Switch	
+	float B_I_7; // Perceived-Behavioral-Control Invest divided by 7
+	float B_C_7; // Perceived-Behavioral-Control Change divided by 7
+	float B_S_7; // Perceived-Behavioral-Control Switch divided by 7	
 	float N_PBC_I; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Invest
 	float N_PBC_C; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Change
 	float N_PBC_S; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Switch
@@ -1076,29 +1108,29 @@ species households {
         			create edge_vis number: 1 with: (my_edge:current_edge);
         		}
         		if flag {
-	        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
-	        			self.CEEA <- self.CEEA + private_communication;
+	        		if (self.A_e < mean([myself.A_e, self.A_e])) and self.A_e < 7 {
+	        			self.A_e <- self.A_e + private_communication;
 	        			if influence_type = "both_sides"{
-	        				myself.CEEA <- myself.CEEA - private_communication;
+	        				myself.A_e <- myself.A_e - private_communication;
 	        			}
 	        		}
-	        		else if CEEA > 0 {
-	        			self.CEEA <- self.CEEA - private_communication;
+	        		else if A_e > 0 {
+	        			self.A_e <- self.A_e - private_communication;
 	        			if influence_type = "both_sides"{
-	        				myself.CEEA <- myself.CEEA + private_communication;
+	        				myself.A_e <- myself.A_e + private_communication;
 	        			}
 	        		}
 	        		
-	        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
-	        			self.EDA <- self.EDA + private_communication;
+	        		if (self.A_d < mean([myself.A_d, self.A_d])) and self.A_d < 7 {
+	        			self.A_d <- self.A_d + private_communication;
 	        			if influence_type = "both_sides"{
-	        				myself.EDA <- myself.EDA - private_communication;
+	        				myself.A_d <- myself.A_d - private_communication;
 	        			}
 	        		}
-	        		else if EDA > 0 {
-	        			self.EDA <- self.EDA - private_communication;
+	        		else if A_d > 0 {
+	        			self.A_d <- self.A_d - private_communication;
 	        			if influence_type = "both_sides"{
-	        				myself.EDA <- myself.EDA + private_communication;
+	        				myself.A_d <- myself.A_d + private_communication;
 	        			}
 	        		}
 	        		
@@ -1140,55 +1172,55 @@ species households {
         				create edge_vis number: 1 with: (my_edge:current_edge);
         			}
         			if flag {
-	        			if self.network_socialgroup = true and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
-	        				self.CEEA <- self.CEEA + (private_communication * 2);
+	        			if self.network_socialgroup = true and ((self.A_e < mean([myself.A_e, self.A_e])) and self.A_e < 7) {
+	        				self.A_e <- self.A_e + (private_communication * 2);
 	        				if influence_type = "both_sides"{
-	        					myself.CEEA <- myself.CEEA - (private_communication * 2);
+	        					myself.A_e <- myself.A_e - (private_communication * 2);
 	        				} 
 	        			}
-	        			else if self.network_socialgroup = true and self.CEEA > 0 {
-	        				self.CEEA <- self.CEEA - (private_communication * 2);
+	        			else if self.network_socialgroup = true and self.A_e > 0 {
+	        				self.A_e <- self.A_e - (private_communication * 2);
 	        				if influence_type = "both_sides"{
-	        					myself.CEEA <- myself.CEEA + (private_communication * 2);
+	        					myself.A_e <- myself.A_e + (private_communication * 2);
 	        				} 
 	      			  	}
-	      			  	else if self.network_socialgroup = false and ((self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7) {
-	        				self.CEEA <- self.CEEA + private_communication;
+	      			  	else if self.network_socialgroup = false and ((self.A_e < mean([myself.A_e, self.A_e])) and self.A_e < 7) {
+	        				self.A_e <- self.A_e + private_communication;
 	        				if influence_type = "both_sides"{
-	        					myself.CEEA <- myself.CEEA - private_communication;
+	        					myself.A_e <- myself.A_e - private_communication;
 	        				}  
 	        			}
-	        			else if self.network_socialgroup = false and self.CEEA > 0 {
-	        				self.CEEA <- self.CEEA - private_communication;
+	        			else if self.network_socialgroup = false and self.A_e > 0 {
+	        				self.A_e <- self.A_e - private_communication;
 	        				if influence_type = "both_sides"{
-	        					myself.CEEA <- myself.CEEA + private_communication;
+	        					myself.A_e <- myself.A_e + private_communication;
 	        				}
 	      			  	}
 	      			  	
 	      			
         		
-	        			if self.network_socialgroup = true and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
-	        				self.EDA <- self.EDA + (private_communication * 2);
+	        			if self.network_socialgroup = true and ((self.A_d < mean([myself.A_d, self.A_d])) and self.A_d < 7) {
+	        				self.A_d <- self.A_d + (private_communication * 2);
 	        				if influence_type = "both_sides"{
-	        					myself.EDA <- myself.EDA - (private_communication * 2);
+	        					myself.A_d <- myself.A_d - (private_communication * 2);
 	        				} 
 	        			}
-	        			else if self.network_socialgroup = true and self.EDA > 0 {
-	        				self.EDA <- self.EDA - (private_communication * 2);
+	        			else if self.network_socialgroup = true and self.A_d > 0 {
+	        				self.A_d <- self.A_d - (private_communication * 2);
 	        				if influence_type = "both_sides"{
-	        					myself.EDA <- myself.EDA + (private_communication * 2);
+	        					myself.A_d <- myself.A_d + (private_communication * 2);
 	        				} 
 	      			  	}
-	      			  	else if self.network_socialgroup = false and ((self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7) {
-	        				self.EDA <- self.EDA + private_communication;
+	      			  	else if self.network_socialgroup = false and ((self.A_d < mean([myself.A_d, self.A_d])) and self.A_d < 7) {
+	        				self.A_d <- self.A_d + private_communication;
 	        				if influence_type = "both_sides"{
-	        					myself.EDA <- myself.EDA - private_communication;
+	        					myself.A_d <- myself.A_d - private_communication;
 	        				}  
 	        			}
-	        			else if self.network_socialgroup = false and self.EDA > 0 {
-	        				self.EDA <- self.EDA - private_communication;
+	        			else if self.network_socialgroup = false and self.A_d > 0 {
+	        				self.A_d <- self.A_d - private_communication;
 	        				if influence_type = "both_sides"{
-	        					myself.EDA <- myself.EDA + private_communication;
+	        					myself.A_d <- myself.A_d + private_communication;
 	        				}
 	      			  	}
 	      			
@@ -1229,29 +1261,29 @@ species households {
 	        			create edge_vis number: 1 with: (my_edge:current_edge);
 	        		}
 	        		if flag {
-		        		if (self.CEEA < mean([myself.CEEA, self.CEEA])) and self.CEEA < 7 {
-		        			self.CEEA <- self.CEEA + private_communication;
+		        		if (self.A_e < mean([myself.A_e, self.A_e])) and self.A_e < 7 {
+		        			self.A_e <- self.A_e + private_communication;
 		        			if influence_type = "both_sides"{
-		        				myself.CEEA <- myself.CEEA - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
+		        				myself.A_e <- myself.A_e - private_communication;// validierung - wie kann hier ein nachvollziehbarer wert gewaehlt werden? Oder muss dies Teil der Untersuchtung sein? & wieso - unendlich?
 		        			}
 		        		}
-		        		else if CEEA > 0 {
-		        			self.CEEA <- self.CEEA - private_communication;
+		        		else if A_e > 0 {
+		        			self.A_e <- self.A_e - private_communication;
 		        			if influence_type = "both_sides"{
-		        				myself.CEEA <- myself.CEEA + private_communication;
+		        				myself.A_e <- myself.A_e + private_communication;
 		        			}
 		        		}
 		        		
-		        		if (self.EDA < mean([myself.EDA, self.EDA])) and self.EDA < 7 {
-		        			self.EDA <- self.EDA + private_communication;
+		        		if (self.A_d < mean([myself.A_d, self.A_d])) and self.A_d < 7 {
+		        			self.A_d <- self.A_d + private_communication;
 		        			if influence_type = "both_sides"{
-		        				myself.EDA <- myself.EDA - private_communication;
+		        				myself.A_d <- myself.A_d - private_communication;
 		        			}
 		        		}
-		        		else if EDA > 0 {
-		        			self.EDA <- self.EDA - private_communication;
+		        		else if A_d > 0 {
+		        			self.A_d <- self.A_d - private_communication;
 		        			if influence_type = "both_sides"{
-		        				myself.EDA <- myself.EDA + private_communication;
+		        				myself.A_d <- myself.A_d + private_communication;
 		        			}
 		        		}
 		        		
@@ -1358,16 +1390,17 @@ species households {
 		Attitude (0 <= KA <= 1),
 		Norms (0 <= N <= 1) and
 		Perceived behavioral control (0 <= PBC <= 1) */ 
-		KA <- mean(CEEK, CEEA, EDA) / 7;
+		A <- mean(A_k, A_e, A_d) / 7;
 		N <- mean(SN) / 7;
-		PBC_I_7 <- mean(PBC_I) / 7;
-		PBC_C_7 <- mean(PBC_C) / 7;
-		PBC_S_7 <- mean(PBC_S) / 7;
+		B_I_7 <- mean(B_I) / 7;
+		B_C_7 <- mean(B_C) / 7;
+		B_S_7 <- mean(B_S) / 7;
 	}
 	
 	action calculate_hypo_e {
 		float hypo_q100_carbon_exp <- my_heat_consumption * q100_emissions * carbon_price * int(carbon_price_on_off);
 		e_invest <- (my_heat_consumption * q100_price_opex / 100) + hypo_q100_carbon_exp + my_power_expenses;
+		write [my_heat_consumption];
 		e_change <- my_heat_expenses * change_factor + my_power_expenses * change_factor;
 		if power_supplier = "mixed" {
 			e_switch <- my_power_consumption * (power_price + 10) / 100 + my_heat_expenses;
@@ -1375,18 +1408,18 @@ species households {
 	}
 	
 	action calculate_utility {
-		U_current <- alpha * e_current + (1 - alpha) * c_current + (KA + N + int(pbc_do_nothing)); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
+		U_current <- alpha * e_current / e_current_max + (1 - alpha) * c_current / c_current_max + (A + N + int(pbc_do_nothing)); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
 	
 		if (invest = true) or (self.house.energy_source = "q100") {
 			U_i <- 0;
 		}
 		else {
 			if delta_on_off {
-				self.delta <- self.PBC_I / 7 * int(self.ownership = "owner");
-				U_i <- (1 - self.delta) * (alpha * e_invest + (1 - alpha) * c_invest) + self.delta *(KA + N + PBC_I_7);
+				self.delta <- self.B_I / 7 * int(self.ownership = "owner");
+				U_i <- (1 - self.delta) * (alpha * e_invest / e_invest_max + (1 - alpha) * c_invest / c_invest_max) + self.delta *(A + N + B_I_7);
 			}
 			else {
-				U_i <- alpha * e_invest + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
+				U_i <- alpha * e_invest / e_invest_max + (1 - alpha) * c_invest / c_invest_max + (A + N + B_I_7);
 			}
 			
 		}
@@ -1396,11 +1429,11 @@ species households {
 		}
 		else {
 			if delta_on_off {
-				self.delta <- self.PBC_C / 7;
-				U_c <- (1 + self.delta) * (alpha * e_change + (1 - alpha) * c_change) + self.delta * (KA + N + PBC_C_7);
+				self.delta <- self.B_C / 7;
+				U_c <- (1 + self.delta) * (alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max) + self.delta * (A + N + B_C_7);
 			}
 			else {
-				U_c <- alpha * e_change + (1 - alpha) * c_change + (KA + N + PBC_C_7);
+				U_c <- alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max + (A + N + B_C_7);
 			}
 		
 		}
@@ -1410,11 +1443,11 @@ species households {
 		}
 		else {
 			if delta_on_off {
-				self.delta <- self.PBC_S / 7;
-				U_s <- (1 - self.delta) * (alpha * e_switch + (1 - alpha) * c_switch) + self.delta * (KA + N + PBC_S_7);
+				self.delta <- self.B_S / 7;
+				U_s <- (1 - self.delta) * (alpha * e_switch / e_switch_max + (1 - alpha) * c_switch / c_switch_max) + self.delta * (A + N + B_S_7);
 			}
 			else {
-				U_s <- alpha * e_switch + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
+				U_s <- alpha * e_switch / e_switch_max + (1 - alpha) * c_switch / c_switch_max + (A + N + B_S_7);
 			}
 		}
 	}
@@ -1756,8 +1789,8 @@ experiment agent_decision_making type: gui{
 		
 		display "Charts" {
 			chart "Average of decision-variables" type: series {
-				data "CEEA" value: sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
-				data "EDA" value: sum_of(agents of_generic_species households, each.EDA) / length(agents of_generic_species households);
+				data "CEEA" value: sum_of(agents of_generic_species households, each.A_e) / length(agents of_generic_species households);
+				data "EDA" value: sum_of(agents of_generic_species households, each.A_d) / length(agents of_generic_species households);
 				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
 			}
 		}
@@ -1888,8 +1921,8 @@ experiment agent_decision_making_3d type: gui{
 		
 		display "Charts" {
 			chart "Average of decision-variables" type: series {
-				data "CEEA" value: sum_of(agents of_generic_species households, each.CEEA) / length(agents of_generic_species households);
-				data "EDA" value: sum_of(agents of_generic_species households, each.EDA) / length(agents of_generic_species households);
+				data "CEEA" value: sum_of(agents of_generic_species households, each.A_e) / length(agents of_generic_species households);
+				data "EDA" value: sum_of(agents of_generic_species households, each.A_d) / length(agents of_generic_species households);
 				data "SN" value: sum_of(agents of_generic_species households, each.SN) / length(agents of_generic_species households);
 			}
 		}
