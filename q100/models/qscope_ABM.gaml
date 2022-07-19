@@ -100,7 +100,7 @@ global {
 	bool carbon_price_on_off <- false;
 
 	bool delta_on_off <- false;
-	bool pbc_do_nothing <- true;
+	bool pbc_do_nothing <- false;
 	float carbon_price <- carbon_prices [carbon_price_column(), 0]; 
 
 	string carbon_price_scenario;
@@ -229,7 +229,6 @@ global {
 		c_invest_max <- max((agents of_generic_species households) accumulate (each.c_invest));
 		c_change_max <- max((agents of_generic_species households) accumulate (each.c_change));
 		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
-		write e_current_max;
 	}
 
 	
@@ -1102,7 +1101,6 @@ species households {
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
 
-	bool invest <- false;
 	building house;
 
 	int my_floor_area;
