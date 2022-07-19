@@ -58,6 +58,7 @@ global {
 	matrix<float> share_employment_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-employment_income_V1.csv", ",", float, true)); // distribution of employment status of households in neighborhood sorted by income
 	matrix<float> share_ownership_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
 
+	list<float> savings_rates <- list(csv_file("../includes/csv-data_socio/2022-07-01/sparquote_einkommen.csv", ",", float));
 
 	matrix<float> share_age_buildings_existing <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
 	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups including people who never moved
@@ -77,6 +78,7 @@ global {
 
 	float alpha <- alphas [alpha_column(), 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
+	
 	int alpha_column {
 		if alpha_scenario = "Static_mean" {
 			return 1;
@@ -90,11 +92,19 @@ global {
 		else if alpha_scenario = "Static_high" {
 			return 4;
 		}
+		else {
+			return 0;
+		}		
 	}
 
 	bool carbon_price_on_off <- false;
-	float carbon_price <- carbon_prices [carbon_price_column(), 0];
+
+	bool delta_on_off <- false;
+	bool pbc_do_nothing <- true;
+	float carbon_price <- carbon_prices [carbon_price_column(), 0]; 
+
 	string carbon_price_scenario;
+	
 	int carbon_price_column {
 		if  carbon_price_scenario = "A - Conservative" {
 			return 1;
@@ -111,6 +121,7 @@ global {
 		else if carbon_price_scenario = "C3 - Progressive" {
 			return 5;
 		}
+
 	}
 
 	float gas_price <- energy_prices_emissions [gas_price_column(), 0];
@@ -220,6 +231,10 @@ global {
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
 	float energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings in percent TODO
   	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
+  	float change_threshold <- 4.75; // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- 0.9; // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made
+  	float MFH_connection_threshold <- 0.8; // TODO share of MFH flats that made decision invest to connect to heat_network
+  	
 	bool view_toggle <- false; // Parameter to toggle the 3D-View.
 	bool keep_seed <- false; // When true, the simulation seed will not change.
 	string timestamp <- "";
@@ -274,21 +289,26 @@ global {
 		}
 		return sum;
 	}
+	
+	list<agent> get_all_instances(species<agent> spec) {
+        return spec.population + spec.subspecies accumulate (get_all_instances(each));
+    }
 
-	list<list<households>> random_groups(list<households> input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
+
+	list<list> random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
 		int len <- length(input);
 		if len = 0 {
 			return range(n - 1) accumulate [[]];
 		}
 		else if len = 1 {
-			list<list<households>> output <- range(n - 2) accumulate [[]];
+			list<list> output <- range(n - 2) accumulate [[]];
 			add input to: output;
 			return shuffle(output);
 		}
 		else {
 			list shuffled_input <- shuffle(input);
 			list inds <- split_in(range(len - 1), n);
-			list<list<households>> output;
+			list<list> output;
 			loop group over: inds {
 				add shuffled_input where (index_of(shuffled_input, each) in group) to: output;
 			}
@@ -297,9 +317,24 @@ global {
 
 	}
 
-	init {
+	action distribute_budget(list household_list) { // assigns each household in the input list a budget based on their income and their age.
+		list<households> all_households <- get_all_instances(households);
+		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
+		int n <- length(all_households);
+		loop h over: household_list {
+				int i <- floor(index_of(all_households, h) / n * 10); // Calculates income decile of the current household.
+				ask h as households{
+					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
+				}
+			}
+			
+		
+	}
+	
+	init { 		
+		
+    bool delete_csv_export_emissions <- delete_file("../includes/csv_export_" + timestamp + "/emissions/..");
 
-		bool delete_csv_export_emissions <- delete_file("../includes/csv_export_" + timestamp + "/emissions/..");
 		create technical_data_calculator number: 1;
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
@@ -322,6 +357,7 @@ global {
 			vacant <- false;
 			built <- false;
 			mod_status <- "s";
+			energy_source <- "q100"; // TODO davon ausgehend, dass alle Neubauten sich an das q100-Netz anschliessen
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -461,7 +497,7 @@ global {
 
 // Power Supplier -> distributes the power supplier among households
 
-		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > 4.5) { //see documentation for references of supplier distribution; EEH is chosen by value above the median
+		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold) { //see documentation for references of supplier distribution; EEH is chosen by value above the median // change_threshold als Bedingung passend?
 		 	power_supplier <- "green";
 		}
 
@@ -473,10 +509,19 @@ global {
 			power_supplier <- "conventional";
 		}
 
+		
+// Distribution of change values among households based on EEH 								// share needs to be validated!!! TODO
+
+		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold)	{
+			change <- true;
+		}	
+		
+		
+
 // Floor area
 
 		ask agents of_generic_species households {
-			my_floor_area <- (self.house.net_floor_area / self.house.units);
+			my_floor_area <- int(self.house.net_floor_area / self.house.units);
 		}
 
 
@@ -534,6 +579,10 @@ global {
 				}
 			}
 		}
+
+		
+		do distribute_budget(get_all_instances(households));
+		
 
 	}
 
@@ -655,7 +704,10 @@ global {
 					}
 			}
 		}
-		if sum_of(new_households of_generic_species households, length(each.social_contacts)) > 0 {
+
+		do distribute_budget(new_households);
+		if sum_of(new_households of_generic_species households, length(each.social_contacts)) > 0 { 
+
 		}
 
 	}
@@ -751,12 +803,6 @@ global {
 			unrefurbished_buildings_year <- length(building where (each.mod_status = "u"));
 		}
 	}
-
-
-
-
-
-
 }
 
 species technical_data_calculator {
@@ -793,6 +839,7 @@ species building {
 	string street;
 	bool built <- true;
 	string mod_status; //modernization-status
+	date mod_date;
 	int net_floor_area;
 	float spec_heat_consumption;
 	float spec_power_consumption;
@@ -800,8 +847,34 @@ species building {
 	rgb color <- #gray;
 	geometry line;
 	string id;
+
+	int invest_counter;
+	
+	action invoke_investment { // Gets called when the tenants decide to invest in a refurbishment of the house. The invest_counter is set depending on the selected payment scenario.
+		if self.mod_status = "s" {}
+		else {
+			self.mod_status <- "s";
+			self.mod_date <- current_date;
+			self.energy_source <- "q100";
+			if q100_price_capex_scenario = "1 payment" {
+				self.invest_counter <- 1;
+
+			}
+			else if q100_price_capex_scenario = "2 payments" {
+				self.invest_counter <- 2;
+
+			}
+			else if q100_price_capex_scenario = "5 payments" {
+				self.invest_counter <- 5;
+
+			}
+		}
+	} 
+	
+
 	bool qscope_interchange_flag <- false;
 	float building_emissions;
+
 
 	action add_tenant {
 		self.tenants <- self.tenants + 1;
@@ -820,10 +893,24 @@ species building {
 	action modernize { // vielleicht besser unterscheiden nach Mieter/Vermieter als nach EFH/MFH TODO
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
+			self.energy_source <- "q100";
 			refurbished_buildings_year <- refurbished_buildings_year + 1;
 			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 		}
 	}
+
+	
+	reflex investment_costs { // When self.invest_counter is set to a value > 0, the tenants of the building will be charged with the costs of the home refurbishment.
+		if self.invest_counter > 0 and current_date.month = mod_date.month and current_date.day = mod_date.day {
+			ask self.get_tenants() {
+				if self.ownership = "owner" {
+					self.budget <- self.budget - q100_price_capex;
+				}
+			}
+			self.invest_counter <- self.invest_counter - 1;
+		}
+	}
+	
 
 	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
 		list neighbors;
@@ -888,7 +975,7 @@ species households {
 	float KA; // ---Decision-Threshold---: Knowledge & Awareness
 	float PN; // Personal Norms
 	float SN; // Subjective Norms
-	float PSN; // ---Decicision-Threshold---: Personal & Subjective Norms
+	float N; // ---Decicision-Threshold---: Norms
 	float PBC_I; // Perceived-Behavioral-Control Invest
 	float PBC_C; // Perceived-Behavioral-Control Change
 	float PBC_S; // Perceived-Behavioral-Control Switch
@@ -898,18 +985,36 @@ species households {
 	float N_PBC_I; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Invest
 	float N_PBC_C; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Change
 	float N_PBC_S; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Switch
-	float EEH; // Energy Efficient Habits
 
 
+	float EEH; // Energy Efficient Habits TODO
+	
+	float U; // Utility value that is selected in decision phase
+	float U_current;
+	float U_i;
+	float U_c;
+	float U_s;
+	
 
 	int income; // households income/month
 	float budget <- 0.0; // TODO every household starts with zero savings?
 	string id_group; // identification which quartile within the income group the agent belongs to
 
+
+	float c_current; // TODO composite goods
+	float c_invest;
+	float c_change;
+	float c_switch;
+	float e_current; // TODO total energy expenses a household has to pay for energy supply - heat & power
+	float e_invest;
+	float e_change;
+	float e_switch;
+	bool change <- false; // init value needs to be set for household with fitting settings TODO
+	bool invest <- false;
 	string power_supplier;
-	float c; // TODO composite goods
-	float e; // TODO total energy expenses a household has to pay for energy supply - heat & power
-	bool change; // init value needs to be set for household with fitting settings
+	float delta;
+	
+	
 
 	float my_heat_consumption; // monthly heat consumption in kWh
 	float my_power_consumption; // monthly power consumption in kWh
@@ -940,8 +1045,10 @@ species households {
 
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
+
 	bool invest <- false;
 	building house;
+
 	int my_floor_area;
 
 
@@ -1213,31 +1320,151 @@ species households {
 
 	reflex calculate_c { // calculation of c is used for decision making
 		if (current_date.day = 1) {
-			cost_benefit_invest <- q100_price_capex;
-			c <- income - (e + cost_benefit_invest);
+			c_current <- income - (e_current);
+			c_invest <- income - (e_invest + q100_price_capex); // langfristige Vorteile des Investments müssen evtl noch bedacht werden??
+			c_change <- income - (e_change);
+			c_switch <- income - (e_switch);
 		}
 	}
 
-	reflex decision_making {
+	
+	reflex decision_making { 
+		
 		if (current_date.day = 1) {
+			do update_decision_thresholds;
+			do calculate_hypo_e;
+			do calculate_utility;
+			
+			
+			U <- max ([U_current, U_i, U_c, U_s]); // rueckkopplung nach entscheidung implementieren
+			
+			if (U = U_i) and (q100_price_capex <= budget) { // Aufteilung der investitionskosten auf mehrere Jahre ergaenzen
+				invest <- true;
+				int test <- length(self.house.get_tenants() where (each.invest = true)); 
+				int test1 <- length(self.house.get_tenants());
+				if (ownership = "owner") and (self.house.type = "EFH") { 
+					ask self.house {
+						do invoke_investment;
+					}
+					
+				}
+//				else if (ownership = "tenant") and (self.house.type = "EFH") and (flip (landlord_prop)) { // ---> where do the CapEx appear??? TODO
+//					self.house.energy_source <- "q100";
+//					budget <- budget - q100_price_capex;
+//				}
 
+				else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (test / test1)) { // U_current = dummy -> (test / test1)
+					ask self.house {
+						do invoke_investment;
+					}
+				}
+			}
+			
+			else if (U = U_c) and (EEH > change_threshold) { 
+				change <- true;
+			}
+			
+			else if U = U_s { 
+				if power_supplier = "conventional" {
+					power_supplier <- "mixed";
+				}
+				else if power_supplier = "mixed" {
+					power_supplier <- "green";
+				}
+			}
 		}
 	}
+	
+	reflex consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
 
-	reflex consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert
 		if (current_date.day = 1) {
 			do calculate_consumption;
+			do calculate_emissions;
 			do calculate_heat_expenses;
 			do calculate_power_expenses;
-			do calculate_emissions;
+      
 
-			e <- my_heat_expenses + my_power_expenses;
+
+			
+			e_current <- my_heat_expenses + my_power_expenses;
+			
+// veraltet - loeschbar?			
 //			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
 //			emissions_neighborhood_power <- emissions_neighborhood_power + my_power_emissions;
+
+		}
+
+	}		
+		
+	// TODO --> Normieren! --> gilt für alpha*e & 1-alpha*c --> vgl Niamir?
+	
+	action update_decision_thresholds {
+		/* calculate household's current 
+		Attitude (0 <= KA <= 1),
+		Norms (0 <= N <= 1) and
+		Perceived behavioral control (0 <= PBC <= 1) */ 
+		KA <- mean(CEEK, CEEA, EDA) / 7;
+		N <- mean(SN) / 7;
+		PBC_I_7 <- mean(PBC_I) / 7;
+		PBC_C_7 <- mean(PBC_C) / 7;
+		PBC_S_7 <- mean(PBC_S) / 7;
+	}
+	
+	action calculate_hypo_e {
+		float hypo_q100_carbon_exp <- my_heat_consumption * q100_emissions * carbon_price * int(carbon_price_on_off);
+		e_invest <- (my_heat_consumption * q100_price_opex / 100) + hypo_q100_carbon_exp + my_power_expenses;
+		e_change <- my_heat_expenses * change_factor + my_power_expenses * change_factor;
+		if power_supplier = "mixed" {
+			e_switch <- my_power_consumption * (power_price + 10) / 100 + my_heat_expenses;
 		}
 	}
-
-
+	
+	action calculate_utility {
+		U_current <- alpha * e_current + (1 - alpha) * c_current + (KA + N + int(pbc_do_nothing)); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
+	
+		if (invest = true) or (self.house.energy_source = "q100") {
+			U_i <- 0;
+		}
+		else {
+			if delta_on_off {
+				self.delta <- self.PBC_I / 7 * int(self.ownership = "owner");
+				U_i <- (1 - self.delta) * (alpha * e_invest + (1 - alpha) * c_invest) + self.delta *(KA + N + PBC_I_7);
+			}
+			else {
+				U_i <- alpha * e_invest + (1 - alpha) * c_invest + (KA + N + PBC_I_7);
+			}
+			
+		}
+		
+		if change = true {
+			U_c <- 0;
+		}
+		else {
+			if delta_on_off {
+				self.delta <- self.PBC_C / 7;
+				U_c <- (1 + self.delta) * (alpha * e_change + (1 - alpha) * c_change) + self.delta * (KA + N + PBC_C_7);
+			}
+			else {
+				U_c <- alpha * e_change + (1 - alpha) * c_change + (KA + N + PBC_C_7);
+			}
+		
+		}
+		
+		if power_supplier = "green" {
+			U_s <- 0;
+		}
+		else {
+			if delta_on_off {
+				self.delta <- self.PBC_S / 7;
+				U_s <- (1 - self.delta) * (alpha * e_switch + (1 - alpha) * c_switch) + self.delta * (KA + N + PBC_S_7);
+			}
+			else {
+				U_s <- alpha * e_switch + (1 - alpha) * c_switch + (KA + N + PBC_S_7);
+			}
+		}
+	}
+	
+	
 
 	action calculate_consumption { // consumption divided by building type
 
@@ -1263,14 +1490,17 @@ species households {
 	}
 
 	action calculate_heat_expenses { // TODO co2-Preis einfach draufrechnen?
-		if (self.house.energy_source = "gas") {
+		if (self.house.energy_source = "Gas") {
 			my_heat_expenses <- my_heat_consumption * gas_price / 100;
 		}
-		else if (self.house.energy_source = "oil") {
+		else if (self.house.energy_source = "Öl") {
 			my_heat_expenses <- my_heat_consumption * oil_price / 100;
 		}
 		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
 			my_heat_expenses <- my_heat_consumption * q100_price_opex / 100;
+		}
+		if carbon_price_on_off {
+			my_heat_expenses <- my_heat_expenses + my_heat_emissions * carbon_price;
 		}
 	}
 
@@ -1280,6 +1510,9 @@ species households {
 		}
 		else {
 			my_power_expenses <- my_power_consumption * power_price / 100;
+		}
+		if carbon_price_on_off {
+			my_power_expenses <- my_power_expenses + my_power_emissions * carbon_price;
 		}
 	}
 
@@ -1296,7 +1529,9 @@ species households {
 
 
 		if (power_supplier = "green") {
-			my_power_emissions <- 0.0; // Emissionen tatsaechlich al 0 annehmen?
+
+			my_power_emissions <- 0; // Emissionen tatsaechlich als 0 annehmen?
+
 		}
 		else if (power_supplier = "mixed") {
 			my_power_emissions <- my_power_consumption * power_emissions * 0.5;
@@ -1312,38 +1547,11 @@ species households {
 
 
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
-		float budget_calc <- income * income_change_rate * alpha - e;
+		float budget_calc <- income * income_change_rate * alpha - e_current;
 		if (current_date.day = 1) and (budget_calc > 0) {
 			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
 		}
 	}
-
-// ueberarbeiten - stark veraltet TODO
-
-	action update_decision_thresholds {
-		/* calculate household's current
-		knowledge & awareness (0 <= KA <= 1),
-		personal & subjective norms (0 <= PSN <= 1) and
-		perceived behavioral control (0 <= N_PBC <= 1) */
-		KA <- mean(CEEK, CEEA, EDA) / 7;
-		PSN <- mean(PN, SN) / 7;
-		PBC_I_7 <- mean(PBC_I) / 7;
-		PBC_C_7 <- mean(PBC_C) / 7;
-		PBC_S_7 <- mean(PBC_S) / 7;
-	}
-
-	action update_decision_thresholds_subjectivenorm { // gives subjective norms a higher weight in an agent's decision making process
-		/* calculate household's current
-		knowledge & awareness (0 <= KA <= 1),
-		personal & subjective norms (0 <= PSN <= 1) and
-		normative perceived behavioral control (0 <= N_PBC <= 1) */
-		KA <- mean(CEEK, CEEA, EDA, SN) / 7;
-		PSN <- mean(PN, SN) / 7;
-		N_PBC_I <- mean(PBC_I, SN) / 7;
-		N_PBC_C <- mean(PBC_C, SN) / 7;
-		N_PBC_S <- mean(PBC_S, SN) / 7;
-	}
-
 
 
 	reflex move_out {
@@ -1395,7 +1603,7 @@ species households {
 	aspect by_energy {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
-		if (self.house.energy_source = "q100") or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> haushalte in bereits saniertem gebäude koennen keine invest entscheidung extra treffen TODO
+		if (self.house.energy_source = "q100") or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> Stand Basismodell Ja TODO
 		// wenn invest entscheidung getroffen wird, nimmt diese einfluss auf parameter "energy_source" einfluss //  Unterscheidung Mieter/Vermieter
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self);
 			list conn <- closest_points_with(netz, self);
@@ -1469,6 +1677,11 @@ experiment agent_decision_making type: gui{
 
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
+ 	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
+ 	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
+ 	parameter "Use delta in utility calculation" var: delta_on_off category: "Decision making";
+ 	parameter "Include PBC-Value in the current utility" var: pbc_do_nothing category: "Decision making";
+
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
@@ -1483,8 +1696,10 @@ experiment agent_decision_making type: gui{
  	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
-  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant_50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
+
+  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
+
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
   	parameter "timestamp" var: timestamp <- "";
@@ -1725,6 +1940,10 @@ experiment agent_decision_making_3d type: gui{
 
 
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
+ 	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
+ 	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
+ 	parameter "Share of MFH units that is needed to connect to Q100 heat_network" var: MFH_connection_threshold category: "Decision making";
+
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
@@ -1740,7 +1959,9 @@ experiment agent_decision_making_3d type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
-  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data"; // TODO
+
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
+  	
 
   	font my_font <- font("Arial", 12, #bold);
 
@@ -1850,4 +2071,26 @@ experiment agent_decision_making_3d type: gui{
 	}
 }
 
-experiment debug type:gui {}
+experiment debug type:gui {
+	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
+ 	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
+ 	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
+ 	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
+	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
+	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
+	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
+ 	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
+ 	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
+ 	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
+ 	parameter "3D-View" var: view_toggle category: "GIS";
+  	parameter "Alpha scenario" var: alpha_scenario <- "Static_mean" among: ["Static_mean", "Dynamic_moderate", "Dynamic_high", "Static_high"] category: "Technical data";
+ 	parameter "Carbon price scenario" var: carbon_price_scenario <- "A - Conservative" among: ["A - Conservative", "B - Moderate", "C1 - Progressive", "C2 - Progressive", "C3 - Progressive"] category: "Technical data";
+ 	parameter "Energy prices scenario" var: energy_price_scenario <- "Prices_Project start" among: ["Prices_Project start", "Prices_2021", "Prices_2022 1st half"] category: "Technical data";
+ 	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
+  	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
+  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
+  	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
+  	parameter "Seed" var: seed <- seed category: "Simulation";
+  	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
+}
