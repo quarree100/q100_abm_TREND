@@ -32,7 +32,7 @@ global {
 	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 	// load shapefiles
-	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
+	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export_without_empty.shp");
 	file shape_file_typologiezonen <- file("../includes/Shapefiles/Typologiezonen.shp");
 	file nahwaerme <- file("../includes/Shapefiles/Nahwaermenetz.shp");
 	file background_map <- file("../includes/Shapefiles/ruesdorfer_kamp_osm.png");
