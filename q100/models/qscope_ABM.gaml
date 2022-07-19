@@ -276,7 +276,7 @@ global {
 	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
 	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
 	
-	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor
+	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor TODO
 	string influence_type <- "one-side";
 	bool communication_memory <- true;
 	
