@@ -205,29 +205,29 @@ global {
 	
 	//	DATA FOR DECISION MAKING INVEST
 	
-	// MAX E AND C VALUES FOR NORMALIZATION // TODO NUR ZUM TESTEN!!
-	float e_current_max <- 1; 
-	float e_invest_max <- 1;
-	float e_change_max <- 1;
-	float e_switch_max <- 1;
-	float c_current_max <- 1;
-	float c_invest_max <- 1;
-	float c_change_max <- 1;
-	float c_switch_max <- 1;
+	// MAX E AND C VALUES FOR NORMALIZATION
+	float e_current_max; 
+	float e_invest_max;
+	float e_change_max;
+	float e_switch_max;
+	float c_current_max;
+	float c_invest_max;
+	float c_change_max;
+	float c_switch_max;
 	
-	reflex update_max_values {
-		if current_date.day = 4 {
-			e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
-			e_invest_max <- max((agents of_generic_species households) accumulate (each.e_invest));
-			e_change_max <- max((agents of_generic_species households) accumulate (each.e_change));
-			e_switch_max <- max((agents of_generic_species households) accumulate (each.e_switch));
-			c_current_max <- max((agents of_generic_species households) accumulate (each.c_current));
-			c_invest_max <- max((agents of_generic_species households) accumulate (each.c_invest));
-			c_change_max <- max((agents of_generic_species households) accumulate (each.c_change));
-			c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
-		}
+	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
+		
+		e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
+		e_invest_max <- max((agents of_generic_species households) accumulate (each.e_invest));
+		e_change_max <- max((agents of_generic_species households) accumulate (each.e_change));
+		e_switch_max <- max((agents of_generic_species households) accumulate (each.e_switch));
+		c_current_max <- max((agents of_generic_species households) accumulate (each.c_current));
+		c_invest_max <- max((agents of_generic_species households) accumulate (each.c_invest));
+		c_change_max <- max((agents of_generic_species households) accumulate (each.c_change));
+		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
+		write e_current_max;
 	}
-	// MAX E AND C VALUES FOR NORMALIZATION //
+
 	
 	float q100_price_capex <- q100_concept_prices_emissions [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
@@ -253,7 +253,7 @@ global {
 	float energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings in percent TODO
   	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
   	float change_threshold <- 4.75; // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- 0.9; // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made
+  	float landlord_prop <- 0.1; // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made
   	float MFH_connection_threshold <- 0.8; // TODO share of MFH flats that made decision invest to connect to heat_network
   	
 	bool view_toggle <- false; // Parameter to toggle the 3D-View.
@@ -570,7 +570,7 @@ global {
 			}
 		}
 		
-		ask agents of_generic_species households where (bool(each.family)) { //distributes belonging to socialgroups over non-/families
+		ask agents of_generic_species households where (each.family) { //distributes belonging to socialgroups over non-/families
 			if flip (share_socialgroup_families) {
 				network_socialgroup <- true;
 			}	
@@ -596,14 +596,10 @@ global {
 		
 		do distribute_budget(get_all_instances(households));
 		
-		// NUR ZUM TESTEN TODO: BEI UMSTRUKTURIERUNG ÄNDERN!!
 		ask agents of_generic_species households {
-			do calculate_consumption;
-			do calculate_emissions;
-			do calculate_heat_expenses;
-			do calculate_power_expenses;
+			do consume_energy(true);
 		}
-		// NUR ZUM TESTEN
+		do update_max_values;
 	}
 
 
@@ -819,6 +815,21 @@ global {
 		if (current_date.month = 1) and (current_date.day = 1) {
 			refurbished_buildings_year <- 0;
 			unrefurbished_buildings_year <- length(building where (each.mod_status = "u"));
+		}
+	}
+	
+	reflex step_households {
+		list<households> household_list <- (agents of_generic_species households);
+		ask household_list {
+			do communicate_daily;
+			do communicate_weekly;
+			do communicate_occasional;
+			do calculate_c;
+		}
+		do update_max_values;
+		ask household_list {
+			do decision_making;
+			do consume_energy;
 		}
 	}
 	
@@ -1090,7 +1101,7 @@ species households {
 
 	
 	
-	reflex communicate_daily { 
+	action communicate_daily { 
 		
 		if network_contacts_temporal_daily > 0 {
 			ask network_contacts_temporal_daily among social_contacts {  
@@ -1154,7 +1165,7 @@ species households {
         }
 	}
 	
-	reflex communicate_weekly { // includes communication with social groups -> increasing factor
+	action communicate_weekly { // includes communication with social groups -> increasing factor
 		if network_contacts_temporal_weekly > 0 {
 			if cycle mod 7 = 0 { 
 				ask network_contacts_temporal_weekly among social_contacts {
@@ -1243,9 +1254,9 @@ species households {
         }
 	}
 	
-	reflex communicate_occasional { 
+	action communicate_occasional { 
 		if network_contacts_temporal_occasional > 0 {
-			if cycle mod 30 = 0 { 
+			if (current_date.day = 1) { 
 				ask network_contacts_temporal_occasional among social_contacts {
        		 		let flag <- false;
        		 		let current_edge <- edge_between(network, self::myself);
@@ -1308,9 +1319,10 @@ species households {
 	}
 	
 
-// Reihenfolge der nachfolgenden Reflexes beachten
+
 	
-	reflex calculate_c { // calculation of c is used for decision making
+	action calculate_c { // calculation of c is used for decision making
+		do calculate_hypo_e;
 		if (current_date.day = 1) {
 			c_current <- income - (e_current);
 			c_invest <- income - (e_invest + q100_price_capex); // langfristige Vorteile des Investments müssen evtl noch bedacht werden??
@@ -1319,11 +1331,11 @@ species households {
 		}
 	}
 	
-	reflex decision_making { 
+	action decision_making { 
 		
 		if (current_date.day = 1) {
 			do update_decision_thresholds;
-			do calculate_hypo_e;
+			
 			do calculate_utility;
 			
 			
@@ -1331,20 +1343,22 @@ species households {
 			
 			if (U = U_i) and (q100_price_capex <= budget) { // Aufteilung der investitionskosten auf mehrere Jahre ergaenzen
 				invest <- true;
-				int test <- length(self.house.get_tenants() where (each.invest = true)); 
-				int test1 <- length(self.house.get_tenants());
+				int no_owners <- length(self.house.get_tenants() where (each.invest = true)); 
+				int no_total_tenants <- length(self.house.get_tenants());
 				if (ownership = "owner") and (self.house.type = "EFH") { 
 					ask self.house {
 						do invoke_investment;
 					}
 					
 				}
-//				else if (ownership = "tenant") and (self.house.type = "EFH") and (flip (landlord_prop)) { // ---> where do the CapEx appear??? TODO
-//					self.house.energy_source <- "q100";
-//					budget <- budget - q100_price_capex;
-//				}
+				else if (ownership = "tenant") and (self.house.type = "EFH") and (flip (landlord_prop)) { // ---> where do the CapEx appear??? TODO
+					self.house.energy_source <- "q100";
+					ask self.house {
+						do invoke_investment;
+					}
+				}
 
-				else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (test / test1)) { // U_current = dummy -> (test / test1)
+				else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (no_owners / no_total_tenants)) { // U_current = dummy -> (test / test1)
 					ask self.house {
 						do invoke_investment;
 					}
@@ -1366,8 +1380,8 @@ species households {
 		}
 	}
 	
-	reflex consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
-		if (current_date.day = 1) {
+	action consume_energy(bool init_value) { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
+		if (current_date.day = 1) or init_value {
 			do calculate_consumption;
 			do calculate_emissions;
 			do calculate_heat_expenses;
@@ -1381,7 +1395,8 @@ species households {
 //			emissions_neighborhood_power <- emissions_neighborhood_power + my_power_emissions;
 
 		}
-	}		
+	}
+		
 		
 	// TODO --> Normieren! --> gilt für alpha*e & 1-alpha*c --> vgl Niamir?
 	
@@ -1400,7 +1415,6 @@ species households {
 	action calculate_hypo_e {
 		float hypo_q100_carbon_exp <- my_heat_consumption * q100_emissions * carbon_price * int(carbon_price_on_off);
 		e_invest <- (my_heat_consumption * q100_price_opex / 100) + hypo_q100_carbon_exp + my_power_expenses;
-		write [my_heat_consumption];
 		e_change <- my_heat_expenses * change_factor + my_power_expenses * change_factor;
 		if power_supplier = "mixed" {
 			e_switch <- my_power_consumption * (power_price + 10) / 100 + my_heat_expenses;
