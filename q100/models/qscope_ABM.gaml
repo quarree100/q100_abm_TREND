@@ -100,7 +100,7 @@ global {
 	bool carbon_price_on_off <- false;
 
 	bool delta_on_off <- false;
-	bool pbc_do_nothing <- false;
+	bool B_do_nothing <- false;
 	float carbon_price <- carbon_prices [carbon_price_column(), 0]; 
 
 	string carbon_price_scenario;
@@ -259,6 +259,8 @@ global {
   	float change_threshold <- 4.75; // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
   	float landlord_prop <- 0.1; // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made
   	float MFH_connection_threshold <- 0.8; // TODO share of MFH flats that made decision invest to connect to heat_network
+  	float feedback_factor <- 1.2; // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	bool B_feedback <- true; // Feedback of a decision on other perceived behavioral control values on-off
   	
 	bool view_toggle <- false; // Parameter to toggle the 3D-View.
 	bool keep_seed <- false; // When true, the simulation seed will not change.
@@ -383,7 +385,7 @@ global {
 			vacant <- false;
 			built <- false;
 			mod_status <- "s";
-			energy_source <- "q100"; // TODO davon ausgehend, dass alle Neubauten sich an das q100-Netz anschliessen
+			energy_source <- "q100"; // expecting a connection of all new buildings to the q100 heat network
 			if type = "EFH" {
 				color <- #blue;
 			}
@@ -406,6 +408,10 @@ global {
 
 				if (qscope_interchange_matrix[5,row_interchange] = "True") {
 					energy_source <- "q100";
+					ask self.get_tenants() {
+						do decision_feedback_attitude;
+						// do decision_feedback_B ---> validation ---> should be implemented?
+					}
 				}
 				else {
 					energy_source <- qscope_interchange_matrix[3,row_interchange];
@@ -413,11 +419,14 @@ global {
 				if (qscope_interchange_matrix[6,row_interchange] = "True") {
 					mod_status <- "s";
 				}
-				else {
-					mod_status <- "u";
+				
+				if (qscope_interchange_matrix[7,row_interchange] = "True") {
+					ask self.get_tenants() {
+						change <- true;
+						do decision_feedback_attitude;
+						// do decision_feedback_B ---> validation ---> should be implemented?
+					}
 				}
-//				write energy_source; //debug
-//				write mod_status; //debug
 			}
 			row_interchange <- row_interchange + 1;
 		}
@@ -451,14 +460,14 @@ global {
 					EEH <- rnd (decision_500_1000_EEH_min, decision_500_1000_EEH_1st);
 					float decision_500_1000_PBC_I_min <- decision_map[income_group][7,i];
 					float decision_500_1000_PBC_I_1st <- decision_map[income_group][7,i+1];
-					B_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
+					B_i <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
 					float decision_500_1000_PBC_C_min <- decision_map[income_group][8,i];
 					float decision_500_1000_PBC_C_1st <- decision_map[income_group][8,i+1];
-					B_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
+					B_c <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
 					float decision_500_1000_PBC_S_min <- decision_map[income_group][9,i];
 					float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
 
-					B_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
+					B_s <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 					id_group <- string(income_group) + "_" + letters[i]; 			
 					
 					do find_house; //Locate household in a random building.
@@ -614,7 +623,7 @@ global {
 		
 
 		ask agents of_generic_species households {
-			do consume_energy(true);
+			do consume_energy;
 		}
 		do update_max_values;
 
@@ -656,13 +665,13 @@ global {
 				EEH <- rnd (decision_500_1000_EEH_min, decision_500_1000_EEH_1st);
 				float decision_500_1000_PBC_I_min <- decision_map[income_group][7,i];
 				float decision_500_1000_PBC_I_1st <- decision_map[income_group][7,i+1];
-				B_I <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
+				B_i <- rnd (decision_500_1000_PBC_I_min, decision_500_1000_PBC_I_1st);
 				float decision_500_1000_PBC_C_min <- decision_map[income_group][8,i];
 				float decision_500_1000_PBC_C_1st <- decision_map[income_group][8,i+1];
-				B_C <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
+				B_c <- rnd (decision_500_1000_PBC_C_min, decision_500_1000_PBC_C_1st);
 				float decision_500_1000_PBC_S_min <- decision_map[income_group][9,i];
 				float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
-				B_S <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
+				B_s <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
 				id_group <- string(income_group) + "_" + ["a", "b", "c", "d"][i];
 				employment <- sample(employment_status_list, 1, false)[0];
 				if flip(share_owner_map[income_group]) {
@@ -682,6 +691,10 @@ global {
 					power_supplier <- "conventional";
 				}
 				my_floor_area <- (self.house.net_floor_area / self.house.units);
+				
+				if self.house.mod_status = "s" {
+					do decision_feedback_attitude;
+				}
 			}
 			n <- n + 1;
 		}
@@ -803,28 +816,6 @@ global {
 
 	}
 
-
-//	reflex reset_technical_data { // resets technical data before new calculation starts
-//		if (current_date.day = 1) {
-//			emissions_neighborhood_heat <- 0;
-//			emissions_neighborhood_power <- 0;
-//		}
-//	}
-//
-//	reflex monthly_updates_technical_data { // for GUI & decision_making algorithm // on day 2 to update after emission calculation & reset
-//		if (current_date.day = 2) {
-//
-//			emissions_neighborhood_total <- emissions_neighborhood_heat + emissions_neighborhood_power;
-//			emissions_neighborhood_accu <- emissions_neighborhood_accu + emissions_neighborhood_total;
-//
-//			emissions_household_average <- emissions_neighborhood_total / nb_units;
-//			emissions_household_average_accu <- emissions_household_average_accu + emissions_household_average;
-//		}
-//
-//	}
-
-
-
 	reflex calculate_modernization_status{
 		if (current_date.month = 12) and (current_date.day = 31) {
 			modernization_rate <- refurbished_buildings_year / unrefurbished_buildings_year;
@@ -845,18 +836,22 @@ global {
 			do communicate_daily;
 			do communicate_weekly;
 			do communicate_occasional;
-			do calculate_c;
+			}
+		if (current_date.day = 1) {
+			ask household_list {		
+				do calculate_c;
+			}	
 		}
 		do update_max_values;
-		ask household_list {
-			do decision_making;
-			do consume_energy;
+		if (current_date.day = 1) {
+			ask household_list {
+				do decision_making;
+				do consume_energy;
+			}
 		}
 	}
-	
-	
-
 }
+
 
 species technical_data_calculator {
 	float emissions_neighborhood_heat;
@@ -943,7 +938,7 @@ species building {
 		do modernize;
 	}
 
-	action modernize { // vielleicht besser unterscheiden nach Mieter/Vermieter als nach EFH/MFH TODO
+	action modernize { 
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
 			self.energy_source <- "q100";
@@ -1030,17 +1025,12 @@ species households {
 	float SN; // Subjective Norms
 	float N; // ---Decicision-Threshold---: Norms
 
-	float B_I; // Perceived-Behavioral-Control Invest
-	float B_C; // Perceived-Behavioral-Control Change
-	float B_S; // Perceived-Behavioral-Control Switch	
-	float B_I_7; // Perceived-Behavioral-Control Invest divided by 7
-	float B_C_7; // Perceived-Behavioral-Control Change divided by 7
-	float B_S_7; // Perceived-Behavioral-Control Switch divided by 7	
-
-	float N_PBC_I; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Invest
-	float N_PBC_C; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Change
-	float N_PBC_S; // ---Decicision-Threshold---: Normative Perceived Behavioral Control Switch
-
+	float B_i; // Perceived-Behavioral-Control Invest
+	float B_c; // Perceived-Behavioral-Control Change
+	float B_s; // Perceived-Behavioral-Control Switch	
+	float B_i_7; // Perceived-Behavioral-Control Invest divided by 7
+	float B_c_7; // Perceived-Behavioral-Control Change divided by 7
+	float B_s_7; // Perceived-Behavioral-Control Switch divided by 7	
 
 	float EEH; // Energy Efficient Habits TODO
 	
@@ -1393,90 +1383,140 @@ species households {
 
 	
 	action calculate_c { // calculation of c is used for decision making
+		
 		do calculate_hypo_e;
-
-		if (current_date.day = 1) {
-			c_current <- income - (e_current);
-			c_invest <- income - (e_invest + q100_price_capex); // langfristige Vorteile des Investments müssen evtl noch bedacht werden??
-			c_change <- income - (e_change);
-			c_switch <- income - (e_switch);
-		}
+	
+		c_current <- income - (e_current);
+		c_invest <- income - (e_invest + q100_price_capex); // langfristige Vorteile des Investments müssen evtl noch bedacht werden??
+		c_change <- income - (e_change);
+		c_switch <- income - (e_switch);
 	}
 
 	
 	action decision_making { 
 		
-		if (current_date.day = 1) {
-			do update_decision_thresholds;
+		
+		do update_decision_thresholds;
 			
-			do calculate_utility;
+		do calculate_utility;
 			
 			
-			U <- max ([U_current, U_i, U_c, U_s]); // rueckkopplung nach entscheidung implementieren
+		U <- max ([U_current, U_i, U_c, U_s]); 
 			
-			if (U = U_i) and (q100_price_capex <= budget) { // Aufteilung der investitionskosten auf mehrere Jahre ergaenzen
-				invest <- true;
-				int no_owners <- length(self.house.get_tenants() where (each.invest = true)); 
-				int no_total_tenants <- length(self.house.get_tenants());
-				if (ownership = "owner") and (self.house.type = "EFH") { 
+		if (U = U_i) and (q100_price_capex <= budget) { 
+			invest <- true;
+			int no_owners_invest <- length(self.house.get_tenants() where (each.invest = true));
+			int no_total_owner <- length(self.house.get_tenants());
+			if (ownership = "owner") and (self.house.type = "EFH") { 
+				ask self.house {
+					do invoke_investment;
+				}
+				do decision_feedback_attitude;
+				do decision_feedback_B;
+			}
+			else if (ownership = "tenant") and (self.house.type = "EFH") { // the CapEx will not appear within the model - landlord is outside of system boundaries
+				if (flip (landlord_prop)) {
 					ask self.house {
 						do invoke_investment;
 					}
-					
+					do decision_feedback_attitude;
+					do decision_feedback_B;
 				}
-				else if (ownership = "tenant") and (self.house.type = "EFH") and (flip (landlord_prop)) { // ---> where do the CapEx appear??? TODO
-					self.house.energy_source <- "q100";
-					ask self.house {
-						do invoke_investment;
-					}
+				else {
+					invest <- false;
 				}
+			}
 
-				else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (no_owners / no_total_tenants)) { // U_current = dummy -> (test / test1)
-					ask self.house {
-						do invoke_investment;
-					}
+			else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (no_owners_invest / no_total_owner)) { 
+				ask self.house {
+					do invoke_investment;
+				}
+				do decision_feedback_attitude;
+				do decision_feedback_B;
+			}
+			
+			else if (ownership = "tenant") and (self.house.type = "MFH") {
+				if (flip (landlord_prop)) {
+					do decision_feedback_attitude;
+					do decision_feedback_B;
+				}
+				else {
+					invest <- false;
+				}
+			}
+		}
+			
+		else if (U = U_c) and (EEH > change_threshold) { 
+			change <- true;
+			do decision_feedback_attitude;
+			do decision_feedback_B;
+		}
+		
+		else if U = U_s { 
+			if power_supplier = "conventional" {
+				power_supplier <- "mixed";
+			}
+			else if power_supplier = "mixed" {
+				power_supplier <- "green";
+			}
+			do decision_feedback_attitude;
+			do decision_feedback_B;
+		}	
+	}
+	
+	action decision_feedback_attitude { // decision feedback calculation for attitude values
+		
+		A_k <- A_k * feedback_factor;
+		A_e <- A_e * feedback_factor;
+		A_d <- A_d * feedback_factor;
+		
+	}
+	
+	action decision_feedback_B { // decision feedback calculation for other values of perceived behavioral control
+		
+		if B_feedback {
+			
+			if U = U_i {
+				if !change {
+					B_c <- B_c * feedback_factor;
+				}
+				if power_supplier != "green" {
+					B_s <- B_s * feedback_factor;
 				}
 			}
 			
-			else if (U = U_c) and (EEH > change_threshold) { 
-				change <- true;
+			if U = U_c {
+				if !invest {
+					B_i <- B_i * feedback_factor;
+				}
+				if power_supplier != "green" {
+					B_s <- B_s * feedback_factor;
+				}
 			}
 			
-			else if U = U_s { 
-				if power_supplier = "conventional" {
-					power_supplier <- "mixed";
+			if U = U_s {
+				if !invest {
+					B_i <- B_i * feedback_factor;
 				}
-				else if power_supplier = "mixed" {
-					power_supplier <- "green";
+				if !change {
+					B_c <- B_c * feedback_factor;
 				}
 			}
 		}
 	}
 	
 
-	action consume_energy(bool init_value) { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
-		if (current_date.day = 1) or init_value {
-
-			do calculate_consumption;
-			do calculate_emissions;
-			do calculate_heat_expenses;
-			do calculate_power_expenses;
-      
-
-
+	action consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
+	
+		do calculate_consumption;
+		do calculate_emissions;
+		do calculate_heat_expenses;
+		do calculate_power_expenses;
+		
+		e_current <- my_heat_expenses + my_power_expenses;
 			
-			e_current <- my_heat_expenses + my_power_expenses;
-			
-// veraltet - loeschbar?			
-//			emissions_neighborhood_heat <- emissions_neighborhood_heat + my_heat_emissions;
-//			emissions_neighborhood_power <- emissions_neighborhood_power + my_power_emissions;
-
-		}
 	}
 		
-
-		
-	// TODO --> Normieren! --> gilt für alpha*e & 1-alpha*c --> vgl Niamir?
 	
 	action update_decision_thresholds {
 		/* calculate household's current 
@@ -1485,9 +1525,9 @@ species households {
 		Perceived behavioral control (0 <= PBC <= 1) */ 
 		A <- mean(A_k, A_e, A_d) / 7;
 		N <- mean(SN) / 7;
-		B_I_7 <- mean(B_I) / 7;
-		B_C_7 <- mean(B_C) / 7;
-		B_S_7 <- mean(B_S) / 7;
+		B_i_7 <- mean(B_i) / 7;
+		B_c_7 <- mean(B_c) / 7;
+		B_s_7 <- mean(B_s) / 7;
 	}
 	
 	action calculate_hypo_e {
@@ -1500,18 +1540,18 @@ species households {
 	}
 	
 	action calculate_utility {
-		U_current <- alpha * e_current / e_current_max + (1 - alpha) * c_current / c_current_max + (A + N + int(pbc_do_nothing)); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
+		U_current <- alpha * e_current / e_current_max + (1 - alpha) * c_current / c_current_max + (A + N + int(B_do_nothing)); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
 	
 		if (invest = true) or (self.house.energy_source = "q100") {
 			U_i <- 0;
 		}
 		else {
 			if delta_on_off {
-				self.delta <- self.B_I / 7 * int(self.ownership = "owner");
-				U_i <- (1 - self.delta) * (alpha * e_invest / e_invest_max + (1 - alpha) * c_invest / c_invest_max) + self.delta *(A + N + B_I_7);
+				self.delta <- self.B_i / 7 * int(self.ownership = "owner");
+				U_i <- (1 - self.delta) * (alpha * e_invest / e_invest_max + (1 - alpha) * c_invest / c_invest_max) + self.delta *(A + N + B_i_7);
 			}
 			else {
-				U_i <- alpha * e_invest / e_invest_max + (1 - alpha) * c_invest / c_invest_max + (A + N + B_I_7);
+				U_i <- alpha * e_invest / e_invest_max + (1 - alpha) * c_invest / c_invest_max + (A + N + B_i_7);
 			}
 			
 		}
@@ -1521,11 +1561,11 @@ species households {
 		}
 		else {
 			if delta_on_off {
-				self.delta <- self.B_C / 7;
-				U_c <- (1 + self.delta) * (alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max) + self.delta * (A + N + B_C_7);
+				self.delta <- self.B_c / 7;
+				U_c <- (1 + self.delta) * (alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max) + self.delta * (A + N + B_c_7);
 			}
 			else {
-				U_c <- alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max + (A + N + B_C_7);
+				U_c <- alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max + (A + N + B_c_7);
 			}
 		
 		}
@@ -1535,11 +1575,11 @@ species households {
 		}
 		else {
 			if delta_on_off {
-				self.delta <- self.B_S / 7;
-				U_s <- (1 - self.delta) * (alpha * e_switch / e_switch_max + (1 - alpha) * c_switch / c_switch_max) + self.delta * (A + N + B_S_7);
+				self.delta <- self.B_s / 7;
+				U_s <- (1 - self.delta) * (alpha * e_switch / e_switch_max + (1 - alpha) * c_switch / c_switch_max) + self.delta * (A + N + B_s_7);
 			}
 			else {
-				U_s <- alpha * e_switch / e_switch_max + (1 - alpha) * c_switch / c_switch_max + (A + N + B_S_7);
+				U_s <- alpha * e_switch / e_switch_max + (1 - alpha) * c_switch / c_switch_max + (A + N + B_s_7);
 			}
 		}
 	}
@@ -1569,7 +1609,7 @@ species households {
 		}
 	}
 
-	action calculate_heat_expenses { // TODO co2-Preis einfach draufrechnen?
+	action calculate_heat_expenses { 
 		if (self.house.energy_source = "Gas") {
 			my_heat_expenses <- my_heat_consumption * gas_price / 100;
 		}
@@ -1584,7 +1624,7 @@ species households {
 		}
 	}
 
-	action calculate_power_expenses { // TODO co2-Preis einfach draufrechnen?
+	action calculate_power_expenses { 
 		if (power_supplier = "green") {
 			my_power_expenses <- my_power_consumption * (power_price + 10) / 100; // es stellt sich die Frage, ob Ökostrom immer teurer bleibt; bzw. es ein "höherklassiges" Angebot geben wird;; ggf Szenario einrichten mit 30 % und 10 ct
 		}
@@ -1760,7 +1800,10 @@ experiment agent_decision_making type: gui{
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
  	parameter "Use delta in utility calculation" var: delta_on_off category: "Decision making";
- 	parameter "Include PBC-Value in the current utility" var: pbc_do_nothing category: "Decision making";
+ 	parameter "Include PBC-Value in the current utility" var: B_do_nothing category: "Decision making";
+ 	parameter "Share of MFH units that is needed to connect to Q100 heat_network" var: MFH_connection_threshold category: "Decision making";
+ 	parameter "Influence of feedback of decision making on own personal values" var: feedback_factor category: "Decision making";
+ 	parameter "Feedback of decision on perceived behavioral control" var: B_feedback category: "Decision making";
 
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
@@ -1797,7 +1840,7 @@ experiment agent_decision_making type: gui{
 		to: export_file type: csv rewrite: false;
 	}
 
-//csv_export for output test - line graph infoscreen
+//csv_export for output test - line graph infoscreen /////////////////////////////// TODO Thema Datenschutz -> eigentlich nur durchschnittswerte exportieren; flag-export wofuer noetig?
 
 	reflex save_results_co2_graph_test {
 		string export_file;
@@ -2019,7 +2062,11 @@ experiment agent_decision_making_3d type: gui{
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
+ 	parameter "Use delta in utility calculation" var: delta_on_off category: "Decision making";
+ 	parameter "Include PBC-Value in the current utility" var: B_do_nothing category: "Decision making";
  	parameter "Share of MFH units that is needed to connect to Q100 heat_network" var: MFH_connection_threshold category: "Decision making";
+ 	parameter "Influence of feedback of decision making on own personal values" var: feedback_factor category: "Decision making";
+ 	parameter "Feedback of decision on perceived behavioral control" var: B_feedback category: "Decision making";
 
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
