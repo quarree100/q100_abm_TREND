@@ -1,7 +1,7 @@
 /*
 * Name: qScope_ABM
 *
-* Authors: lennartwinkeler, davidunland, philippolaleye
+* Authors: lennartwinkeler, davidunland, philipolaleye
 * Institution: University of Bremen, Department of Resilient Energy Systems
 * Date: 2022-03-18
 * Description: agent-based model within the project quarree100 - work group 2
@@ -692,7 +692,7 @@ global {
 				}
 				my_floor_area <- (self.house.net_floor_area / self.house.units);
 				
-				if self.house.mod_status = "s" {
+				if self.house.energy_source = "q100" {
 					do decision_feedback_attitude;
 				}
 			}
