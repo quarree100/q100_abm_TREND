@@ -37,6 +37,8 @@ global {
 	file nahwaerme <- file("../includes/Shapefiles/Nahwaermenetz.shp");
 	file background_map <- file("../includes/Shapefiles/ruesdorfer_kamp_osm.png");
 	file shape_file_new_buildings <- file("../includes/Shapefiles/Neubau Gebaeude Kataster.shp");
+	
+	matrix<string> initial_values <- matrix<string>(csv_file("../includes/csv-data_technical/initial_variables.csv", ",", true));
 
 	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
 	string attributes_source <- attributes_possible_sources[0];
@@ -219,6 +221,27 @@ global {
 	float c_change_max;
 	float c_switch_max;
 	
+	action get_inital_value(string name) { //Retrieves the inital value for the variable with name "name".
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, name);
+		write [name, row];
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		if type = "bool"  {
+			return bool(value);
+		}
+		else if type = "int" {
+			return int(value);
+		}
+		else if type = "float" {
+			return float(value);
+		}
+		else if type = "string" {
+			return value;
+		}
+		
+	}
+	
 	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
 		
 		e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
@@ -249,21 +272,21 @@ global {
 
 
 	int nb_units <- get_nb_units(); //number of households
-	int global_neighboring_distance <- 2;
+	int global_neighboring_distance <- get_inital_value("global_neighboring_distance");
 	string new_buildings_parameter;
-	bool new_buildings_order_random <- true; // TODO
+	bool new_buildings_order_random <- get_inital_value("new_buildings_order_random"); // TODO
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	float energy_saving_rate <- 0.5; // Energy-Saving of modernized buildings in percent TODO
-  	float change_factor <- 0.8; // Energy-Saving of households with change = true TODO
-  	float change_threshold <- 4.75; // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- 0.1; // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made
-  	float MFH_connection_threshold <- 0.8; // TODO share of MFH flats that made decision invest to connect to heat_network
-  	float feedback_factor <- 1.2; // influence factor of feedback after a decision is made or household moved into a building with q100-connection
-  	bool B_feedback <- true; // Feedback of a decision on other perceived behavioral control values on-off
+	float energy_saving_rate <- get_inital_value("energy_saving_rate"); // Energy-Saving of modernized buildings in percent TODO
+  	float change_factor <- get_inital_value("change_factor"); // Energy-Saving of households with change = true TODO
+  	float change_threshold <- get_inital_value("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- get_inital_value("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made
+  	float MFH_connection_threshold <- get_inital_value("MFH_connection_threshold"); // TODO share of MFH flats that made decision invest to connect to heat_network
+  	float feedback_factor <- get_inital_value("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	bool B_feedback <- get_inital_value("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
   	
-	bool view_toggle <- false; // Parameter to toggle the 3D-View.
-	bool keep_seed <- false; // When true, the simulation seed will not change.
+	bool view_toggle <- get_inital_value("view_toggle"); // Parameter to toggle the 3D-View.
+	bool keep_seed <- get_inital_value("keep_seed"); // When true, the simulation seed will not change.
 	string timestamp <- "";
 
 	int refurbished_buildings_year; // sum of buildings refurbished this year
@@ -279,14 +302,14 @@ global {
 //	int emissions_household_average; // annual energy emissions of an average household within the q100 neighborhood
 //	int emissions_household_average_accu; // accumulated energy emissions of an average household within the q100 neighborhood
 
-	float share_families <- 0.17; // share of families in whole neighborhood
-	float share_socialgroup_families <- 0.75; // share of families that are part of a social group
-	float share_socialgroup_nonfamilies <- 0.29; // share of households that are not families but part of a social group
+	float share_families <- get_inital_value("share_families"); // share of families in whole neighborhood
+	float share_socialgroup_families <- get_inital_value("share_socialgroup_families"); // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- get_inital_value("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
 	
-	float private_communication <- 0.25; // influence on psychological data while private communication; value used in communication action, accessable in monitor TODO
+	float private_communication <- get_inital_value("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor TODO
 
-	string influence_type <- "one-side";
-	bool communication_memory <- true;
+	string influence_type <- get_inital_value("influence_type");
+	bool communication_memory <- get_inital_value("communication_memory");
 
 	list<species<households>> income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map<species<households>,float> share_income_map <- create_map(income_groups_list, list(share_income));
@@ -628,7 +651,7 @@ global {
 		do update_max_values;
 
 	}
-
+	
 
 	reflex new_household { //creates new households to keep the total number of households constant.
 		let new_households of: households <- [];
