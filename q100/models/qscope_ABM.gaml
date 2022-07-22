@@ -1880,7 +1880,8 @@ experiment agent_decision_making type: gui{
 			ask technical_data_calculator {
 				export_file <- (timestamp != "") ? "../includes/csv_export/emissions_" + timestamp + "/csv_export_co2_graph_test_neighborhood.csv" : "../includes/csv_export/emissions_/csv_export_co2_graph_test_neighborhood.csv";
 
-				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu]
+				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu, modernization_rate]
+
 				to: export_file type: csv rewrite: false header: true; // löschung der datei implementieren
 			}
 		}
