@@ -384,7 +384,9 @@ global {
 	
 	init { 		
 		
-    bool delete_csv_export_emissions <- delete_file("../includes/csv_export_" + timestamp + "/emissions/..");
+	string file_to_delete <- (timestamp = "") ? "..includes/csv_export/emissions/.." : "../includes/csv_export_" + timestamp + "/emissions/..";
+
+    bool delete_csv_export_emissions <- delete_file(file_to_delete);
 
 		create technical_data_calculator number: 1;
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
@@ -1876,9 +1878,9 @@ experiment agent_decision_making type: gui{
 			}
 
 			ask technical_data_calculator {
-				export_file <- (timestamp != "") ? "../includes/csv_export_/emissions_" + timestamp + "/csv_export_co2_graph_test_neighborhood.csv" : "../includes/csv_export_/emissions_/csv_export_co2_graph_test_neighborhood.csv";
+				export_file <- (timestamp != "") ? "../includes/csv_export/emissions_" + timestamp + "/csv_export_co2_graph_test_neighborhood.csv" : "../includes/csv_export/emissions_/csv_export_co2_graph_test_neighborhood.csv";
 
-				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average]
+				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu]
 				to: export_file type: csv rewrite: false header: true; // löschung der datei implementieren
 			}
 		}
