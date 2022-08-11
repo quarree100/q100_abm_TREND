@@ -1856,11 +1856,21 @@ experiment agent_decision_making type: gui{
 
 //csv_export for frontend test
 
-	reflex save_results_test {
+	reflex save_num_connections {
 		float value <- (length(building where (each.mod_status = "s")) / length(building) * 100);
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
 		save [cycle, current_date, value]
 		to: export_file type: csv rewrite: false;
+	}
+
+// export energy costs:
+
+	reflex save_energy_costs {
+		string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_export.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_export.csv";
+
+		save [cycle, power_price, oil_price, gas_price]
+
+		to: export_file type: csv rewrite: false header: true;
 	}
 
 //csv_export for output test - line graph infoscreen /////////////////////////////// TODO Thema Datenschutz -> eigentlich nur durchschnittswerte exportieren; flag-export wofuer noetig?
@@ -1879,7 +1889,7 @@ experiment agent_decision_making type: gui{
 				export_file <- (timestamp = "") ? "../data/outputs/output/emissions/CO2_emissions_neighborhood.csv" : "../data/outputs/output_" + timestamp + "/emissions/CO2_emissions_neighborhood.csv";
 
 				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu, modernization_rate]
- 
+
 				to: export_file type: csv rewrite: false header: true; // löschung der datei implementieren
 			}
 		}
