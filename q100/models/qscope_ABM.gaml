@@ -1871,7 +1871,7 @@ experiment agent_decision_making type: gui{
 		if (current_date.month = 1) and (current_date.day = 1) {
 				string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_export.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_export.csv";
 
-			save [cycle, power_price, oil_price, gas_price]
+			save [cycle, current_date, power_price, oil_price, gas_price]
 			to: export_file type: csv rewrite: false  header: true;
 		}
 	}
