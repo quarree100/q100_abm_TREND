@@ -384,7 +384,9 @@ global {
 
 	init {
 
-    bool delete_csv_export_emissions <- delete_file("..data/outputs/output/emissions/..");
+    bool delete_csv_export_emissions <- delete_file("../data/outputs/output/emissions/");
+    bool delete_csv_export_energy_prices <- delete_file("../data/outputs/output/energy_prices/");
+    bool delete_csv_export_connections <- delete_file("../data/outputs/output/connections/");
 
 		create technical_data_calculator number: 1;
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
@@ -1866,13 +1868,13 @@ experiment agent_decision_making type: gui{
 // export energy costs:
 
 	reflex save_energy_costs {
-		string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_export.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_export.csv";
+		if (current_date.month = 1) and (current_date.day = 1) {
+				string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_export.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_export.csv";
 
-		save [cycle, power_price, oil_price, gas_price]
-
-		to: export_file type: csv rewrite: false header: true;
+			save [cycle, power_price, oil_price, gas_price]
+			to: export_file type: csv rewrite: false  header: true;
+		}
 	}
-
 //csv_export for output test - line graph infoscreen /////////////////////////////// TODO Thema Datenschutz -> eigentlich nur durchschnittswerte exportieren; flag-export wofuer noetig?
 
 	reflex save_results_co2_graph {
