@@ -1873,7 +1873,7 @@ experiment agent_decision_making type: gui{
 		if (current_date.month = 1) and (current_date.day = 1) {
 				string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_total.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_total.csv";
 
-			save [cycle, current_date, power_price, oil_price, gas_price]
+			save [cycle, current_date, power_price, oil_price, gas_price, q100_price_opex] // TODO exportiert derzeit "nur" die Werte, welche an anderer Stelle importiert werden; koennte erweitert werden durch zB "monatliche Ausgaben eines Durchschnitts-Haushalts fuer Energie"
 			to: export_file type: csv rewrite: false  header: true;
 		}
 	}
