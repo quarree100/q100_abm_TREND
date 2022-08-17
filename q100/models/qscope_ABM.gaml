@@ -384,8 +384,12 @@ global {
 
 	init {
 
-    bool delete_csv_export_emissions <- delete_file("..data/outputs/output/emissions/..");
-
+	if (timestamp = "") // only delete files in general output folder if using GUI
+	{
+    	bool delete_csv_export_emissions <- delete_file("../data/outputs/output/emissions/");
+    	bool delete_csv_export_energy_prices <- delete_file("../data/outputs/output/energy_prices/");
+    	bool delete_csv_export_connections <- delete_file("../data/outputs/output/connections/");
+	}
 		create technical_data_calculator number: 1;
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
@@ -1856,13 +1860,23 @@ experiment agent_decision_making type: gui{
 
 //csv_export for frontend test
 
-	reflex save_results_test {
+	reflex save_num_connections {
 		float value <- (length(building where (each.mod_status = "s")) / length(building) * 100);
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
 		save [cycle, current_date, value]
 		to: export_file type: csv rewrite: false;
 	}
 
+// export energy costs:
+
+	reflex save_energy_costs {
+		if (current_date.month = 1) and (current_date.day = 1) {
+				string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_total.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_total.csv";
+
+			save [cycle, current_date, power_price, oil_price, gas_price, q100_price_opex] // TODO exportiert derzeit "nur" die Werte, welche an anderer Stelle importiert werden; koennte erweitert werden durch zB "monatliche Ausgaben eines Durchschnitts-Haushalts fuer Energie"
+			to: export_file type: csv rewrite: false  header: true;
+		}
+	}
 //csv_export for output test - line graph infoscreen /////////////////////////////// TODO Thema Datenschutz -> eigentlich nur durchschnittswerte exportieren; flag-export wofuer noetig?
 
 	reflex save_results_co2_graph {
@@ -1879,7 +1893,7 @@ experiment agent_decision_making type: gui{
 				export_file <- (timestamp = "") ? "../data/outputs/output/emissions/CO2_emissions_neighborhood.csv" : "../data/outputs/output_" + timestamp + "/emissions/CO2_emissions_neighborhood.csv";
 
 				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu, modernization_rate]
- 
+
 				to: export_file type: csv rewrite: false header: true; // löschung der datei implementieren
 			}
 		}
