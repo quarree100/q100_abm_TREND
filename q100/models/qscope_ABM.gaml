@@ -37,7 +37,7 @@ global {
 	file nahwaerme <- file("../includes/Shapefiles/Nahwaermenetz.shp");
 	file background_map <- file("../includes/Shapefiles/ruesdorfer_kamp_osm.png");
 	file shape_file_new_buildings <- file("../includes/Shapefiles/Neubau Gebaeude Kataster.shp");
-	
+
 	matrix<string> initial_values <- matrix<string>(csv_file("../includes/csv-data_technical/initial_variables.csv", ",", true));
 
 	list attributes_possible_sources <- ["Kataster_A", "Kataster_T"]; // create list from shapefile metadata; kataster_a = art, kataster_t = typ
@@ -73,14 +73,14 @@ global {
 	matrix<float> energy_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
 	matrix<float> q100_concept_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/q100_prices_emissions-dummy.csv", ",", float, true));
 
-
-	matrix<string> qscope_interchange_matrix <- matrix<string>(csv_file("../includes/csv_qscope/buildings_clusters.csv", ",", string, true));
+	string buildings_file <- (timestamp = "") ? "../data/outputs/output/buildings_clusters.csv" : "../data/outputs/output_" + timestamp + "/buildings_clusters_" + timestamp + ".csv";
+	matrix<string> qscope_interchange_matrix <- matrix<string>(csv_file(buildings_file, ",", string, true));
 
 
 
 	float alpha <- alphas [alpha_column(), 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
-	
+
 	int alpha_column {
 		if alpha_scenario = "Static_mean" {
 			return 1;
@@ -96,17 +96,17 @@ global {
 		}
 		else {
 			return 0;
-		}		
+		}
 	}
 
 	bool carbon_price_on_off <- false;
 
 	bool delta_on_off <- false;
 	bool B_do_nothing <- false;
-	float carbon_price <- carbon_prices [carbon_price_column(), 0]; 
+	float carbon_price <- carbon_prices [carbon_price_column(), 0];
 
 	string carbon_price_scenario;
-	
+
 	int carbon_price_column {
 		if  carbon_price_scenario = "A - Conservative" {
 			return 1;
@@ -210,9 +210,9 @@ global {
 
 	//	DATA FOR DECISION MAKING INVEST
 
-	
+
 	// MAX E AND C VALUES FOR NORMALIZATION
-	float e_current_max; 
+	float e_current_max;
 	float e_invest_max;
 	float e_change_max;
 	float e_switch_max;
@@ -220,7 +220,7 @@ global {
 	float c_invest_max;
 	float c_change_max;
 	float c_switch_max;
-	
+
 	action get_inital_value(string name) { //Retrieves the inital value for the variable with name "name".
 		list<string> names <- column_at(initial_values, 3);
 		int row <- index_of(names, name);
@@ -239,11 +239,11 @@ global {
 		else if type = "string" {
 			return value;
 		}
-		
+
 	}
-	
+
 	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
-		
+
 		e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
 		e_invest_max <- max((agents of_generic_species households) accumulate (each.e_invest));
 		e_change_max <- max((agents of_generic_species households) accumulate (each.e_change));
@@ -254,7 +254,7 @@ global {
 		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
 	}
 
-	
+
 
 	float q100_price_capex <- q100_concept_prices_emissions [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
@@ -284,7 +284,7 @@ global {
   	float MFH_connection_threshold <- get_inital_value("MFH_connection_threshold"); // TODO share of MFH flats that made decision invest to connect to heat_network
   	float feedback_factor <- get_inital_value("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
   	bool B_feedback <- get_inital_value("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
-  	
+
 	bool view_toggle <- get_inital_value("view_toggle"); // Parameter to toggle the 3D-View.
 	bool keep_seed <- get_inital_value("keep_seed"); // When true, the simulation seed will not change.
 	string timestamp <- "";
@@ -305,7 +305,7 @@ global {
 	float share_families <- get_inital_value("share_families"); // share of families in whole neighborhood
 	float share_socialgroup_families <- get_inital_value("share_socialgroup_families"); // share of families that are part of a social group
 	float share_socialgroup_nonfamilies <- get_inital_value("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
-	
+
 	float private_communication <- get_inital_value("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor TODO
 
 	string influence_type <- get_inital_value("influence_type");
@@ -340,7 +340,7 @@ global {
 		}
 		return sum;
 	}
-	
+
 	list<agent> get_all_instances(species<agent> spec) {
         return spec.population + spec.subspecies accumulate (get_all_instances(each));
     }
@@ -378,16 +378,18 @@ global {
 					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
 				}
 			}
-			
-		
+
+
 	}
-	
-	init { 		
-		
-	string file_to_delete <- (timestamp = "") ? "..includes/csv_export/emissions/.." : "../includes/csv_export_" + timestamp + "/emissions/..";
 
-    bool delete_csv_export_emissions <- delete_file(file_to_delete);
+	init {
 
+	if (timestamp = "") // only delete files in general output folder if using GUI
+	{
+    	bool delete_csv_export_emissions <- delete_file("../data/outputs/output/emissions/");
+    	bool delete_csv_export_energy_prices <- delete_file("../data/outputs/output/energy_prices/");
+    	bool delete_csv_export_connections <- delete_file("../data/outputs/output/connections/");
+	}
 		create technical_data_calculator number: 1;
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
@@ -444,7 +446,7 @@ global {
 				if (qscope_interchange_matrix[6,row_interchange] = "True") {
 					mod_status <- "s";
 				}
-				
+
 				if (qscope_interchange_matrix[7,row_interchange] = "True") {
 					ask self.get_tenants() {
 						change <- true;
@@ -493,8 +495,8 @@ global {
 					float decision_500_1000_PBC_S_1st <- decision_map[income_group][9,i+1];
 
 					B_s <- rnd (decision_500_1000_PBC_S_min, decision_500_1000_PBC_S_1st);
-					id_group <- string(income_group) + "_" + letters[i]; 			
-					
+					id_group <- string(income_group) + "_" + letters[i];
+
 					do find_house; //Locate household in a random building.
 				}
 			}
@@ -570,14 +572,14 @@ global {
 			power_supplier <- "conventional";
 		}
 
-		
+
 // Distribution of change values among households based on EEH 								// share needs to be validated!!! TODO
 
 		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold)	{
 			change <- true;
-		}	
-		
-		
+		}
+
+
 
 // Floor area
 
@@ -617,7 +619,7 @@ global {
 			}
 		}
 
-		
+
 		ask agents of_generic_species households where (each.family) { //distributes belonging to socialgroups over non-/families
 
 			if flip (share_socialgroup_families) {
@@ -643,9 +645,9 @@ global {
 			}
 		}
 
-		
+
 		do distribute_budget(get_all_instances(households));
-		
+
 
 		ask agents of_generic_species households {
 			do consume_energy;
@@ -653,7 +655,7 @@ global {
 		do update_max_values;
 
 	}
-	
+
 
 	reflex new_household { //creates new households to keep the total number of households constant.
 		let new_households of: households <- [];
@@ -716,7 +718,7 @@ global {
 					power_supplier <- "conventional";
 				}
 				my_floor_area <- (self.house.net_floor_area / self.house.units);
-				
+
 				if self.house.energy_source = "q100" {
 					do decision_feedback_attitude;
 				}
@@ -778,7 +780,7 @@ global {
 		}
 
 		do distribute_budget(new_households);
-		if sum_of(new_households of_generic_species households, length(each.social_contacts)) > 0 { 
+		if sum_of(new_households of_generic_species households, length(each.social_contacts)) > 0 {
 
 		}
 
@@ -854,7 +856,7 @@ global {
 		}
 	}
 
-	
+
 	reflex step_households {
 		list<households> household_list <- (agents of_generic_species households);
 		ask household_list {
@@ -863,9 +865,9 @@ global {
 			do communicate_occasional;
 			}
 		if (current_date.day = 1) {
-			ask household_list {		
+			ask household_list {
 				do calculate_c;
-			}	
+			}
 		}
 		do update_max_values;
 		if (current_date.day = 1) {
@@ -922,7 +924,7 @@ species building {
 	string id;
 
 	int invest_counter;
-	
+
 	action invoke_investment { // Gets called when the tenants decide to invest in a refurbishment of the house. The invest_counter is set depending on the selected payment scenario.
 		if self.mod_status = "s" {}
 		else {
@@ -942,8 +944,8 @@ species building {
 
 			}
 		}
-	} 
-	
+	}
+
 
 	bool qscope_interchange_flag <- false;
 	float building_emissions;
@@ -963,7 +965,7 @@ species building {
 		do modernize;
 	}
 
-	action modernize { 
+	action modernize {
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
 			self.energy_source <- "q100";
@@ -972,7 +974,7 @@ species building {
 		}
 	}
 
-	
+
 	reflex investment_costs { // When self.invest_counter is set to a value > 0, the tenants of the building will be charged with the costs of the home refurbishment.
 		if self.invest_counter > 0 and current_date.month = mod_date.month and current_date.day = mod_date.day {
 			ask self.get_tenants() {
@@ -983,7 +985,7 @@ species building {
 			self.invest_counter <- self.invest_counter - 1;
 		}
 	}
-	
+
 
 	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
 		list neighbors;
@@ -1052,19 +1054,19 @@ species households {
 
 	float B_i; // Perceived-Behavioral-Control Invest
 	float B_c; // Perceived-Behavioral-Control Change
-	float B_s; // Perceived-Behavioral-Control Switch	
+	float B_s; // Perceived-Behavioral-Control Switch
 	float B_i_7; // Perceived-Behavioral-Control Invest divided by 7
 	float B_c_7; // Perceived-Behavioral-Control Change divided by 7
-	float B_s_7; // Perceived-Behavioral-Control Switch divided by 7	
+	float B_s_7; // Perceived-Behavioral-Control Switch divided by 7
 
 	float EEH; // Energy Efficient Habits TODO
-	
+
 	float U; // Utility value that is selected in decision phase
 	float U_current;
 	float U_i;
 	float U_c;
 	float U_s;
-	
+
 
 	int income; // households income/month
 	float budget <- 0.0; // TODO every household starts with zero savings?
@@ -1083,8 +1085,8 @@ species households {
 	bool invest <- false;
 	string power_supplier;
 	float delta;
-	
-	
+
+
 
 	float my_heat_consumption; // monthly heat consumption in kWh
 	float my_power_consumption; // monthly power consumption in kWh
@@ -1165,10 +1167,10 @@ species households {
 
 
 
-	
-	
-	action communicate_daily { 
-		
+
+
+	action communicate_daily {
+
 
 		if network_contacts_temporal_daily > 0 {
 			ask network_contacts_temporal_daily among social_contacts {
@@ -1199,7 +1201,7 @@ species households {
 	        			}
 	        		}
 
-	        		
+
 	        		if (self.A_d < mean([myself.A_d, self.A_d])) and self.A_d < 7 {
 	        			self.A_d <- self.A_d + private_communication;
 
@@ -1234,7 +1236,7 @@ species households {
         }
 	}
 
-	
+
 	action communicate_weekly { // includes communication with social groups -> increasing factor
 
 		if network_contacts_temporal_weekly > 0 {
@@ -1259,7 +1261,7 @@ species households {
 	        				if influence_type = "both_sides"{
 
 	        					myself.A_e <- myself.A_e - (private_communication * 2);
-	        				} 
+	        				}
 
 	        			}
 	        			else if self.network_socialgroup = true and self.A_e > 0 {
@@ -1267,7 +1269,7 @@ species households {
 	        				if influence_type = "both_sides"{
 
 	        					myself.A_e <- myself.A_e + (private_communication * 2);
-	        				} 
+	        				}
 
 	      			  	}
 	      			  	else if self.network_socialgroup = false and ((self.A_e < mean([myself.A_e, self.A_e])) and self.A_e < 7) {
@@ -1275,7 +1277,7 @@ species households {
 	        				if influence_type = "both_sides"{
 
 	        					myself.A_e <- myself.A_e - private_communication;
-	        				}  
+	        				}
 
 	        			}
 	        			else if self.network_socialgroup = false and self.A_e > 0 {
@@ -1284,14 +1286,14 @@ species households {
 	        					myself.A_e <- myself.A_e + private_communication;
 	        				}
 	      			  	}
-	      			  	
-	      			
-        		
+
+
+
 	        			if self.network_socialgroup = true and ((self.A_d < mean([myself.A_d, self.A_d])) and self.A_d < 7) {
 	        				self.A_d <- self.A_d + (private_communication * 2);
 	        				if influence_type = "both_sides"{
 	        					myself.A_d <- myself.A_d - (private_communication * 2);
-	        				} 
+	        				}
 
 	        			}
 	        			else if self.network_socialgroup = true and self.A_d > 0 {
@@ -1299,7 +1301,7 @@ species households {
 	        				if influence_type = "both_sides"{
 
 	        					myself.A_d <- myself.A_d + (private_communication * 2);
-	        				} 
+	        				}
 
 	      			  	}
 	      			  	else if self.network_socialgroup = false and ((self.A_d < mean([myself.A_d, self.A_d])) and self.A_d < 7) {
@@ -1307,7 +1309,7 @@ species households {
 	        				if influence_type = "both_sides"{
 
 	        					myself.A_d <- myself.A_d - private_communication;
-	        				}  
+	        				}
 
 	        			}
 	        			else if self.network_socialgroup = false and self.A_d > 0 {
@@ -1336,10 +1338,10 @@ species households {
         }
 	}
 
-	
-	action communicate_occasional { 
+
+	action communicate_occasional {
 		if network_contacts_temporal_occasional > 0 {
-			if (current_date.day = 1) { 
+			if (current_date.day = 1) {
 
 				ask network_contacts_temporal_occasional among social_contacts {
        		 		let flag <- false;
@@ -1369,7 +1371,7 @@ species households {
 		        			}
 		        		}
 
-		        		
+
 		        		if (self.A_d < mean([myself.A_d, self.A_d])) and self.A_d < 7 {
 		        			self.A_d <- self.A_d + private_communication;
 
@@ -1406,33 +1408,33 @@ species households {
 
 
 
-	
+
 	action calculate_c { // calculation of c is used for decision making
-		
+
 		do calculate_hypo_e;
-	
+
 		c_current <- income - (e_current);
 		c_invest <- income - (e_invest + q100_price_capex); // langfristige Vorteile des Investments müssen evtl noch bedacht werden??
 		c_change <- income - (e_change);
 		c_switch <- income - (e_switch);
 	}
 
-	
-	action decision_making { 
-		
-		
+
+	action decision_making {
+
+
 		do update_decision_thresholds;
-			
+
 		do calculate_utility;
-			
-			
-		U <- max ([U_current, U_i, U_c, U_s]); 
-			
-		if (U = U_i) and (q100_price_capex <= budget) { 
+
+
+		U <- max ([U_current, U_i, U_c, U_s]);
+
+		if (U = U_i) and (q100_price_capex <= budget) {
 			invest <- true;
 			int no_owners_invest <- length(self.house.get_tenants() where (each.invest = true));
 			int no_total_owner <- length(self.house.get_tenants());
-			if (ownership = "owner") and (self.house.type = "EFH") { 
+			if (ownership = "owner") and (self.house.type = "EFH") {
 				ask self.house {
 					do invoke_investment;
 				}
@@ -1452,14 +1454,14 @@ species households {
 				}
 			}
 
-			else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (no_owners_invest / no_total_owner)) { 
+			else if (ownership = "owner") and (self.house.type = "MFH") and (MFH_connection_threshold <= (no_owners_invest / no_total_owner)) {
 				ask self.house {
 					do invoke_investment;
 				}
 				do decision_feedback_attitude;
 				do decision_feedback_B;
 			}
-			
+
 			else if (ownership = "tenant") and (self.house.type = "MFH") {
 				if (flip (landlord_prop)) {
 					do decision_feedback_attitude;
@@ -1470,14 +1472,14 @@ species households {
 				}
 			}
 		}
-			
-		else if (U = U_c) and (EEH > change_threshold) { 
+
+		else if (U = U_c) and (EEH > change_threshold) {
 			change <- true;
 			do decision_feedback_attitude;
 			do decision_feedback_B;
 		}
-		
-		else if U = U_s { 
+
+		else if U = U_s {
 			if power_supplier = "conventional" {
 				power_supplier <- "mixed";
 			}
@@ -1486,21 +1488,21 @@ species households {
 			}
 			do decision_feedback_attitude;
 			do decision_feedback_B;
-		}	
+		}
 	}
-	
+
 	action decision_feedback_attitude { // decision feedback calculation for attitude values
-		
+
 		A_k <- A_k * feedback_factor;
 		A_e <- A_e * feedback_factor;
 		A_d <- A_d * feedback_factor;
-		
+
 	}
-	
+
 	action decision_feedback_B { // decision feedback calculation for other values of perceived behavioral control
-		
+
 		if B_feedback {
-			
+
 			if U = U_i {
 				if !change {
 					B_c <- B_c * feedback_factor;
@@ -1509,7 +1511,7 @@ species households {
 					B_s <- B_s * feedback_factor;
 				}
 			}
-			
+
 			if U = U_c {
 				if !invest {
 					B_i <- B_i * feedback_factor;
@@ -1518,7 +1520,7 @@ species households {
 					B_s <- B_s * feedback_factor;
 				}
 			}
-			
+
 			if U = U_s {
 				if !invest {
 					B_i <- B_i * feedback_factor;
@@ -1529,32 +1531,32 @@ species households {
 			}
 		}
 	}
-	
+
 
 	action consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
-	
+
 		do calculate_consumption;
 		do calculate_emissions;
 		do calculate_heat_expenses;
 		do calculate_power_expenses;
-		
+
 		e_current <- my_heat_expenses + my_power_expenses;
-			
+
 	}
-		
-	
+
+
 	action update_decision_thresholds {
-		/* calculate household's current 
+		/* calculate household's current
 		Attitude (0 <= KA <= 1),
 		Norms (0 <= N <= 1) and
-		Perceived behavioral control (0 <= PBC <= 1) */ 
+		Perceived behavioral control (0 <= PBC <= 1) */
 		A <- mean(A_k, A_e, A_d) / 7;
 		N <- mean(SN) / 7;
 		B_i_7 <- mean(B_i) / 7;
 		B_c_7 <- mean(B_c) / 7;
 		B_s_7 <- mean(B_s) / 7;
 	}
-	
+
 	action calculate_hypo_e {
 		float hypo_q100_carbon_exp <- my_heat_consumption * q100_emissions * carbon_price * int(carbon_price_on_off);
 		e_invest <- (my_heat_consumption * q100_price_opex / 100) + hypo_q100_carbon_exp + my_power_expenses;
@@ -1563,10 +1565,10 @@ species households {
 			e_switch <- my_power_consumption * (power_price + 10) / 100 + my_heat_expenses;
 		}
 	}
-	
+
 	action calculate_utility {
 		U_current <- alpha * e_current / e_current_max + (1 - alpha) * c_current / c_current_max + (A + N + int(B_do_nothing)); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
-	
+
 		if (invest = true) or (self.house.energy_source = "q100") {
 			U_i <- 0;
 		}
@@ -1578,9 +1580,9 @@ species households {
 			else {
 				U_i <- alpha * e_invest / e_invest_max + (1 - alpha) * c_invest / c_invest_max + (A + N + B_i_7);
 			}
-			
+
 		}
-		
+
 		if change = true {
 			U_c <- 0;
 		}
@@ -1592,9 +1594,9 @@ species households {
 			else {
 				U_c <- alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max + (A + N + B_c_7);
 			}
-		
+
 		}
-		
+
 		if power_supplier = "green" {
 			U_s <- 0;
 		}
@@ -1608,8 +1610,8 @@ species households {
 			}
 		}
 	}
-	
-	
+
+
 
 	action calculate_consumption { // consumption divided by building type
 
@@ -1634,7 +1636,7 @@ species households {
 		}
 	}
 
-	action calculate_heat_expenses { 
+	action calculate_heat_expenses {
 		if (self.house.energy_source = "Gas") {
 			my_heat_expenses <- my_heat_consumption * gas_price / 100;
 		}
@@ -1649,7 +1651,7 @@ species households {
 		}
 	}
 
-	action calculate_power_expenses { 
+	action calculate_power_expenses {
 		if (power_supplier = "green") {
 			my_power_expenses <- my_power_consumption * (power_price + 10) / 100; // es stellt sich die Frage, ob Ökostrom immer teurer bleibt; bzw. es ein "höherklassiges" Angebot geben wird;; ggf Szenario einrichten mit 30 % und 10 ct
 		}
@@ -1858,27 +1860,37 @@ experiment agent_decision_making type: gui{
 
 //csv_export for frontend test
 
-	reflex save_results_test {
+	reflex save_num_connections {
 		float value <- (length(building where (each.mod_status = "s")) / length(building) * 100);
-		string export_file <- (timestamp != "") ? "../includes/csv_export/test_" + timestamp + "/csv_export_test.csv" : "../includes/csv_export/test/csv_export_test.csv";		
-		save [cycle, current_date, value]		
+		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
+		save [cycle, current_date, value]
 		to: export_file type: csv rewrite: false;
 	}
 
+// export energy costs:
+
+	reflex save_energy_costs {
+		if (current_date.month = 1) and (current_date.day = 1) {
+				string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_total.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_total.csv";
+
+			save [cycle, current_date, power_price, oil_price, gas_price, q100_price_opex] // TODO exportiert derzeit "nur" die Werte, welche an anderer Stelle importiert werden; koennte erweitert werden durch zB "monatliche Ausgaben eines Durchschnitts-Haushalts fuer Energie"
+			to: export_file type: csv rewrite: false  header: true;
+		}
+	}
 //csv_export for output test - line graph infoscreen /////////////////////////////// TODO Thema Datenschutz -> eigentlich nur durchschnittswerte exportieren; flag-export wofuer noetig?
 
-	reflex save_results_co2_graph_test {
+	reflex save_results_co2_graph {
 		string export_file;
 		if current_date.day = 3 {
 
 			ask building where (each.qscope_interchange_flag = true) {
-				export_file <- (timestamp != "") ? "../includes/csv_export/emissions_" + timestamp + "/csv_export_co2_graph_test_" + id + ".csv" : "../includes/csv_export/emissions/csv_export_co2_graph_test_" + id + ".csv";
+				export_file <- (timestamp = "") ? "../data/outputs/output/emissions/CO2_emissions_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/emissions/CO2_emissions_" + id + ".csv";
 				save [cycle, current_date, id, building_emissions]
 				to: export_file type: csv rewrite: false header: true;
 			}
 
 			ask technical_data_calculator {
-				export_file <- (timestamp != "") ? "../includes/csv_export/emissions_" + timestamp + "/csv_export_co2_graph_test_neighborhood.csv" : "../includes/csv_export/emissions_/csv_export_co2_graph_test_neighborhood.csv";
+				export_file <- (timestamp = "") ? "../data/outputs/output/emissions/CO2_emissions_neighborhood.csv" : "../data/outputs/output_" + timestamp + "/emissions/CO2_emissions_neighborhood.csv";
 
 				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu, modernization_rate]
 
@@ -2111,7 +2123,7 @@ experiment agent_decision_making_3d type: gui{
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
 
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
-  	
+
 
   	font my_font <- font("Arial", 12, #bold);
 
@@ -2226,10 +2238,10 @@ experiment debug type:gui {
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
-	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";	
+	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
-	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings"; 	
+	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings";
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
