@@ -9,7 +9,7 @@ model json_udp
 
 global {
 	string client_ip <- "localhost";
-	int client_port <- 8082;
+	int client_port <- 8081;
 	string save_path <- "../jstring.json";
 	
 	
