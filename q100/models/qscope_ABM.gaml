@@ -19,6 +19,10 @@ model q100
 
 global {
 
+	//technical agents
+	
+	decision_counter dc;
+	
 	// bool show_heatingnetwork <- true;
 
 	float step <- 1 #day;
@@ -391,6 +395,8 @@ global {
     	bool delete_csv_export_connections <- delete_file("../data/outputs/output/connections/");
 	}
 		create technical_data_calculator number: 1;
+		create decision_counter number: 1;
+		dc <- decision_counter[0];
 		create building from: shape_file_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), mod_status::string(read("Kataster_8")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15")), energy_source::string(read("Kataster_E"))] { // create agents according to shapefile metadata
 
 			vacant <- bool(units);
@@ -865,6 +871,9 @@ global {
 			do communicate_occasional;
 			}
 		if (current_date.day = 1) {
+			ask dc {
+				do clear_monthly_data;
+			}
 			ask household_list {
 				do calculate_c;
 			}
@@ -876,6 +885,41 @@ global {
 				do consume_energy;
 			}
 		}
+	}
+}
+
+species decision_counter {
+	int total_decisions;
+	int total_investments;
+	int total_changes;
+	int total_switches;
+	int monthly_total;
+	int monthly_investments;
+	int monthly_changes;
+	int monthly_switches;
+	
+	action clear_monthly_data {
+		self.monthly_investments <- 0 ;
+		self.monthly_changes <- 0;
+		self.monthly_switches <- 0;
+		self.monthly_total <- 0;
+	}
+	
+	action update_counter(string dec_type) {
+		self.total_decisions <- self.total_decisions + 1;
+		self.monthly_total <- self.monthly_total + 1;
+		if dec_type = "invest"  {
+			self.monthly_investments <- self.monthly_investments + 1;
+			self.total_investments <- self.total_investments + 1;
+		}
+		else if dec_type = "change"  {
+			self.monthly_changes <- self.monthly_changes + 1;
+			self.total_changes <- self.total_changes + 1;
+		}
+		else if dec_type = "switch"  {
+			self.monthly_switches <- self.monthly_switches + 1;
+			self.total_switches <- self.total_switches + 1;
+		} 
 	}
 }
 
@@ -1440,6 +1484,9 @@ species households {
 				}
 				do decision_feedback_attitude;
 				do decision_feedback_B;
+				ask dc {
+					do update_counter("invest");
+				}
 			}
 			else if (ownership = "tenant") and (self.house.type = "EFH") { // the CapEx will not appear within the model - landlord is outside of system boundaries
 				if (flip (landlord_prop)) {
@@ -1448,6 +1495,9 @@ species households {
 					}
 					do decision_feedback_attitude;
 					do decision_feedback_B;
+					ask dc {
+					do update_counter("invest");
+				}
 				}
 				else {
 					invest <- false;
@@ -1460,12 +1510,18 @@ species households {
 				}
 				do decision_feedback_attitude;
 				do decision_feedback_B;
+				ask dc {
+					do update_counter("invest");
+				}
 			}
 
 			else if (ownership = "tenant") and (self.house.type = "MFH") {
 				if (flip (landlord_prop)) {
 					do decision_feedback_attitude;
 					do decision_feedback_B;
+					ask dc {
+					do update_counter("invest");
+				}
 				}
 				else {
 					invest <- false;
@@ -1477,14 +1533,23 @@ species households {
 			change <- true;
 			do decision_feedback_attitude;
 			do decision_feedback_B;
+			ask dc {
+					do update_counter("change");
+				}
 		}
 
 		else if U = U_s {
 			if power_supplier = "conventional" {
 				power_supplier <- "mixed";
+				ask dc {
+					do update_counter("switch");
+				}
 			}
 			else if power_supplier = "mixed" {
 				power_supplier <- "green";
+				ask dc {
+					do update_counter("switch");
+				}
 			}
 			do decision_feedback_attitude;
 			do decision_feedback_B;
@@ -1916,7 +1981,8 @@ experiment agent_decision_making type: gui{
 
 	output {
 		//monitor monat value: ((technical_data_calculator[0].month_counter - 1) mod 12) ;
-
+		monitor "total decisions" value: dc.total_decisions;
+		monitor "monthly decisions" value: dc.monthly_total;
 
 		layout #split;
 		display neighborhood {
