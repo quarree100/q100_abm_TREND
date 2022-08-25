@@ -15,7 +15,7 @@
 
 
 model q100
-
+import "../modules/json_udp.gaml"
 
 global {
 
