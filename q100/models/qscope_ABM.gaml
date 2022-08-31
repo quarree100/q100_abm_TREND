@@ -271,17 +271,17 @@ global {
 	}
 
 
-	int nb_units <- get_nb_units(); //number of households
+	int nb_units <- get_nb_units(); // number of households
 	int global_neighboring_distance <- get_inital_value("global_neighboring_distance");
-	string new_buildings_parameter;
-	bool new_buildings_order_random <- get_inital_value("new_buildings_order_random"); // TODO
+	string new_buildings_parameter; // determines the speed of completion of new_buildings
+	bool new_buildings_order_random <- get_inital_value("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	float energy_saving_rate <- get_inital_value("energy_saving_rate"); // Energy-Saving of modernized buildings in percent TODO
-  	float change_factor <- get_inital_value("change_factor"); // Energy-Saving of households with change = true TODO
+	float energy_saving_rate <- get_inital_value("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	float change_factor <- get_inital_value("change_factor"); // Energy-Saving of households with change = true
   	float change_threshold <- get_inital_value("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- get_inital_value("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made
-  	float MFH_connection_threshold <- get_inital_value("MFH_connection_threshold"); // TODO share of MFH flats that made decision invest to connect to heat_network
+  	float landlord_prop <- get_inital_value("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	float MFH_connection_threshold <- get_inital_value("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
   	float feedback_factor <- get_inital_value("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
   	bool B_feedback <- get_inital_value("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
 
@@ -294,19 +294,11 @@ global {
 	float modernization_rate; // yearly rate of modernization
 
 
-	// TODO
-//	int emissions_neighborhood_total; // total annual energy emissions of q100 neighborhood
-//	int emissions_neighborhood_heat; // total annual heat emissions of q100 neighborhood
-//	int emissions_neighborhood_power; // total annual power emissions of q100 neighborhood
-//	int emissions_neighborhood_accu; // accumulated energy emissions of the q100 neighborhood
-//	int emissions_household_average; // annual energy emissions of an average household within the q100 neighborhood
-//	int emissions_household_average_accu; // accumulated energy emissions of an average household within the q100 neighborhood
-
 	float share_families <- get_inital_value("share_families"); // share of families in whole neighborhood
 	float share_socialgroup_families <- get_inital_value("share_socialgroup_families"); // share of families that are part of a social group
 	float share_socialgroup_nonfamilies <- get_inital_value("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
 
-	float private_communication <- get_inital_value("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor TODO
+	float private_communication <- get_inital_value("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
 
 	string influence_type <- get_inital_value("influence_type");
 	bool communication_memory <- get_inital_value("communication_memory");
@@ -571,14 +563,6 @@ global {
 		ask agents of_generic_species households where (each.power_supplier = nil) {
 			power_supplier <- "conventional";
 		}
-
-
-// Distribution of change values among households based on EEH 								// share needs to be validated!!! TODO
-
-		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold)	{
-			change <- true;
-		}
-
 
 
 // Floor area
@@ -1116,7 +1100,7 @@ species households {
 	int network_contacts_spatial_beyond; // available amount of contacts within an households network - contacts beyond the system's environment TODO - not yet implemented - no influence beyond the system boundaries
 
 	bool family; // represents young families - higher possibility of being part of a socialgroup
-	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior
+	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior; e.g. football club
 
 	building house;
 
@@ -1441,7 +1425,7 @@ species households {
 				do decision_feedback_attitude;
 				do decision_feedback_B;
 			}
-			else if (ownership = "tenant") and (self.house.type = "EFH") { // the CapEx will not appear within the model - landlord is outside of system boundaries
+			else if (ownership = "tenant") and (self.house.type = "EFH") { // the CapEx will not appear in this situation - landlord is outside of system boundaries
 				if (flip (landlord_prop)) {
 					ask self.house {
 						do invoke_investment;
@@ -1466,6 +1450,11 @@ species households {
 				if (flip (landlord_prop)) {
 					do decision_feedback_attitude;
 					do decision_feedback_B;
+					if (MFH_connection_threshold <= (no_owners_invest / no_total_owner)) {
+						ask self.house {
+							do invoke_investment;
+						}
+					}
 				}
 				else {
 					invest <- false;
