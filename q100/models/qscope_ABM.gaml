@@ -933,6 +933,8 @@ species building {
 
 	bool qscope_interchange_flag <- false;
 	float building_emissions;
+	float building_expenses_heat;
+	float building_expenses_power;
 
 
 	action add_tenant {
@@ -1009,6 +1011,21 @@ species building {
 			building_emissions <- 0;
 			ask self.get_tenants() {
 				house.building_emissions <- house.building_emissions + self.my_energy_emissions;
+			}
+		}
+	}
+	
+	reflex monthly_updates_expenses { //to validate! TODO
+		if (current_date.day = 2) {
+			building_expenses_heat <- 0;
+			ask self.get_tenants() {
+				house.building_expenses_heat <- house.building_expenses_heat + self.my_heat_expenses;
+			}
+		}
+		if (current_date.day = 2) {
+			building_expenses_power <- 0;
+			ask self.get_tenants() {
+				house.building_expenses_power <- house.building_expenses_power + self.my_power_expenses;
 			}
 		}
 	}
@@ -1884,6 +1901,18 @@ experiment agent_decision_making type: gui{
 				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu, modernization_rate]
 
 				to: export_file type: csv rewrite: false header: true; // löschung der datei implementieren
+			}
+		}
+	}
+	
+	reflex save_results_energy_prices_building {
+		string export_file;
+		if current_date.day = 3 {
+		
+			ask building where (each.qscope_interchange_flag = true) {
+				export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_" + id + ".csv";
+				save [cycle, current_date, id, building_expenses_heat, building_expenses_power]
+				to: export_file type: csv rewrite: false header: true;
 			}
 		}
 	}
