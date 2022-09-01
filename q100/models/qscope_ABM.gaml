@@ -274,7 +274,7 @@ global {
 
 	int nb_units <- get_nb_units(); // number of households
 	int global_neighboring_distance <- get_inital_value("global_neighboring_distance");
-	string new_buildings_parameter; // determines the speed of completion of new_buildings
+	string new_buildings_parameter <- "none"; // determines the speed of completion of new_buildings
 	bool new_buildings_order_random <- get_inital_value("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
@@ -436,7 +436,7 @@ global {
 					energy_source <- "q100";
 					
 					ask self.get_tenants() {
-						do decision_feedback_attitude;
+						// do decision_feedback_attitude;
 						// do decision_feedback_B ---> validation ---> should be implemented?
 					}
 				}
@@ -450,7 +450,7 @@ global {
 				if (qscope_interchange_matrix[7,row_interchange] = "True") {
 					ask self.get_tenants() {
 						change <- true;
-						do decision_feedback_attitude;
+						// do decision_feedback_attitude;
 						// do decision_feedback_B ---> validation ---> should be implemented?
 					}
 				}
@@ -851,11 +851,11 @@ global {
 
 	reflex step_households {
 		list<households> household_list <- (agents of_generic_species households);
-		ask household_list {
-			do communicate_daily;
-			do communicate_weekly;
-			do communicate_occasional;
-			}
+//		ask household_list {
+//			do communicate_daily;
+//			do communicate_weekly;
+//			do communicate_occasional;
+//		}
 		if (current_date.day = 1) {
 			ask household_list {
 				do calculate_c;
@@ -864,7 +864,7 @@ global {
 		do update_max_values;
 		if (current_date.day = 1) {
 			ask household_list {
-				do decision_making;
+				// do decision_making;
 				do consume_energy;
 			}
 		}
@@ -942,7 +942,12 @@ species building {
 	}
 
 
-	
+
+	bool qscope_interchange_flag <- false;
+	float building_emissions;
+	float building_expenses_heat;
+	float building_expenses_power;
+
 
 
 	action add_tenant {
@@ -1025,6 +1030,21 @@ species building {
 			building_emissions <- 0;
 			ask self.get_tenants() {
 				house.building_emissions <- house.building_emissions + self.my_energy_emissions;
+			}
+		}
+	}
+	
+	reflex monthly_updates_expenses { //to validate! TODO
+		if (current_date.day = 2) {
+			building_expenses_heat <- 0;
+			ask self.get_tenants() {
+				house.building_expenses_heat <- house.building_expenses_heat + self.my_heat_expenses;
+			}
+		}
+		if (current_date.day = 2) {
+			building_expenses_power <- 0;
+			ask self.get_tenants() {
+				house.building_expenses_power <- house.building_expenses_power + self.my_power_expenses;
 			}
 		}
 	}
@@ -1706,45 +1726,45 @@ species households {
 	}
 
 
-	reflex move_out {
-		if (current_date.month = 12) and (current_date.day = 15) {
-
-			//initiation of moving-out-procedure by age
-			age <- age + 1;
-			length_of_residence <- length_of_residence + 1;
-			let current_agent <- self;
-			if age >= 100 {
-				ask neighbors_of(network, self) {
-					do update_social_contacts(current_agent);
-				}
-				remove self from: network;
-				ask self.house{
-					do remove_tenant;
-				}
-				do die;
-			}
-
-			//initiation of moving-out-procedure by average probability
-			int current_age_group <- int(floor(age / 20)) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
-			float moving_prob  <- 1 / average_lor_inclusive[1, current_age_group];
-			if flip(moving_prob) {
-				households my_temporary_network <- households(neighbors_of(network, self));
-				if my_temporary_network != nil {
-					ask my_temporary_network {
-						do update_social_contacts(current_agent);
-					}
-				}
-				remove self from: network;
-				ask self.house {
-					do remove_tenant;
-				}
-				do die;
-
-			}
-
-		}
-
-	}
+//	reflex move_out {
+//		if (current_date.month = 12) and (current_date.day = 15) {
+//
+//			//initiation of moving-out-procedure by age
+//			age <- age + 1;
+//			length_of_residence <- length_of_residence + 1;
+//			let current_agent <- self;
+//			if age >= 100 {
+//				ask neighbors_of(network, self) {
+//					do update_social_contacts(current_agent);
+//				}
+//				remove self from: network;
+//				ask self.house{
+//					do remove_tenant;
+//				}
+//				do die;
+//			}
+//
+//			//initiation of moving-out-procedure by average probability
+//			int current_age_group <- int(floor(age / 20)) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
+//			float moving_prob  <- 1 / average_lor_inclusive[1, current_age_group];
+//			if flip(moving_prob) {
+//				households my_temporary_network <- households(neighbors_of(network, self));
+//				if my_temporary_network != nil {
+//					ask my_temporary_network {
+//						do update_social_contacts(current_agent);
+//					}
+//				}
+//				remove self from: network;
+//				ask self.house {
+//					do remove_tenant;
+//				}
+//				do die;
+//
+//			}
+//
+//		}
+//
+//	}
 
 	reflex retire { //emp-status of the household moves to "pensioner" when they reach age 64.
 		if (self.age >= 64) and (self.employment != "pensioner") {
@@ -1840,7 +1860,7 @@ experiment agent_decision_making type: gui{
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
-	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
+	parameter "New Buildings" var: new_buildings_parameter <- "none" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings";
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
@@ -1900,6 +1920,18 @@ experiment agent_decision_making type: gui{
 				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu, modernization_rate]
 
 				to: export_file type: csv rewrite: false header: true; // löschung der datei implementieren
+			}
+		}
+	}
+	
+	reflex save_results_energy_prices_building {
+		string export_file;
+		if current_date.day = 3 {
+		
+			ask building where (each.qscope_interchange_flag = true) {
+				export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_" + id + ".csv";
+				save [cycle, current_date, id, building_expenses_heat, building_expenses_power]
+				to: export_file type: csv rewrite: false header: true;
 			}
 		}
 	}
@@ -2114,7 +2146,7 @@ experiment agent_decision_making_3d type: gui{
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
-	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
+	parameter "New Buildings" var: new_buildings_parameter <- "none" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings";
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
@@ -2245,7 +2277,7 @@ experiment debug type:gui {
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
 	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
 	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
-	parameter "New Buildings" var: new_buildings_parameter <- "continuously" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
+	parameter "New Buildings" var: new_buildings_parameter <- "none" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
 	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings";
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
