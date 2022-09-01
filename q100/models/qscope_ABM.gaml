@@ -23,7 +23,20 @@ global {
 
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
-	reflex end_simulation when: (current_date.year = 2045) and (current_date.month = 12) and (current_date.day = 31){
+	string model_runtime_string <- "2020-2030";
+	int model_runtime {
+		if model_runtime_string = "2020-2030" {
+			return 2030;
+		}
+		else if model_runtime_string = "2020-2040" {
+			return 2040;
+		}
+		else {
+			return 2045;
+		}
+	}
+	
+	reflex end_simulation when: (current_date.year = model_runtime()) and (current_date.month = 12) and (current_date.day = 31){
     	do pause;
     }
 
@@ -1859,6 +1872,7 @@ experiment agent_decision_making type: gui{
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
   	parameter "timestamp" var: timestamp <- "";
+  	parameter "Model runtime" var: model_runtime_string among: ["2020 - 2030", "2020-2040", "2020-2045"] category: "Simulation";
 
   	font my_font <- font("Arial", 12, #bold);
 
@@ -2141,6 +2155,9 @@ experiment agent_decision_making_3d type: gui{
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant 50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
 
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
+  	
+  	parameter "Model runtime" var: model_runtime_string among: ["2020 - 2030", "2020-2040", "2020-2045"] category: "Simulation";
+  	
 
 
   	font my_font <- font("Arial", 12, #bold);
@@ -2273,4 +2290,6 @@ experiment debug type:gui {
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
+  	parameter "Model runtime" var: model_runtime_string among: ["2020 - 2030", "2020-2040", "2020-2045"] category: "Simulation";
+  	
 }
