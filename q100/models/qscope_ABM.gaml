@@ -78,6 +78,7 @@ global {
 
 
 
+
 	float alpha <- alphas [alpha_column(), 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
 
@@ -375,7 +376,7 @@ global {
 	}
 
 	init {
-
+	write qscope_interchange_matrix;
 	if (timestamp = "") // only delete files in general output folder if using GUI
 	{
     	bool delete_csv_export_emissions <- delete_file("../data/outputs/output/emissions/");
@@ -425,15 +426,22 @@ global {
 			ask (building where (each.id = qscope_interchange)) {
 				qscope_interchange_flag <- true;
 
-				if (qscope_interchange_matrix[5,row_interchange] = "True") {
+				
+				if (int(qscope_interchange_matrix[5,row_interchange]) = -1) {
+					
+					energy_source <- qscope_interchange_matrix[3,row_interchange];
+					
+				}
+				else if (int(qscope_interchange_matrix[5,row_interchange]) = 0) {
 					energy_source <- "q100";
+					
 					ask self.get_tenants() {
 						// do decision_feedback_attitude;
 						// do decision_feedback_B ---> validation ---> should be implemented?
 					}
 				}
-				else {
-					energy_source <- qscope_interchange_matrix[3,row_interchange];
+				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0) {
+					connection_date <- current_date plus_years int(qscope_interchange_matrix[5,row_interchange]);
 				}
 				if (qscope_interchange_matrix[6,row_interchange] = "True") {
 					mod_status <- "s";
@@ -903,9 +911,12 @@ species building {
 	float spec_heat_consumption;
 	float spec_power_consumption;
 	string energy_source;
+	date connection_date;
 	rgb color <- #gray;
 	geometry line;
 	string id;
+	bool qscope_interchange_flag <- false;
+	float building_emissions;
 
 	int invest_counter;
 
@@ -931,10 +942,12 @@ species building {
 	}
 
 
+
 	bool qscope_interchange_flag <- false;
 	float building_emissions;
 	float building_expenses_heat;
 	float building_expenses_power;
+
 
 
 	action add_tenant {
@@ -969,6 +982,12 @@ species building {
 				}
 			}
 			self.invest_counter <- self.invest_counter - 1;
+		}
+	}
+	
+	reflex connect_q100 {
+		if current_date = connection_date {
+			self.energy_source <- "q100";
 		}
 	}
 
