@@ -184,7 +184,7 @@ global {
 	float q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), 0];
 	string q100_emissions_scenario;
 	int q100_emissions_column {
-		if  q100_emissions_scenario = "Constant_50 g / kWh" {
+		if  q100_emissions_scenario = "Constant_50g_/_kWh" {
 			return 6;
 		}
 		else if q100_emissions_scenario = "Declining_Steps" {
@@ -193,7 +193,7 @@ global {
 		else if q100_emissions_scenario = "Declining_Linear" {
 			return 8;
 		}
-		else if q100_emissions_scenario = "Constant_Zero emissions" {
+		else if q100_emissions_scenario = "Constant_Zero_emissions" {
 			return 9;
 		}
 	}
@@ -1853,7 +1853,7 @@ experiment agent_decision_making type: gui{
  	parameter "Q100 OpEx prices scenario" var: q100_price_opex_scenario <- "12 ct / kWh (static)" among: ["12 ct / kWh (static)", "9-15 ct / kWh (dynamic)"] category: "Technical data";
   	parameter "Q100 CapEx prices scenario" var: q100_price_capex_scenario <- "1 payment" among: ["1 payment", "2 payments", "5 payments"] category: "Technical data";
 
-  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant_ Zero emissions" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
+  	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant_Zero_emissions" among: ["Constant_50g_/_kWh", "Declining_Steps", "Declining_Linear", "Constant_Zero_emissions"] category: "Technical data";
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
 
   	parameter "Seed" var: seed <- seed category: "Simulation";
