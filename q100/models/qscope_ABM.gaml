@@ -375,7 +375,7 @@ global {
 	}
 
 	init {
-
+	write rnd(1.0);
 	if (timestamp = "") // only delete files in general output folder if using GUI
 	{
     	bool delete_csv_export_emissions <- delete_file("../data/outputs/output/emissions/");
@@ -437,6 +437,7 @@ global {
 				}
 				if (qscope_interchange_matrix[6,row_interchange] = "True") {
 					mod_status <- "s";
+					self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 				}
 
 				if (qscope_interchange_matrix[7,row_interchange] = "True") {
@@ -816,12 +817,12 @@ global {
 			power_emissions <- energy_prices_emissions [12, current_date.year - 2020];
 			q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), current_date.year - 2020];
 
-			income_change_rate <- agora_45 [11, current_date.year - 2020];
-			power_consumption_change_rate <- agora_45 [12, current_date.year - 2020];
-			heat_consumption_new_EFH_change_rate <- agora_45 [13, current_date.year - 2020];
-			heat_consumption_new_MFH_change_rate <- agora_45 [14, current_date.year - 2020];
-			heat_consumption_exist_EFH_change_rate <- agora_45 [15, current_date.year - 2020];
-			heat_consumption_exist_MFH_change_rate <- agora_45 [16, current_date.year - 2020];
+			income_change_rate <- income_change_rate * agora_45 [11, current_date.year - 2020];
+			power_consumption_change_rate <- power_consumption_change_rate * agora_45 [12, current_date.year - 2020];
+			heat_consumption_new_EFH_change_rate <- heat_consumption_new_EFH_change_rate * agora_45 [13, current_date.year - 2020];
+			heat_consumption_new_MFH_change_rate <- heat_consumption_new_MFH_change_rate * agora_45 [14, current_date.year - 2020];
+			heat_consumption_exist_EFH_change_rate <- heat_consumption_exist_EFH_change_rate * agora_45 [15, current_date.year - 2020];
+			heat_consumption_exist_MFH_change_rate <- heat_consumption_exist_MFH_change_rate * agora_45 [16, current_date.year - 2020];
 
 		}
 
