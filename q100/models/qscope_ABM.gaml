@@ -201,11 +201,11 @@ global {
 
 	float income_change_rate <- agora_45 [11, 0];
 
-	float power_consumption_change_rate <- agora_45 [12, 0];
-	float heat_consumption_new_EFH_change_rate <- agora_45 [13, 0];
-	float heat_consumption_new_MFH_change_rate <- agora_45 [14, 0];
-	float heat_consumption_exist_EFH_change_rate <- agora_45 [15, 0];
-	float heat_consumption_exist_MFH_change_rate <- agora_45 [16, 0];
+	float power_consumption_change_rate <- agora_45 [13, 0];
+	float heat_consumption_new_EFH_change_rate <- agora_45 [14, 0];
+	float heat_consumption_new_MFH_change_rate <- agora_45 [15, 0];
+	float heat_consumption_exist_EFH_change_rate <- agora_45 [16, 0];
+	float heat_consumption_exist_MFH_change_rate <- agora_45 [17, 0];
 
 
 	//	DATA FOR DECISION MAKING INVEST
@@ -818,11 +818,11 @@ global {
 			q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), current_date.year - 2020];
 
 			income_change_rate <- income_change_rate * agora_45 [11, current_date.year - 2020];
-			power_consumption_change_rate <- power_consumption_change_rate * agora_45 [12, current_date.year - 2020];
-			heat_consumption_new_EFH_change_rate <- heat_consumption_new_EFH_change_rate * agora_45 [13, current_date.year - 2020];
-			heat_consumption_new_MFH_change_rate <- heat_consumption_new_MFH_change_rate * agora_45 [14, current_date.year - 2020];
-			heat_consumption_exist_EFH_change_rate <- heat_consumption_exist_EFH_change_rate * agora_45 [15, current_date.year - 2020];
-			heat_consumption_exist_MFH_change_rate <- heat_consumption_exist_MFH_change_rate * agora_45 [16, current_date.year - 2020];
+			power_consumption_change_rate <- power_consumption_change_rate * agora_45 [13, current_date.year - 2020];
+			heat_consumption_new_EFH_change_rate <- heat_consumption_new_EFH_change_rate * agora_45 [14, current_date.year - 2020];
+			heat_consumption_new_MFH_change_rate <- heat_consumption_new_MFH_change_rate * agora_45 [15, current_date.year - 2020];
+			heat_consumption_exist_EFH_change_rate <- heat_consumption_exist_EFH_change_rate * agora_45 [16, current_date.year - 2020];
+			heat_consumption_exist_MFH_change_rate <- heat_consumption_exist_MFH_change_rate * agora_45 [17, current_date.year - 2020];
 
 		}
 
