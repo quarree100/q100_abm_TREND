@@ -23,7 +23,14 @@ global {
 
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
-	string model_runtime_string <- "2020-2030";
+	
+	
+
+	string model_runtime_string <- get_initial_value("model_runtime");
+	reflex end_simulation when: (current_date.year = model_runtime()) and (current_date.month = 1) and (current_date.day = 1){
+    	do pause;
+    }
+    
 	int model_runtime {
 		if model_runtime_string = "2020-2030" {
 			return 2030;
@@ -36,9 +43,6 @@ global {
 		}
 	}
 	
-	reflex end_simulation when: (current_date.year = model_runtime()) and (current_date.month = 12) and (current_date.day = 31){
-    	do pause;
-    }
 
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
@@ -234,7 +238,7 @@ global {
 	float c_change_max;
 	float c_switch_max;
 
-	action get_inital_value(string name) { //Retrieves the inital value for the variable with name "name".
+	action get_initial_value(string name) { //Retrieves the inital value for the variable with name "name".
 		list<string> names <- column_at(initial_values, 3);
 		int row <- index_of(names, name);
 		write [name, row];
@@ -285,21 +289,21 @@ global {
 
 
 	int nb_units <- get_nb_units(); // number of households
-	int global_neighboring_distance <- get_inital_value("global_neighboring_distance");
+	int global_neighboring_distance <- get_initial_value("global_neighboring_distance");
 	string new_buildings_parameter <- "none"; // determines the speed of completion of new_buildings
-	bool new_buildings_order_random <- get_inital_value("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
+	bool new_buildings_order_random <- get_initial_value("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	float energy_saving_rate <- get_inital_value("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
-  	float change_factor <- get_inital_value("change_factor"); // Energy-Saving of households with change = true
-  	float change_threshold <- get_inital_value("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- get_inital_value("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
-  	float MFH_connection_threshold <- get_inital_value("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
-  	float feedback_factor <- get_inital_value("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
-  	bool B_feedback <- get_inital_value("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
+	float energy_saving_rate <- get_initial_value("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	float change_factor <- get_initial_value("change_factor"); // Energy-Saving of households with change = true
+  	float change_threshold <- get_initial_value("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- get_initial_value("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	float MFH_connection_threshold <- get_initial_value("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
+  	float feedback_factor <- get_initial_value("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	bool B_feedback <- get_initial_value("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
 
-	bool view_toggle <- get_inital_value("view_toggle"); // Parameter to toggle the 3D-View.
-	bool keep_seed <- get_inital_value("keep_seed"); // When true, the simulation seed will not change.
+	bool view_toggle <- get_initial_value("view_toggle"); // Parameter to toggle the 3D-View.
+	bool keep_seed <- get_initial_value("keep_seed"); // When true, the simulation seed will not change.
 	string timestamp <- "";
 
 	int refurbished_buildings_year; // sum of buildings refurbished this year
@@ -307,14 +311,14 @@ global {
 	float modernization_rate; // yearly rate of modernization
 
 
-	float share_families <- get_inital_value("share_families"); // share of families in whole neighborhood
-	float share_socialgroup_families <- get_inital_value("share_socialgroup_families"); // share of families that are part of a social group
-	float share_socialgroup_nonfamilies <- get_inital_value("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
+	float share_families <- get_initial_value("share_families"); // share of families in whole neighborhood
+	float share_socialgroup_families <- get_initial_value("share_socialgroup_families"); // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- get_initial_value("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
 
-	float private_communication <- get_inital_value("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+	float private_communication <- get_initial_value("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
 
-	string influence_type <- get_inital_value("influence_type");
-	bool communication_memory <- get_inital_value("communication_memory");
+	string influence_type <- get_initial_value("influence_type");
+	bool communication_memory <- get_initial_value("communication_memory");
 
 	list<species<households>> income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map<species<households>,float> share_income_map <- create_map(income_groups_list, list(share_income));
@@ -1872,7 +1876,7 @@ experiment agent_decision_making type: gui{
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
   	parameter "timestamp" var: timestamp <- "";
-  	parameter "Model runtime" var: model_runtime_string among: ["2020 - 2030", "2020-2040", "2020-2045"] category: "Simulation";
+  	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
 
   	font my_font <- font("Arial", 12, #bold);
 
@@ -2156,7 +2160,7 @@ experiment agent_decision_making_3d type: gui{
 
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
   	
-  	parameter "Model runtime" var: model_runtime_string among: ["2020 - 2030", "2020-2040", "2020-2045"] category: "Simulation";
+  	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
   	
 
 
@@ -2290,6 +2294,6 @@ experiment debug type:gui {
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
-  	parameter "Model runtime" var: model_runtime_string among: ["2020 - 2030", "2020-2040", "2020-2045"] category: "Simulation";
+  	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
   	
 }
