@@ -26,7 +26,7 @@ global {
 	
 	
 
-	string model_runtime_string <- string(get_initial_value("model_runtime"));
+	string model_runtime_string <- string(get_initial_value("model_runtime_string"));
 	reflex end_simulation when: (current_date.year = model_runtime()) and (current_date.month = 1) and (current_date.day = 1){
     	do pause;
     }
@@ -240,7 +240,7 @@ global {
 	float c_switch_max;
 
 	action get_initial_value(string descr) { //Retrieves the inital value for the variable with name "name".
-
+	
 		list<string> names <- column_at(initial_values, 3);
 		int row <- index_of(names, descr);
 		write [descr, row];
@@ -258,7 +258,8 @@ global {
 		else if type = "string" {
 			return value;
 		}
-
+		
+		
 	}
 
 	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
