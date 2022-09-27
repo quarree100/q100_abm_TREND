@@ -221,12 +221,73 @@ global {
 	float c_change_max;
 	float c_switch_max;
 
-	action get_inital_value(string descr) { //Retrieves the inital value for the variable with name "name".
+	int get_initial_value_int(string descr) {
 		list<string> names <- column_at(initial_values, 3);
 		int row <- index_of(names, descr);
-		write [descr, row];
+		
 		string type <- initial_values[1, row];
 		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "int" {
+			return int(value);
+		}
+		else {
+			error "The type of the value should be int but is " + type; 
+		}
+	}
+	
+	float get_initial_value_float(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+		
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "float" {
+			return float(value);
+		}
+		else {
+			error "The type of the value should be float but is " + type; 
+		}
+	}
+	
+	string get_initial_value_string(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+		
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "string" {
+			return string(value);
+		}
+		else {
+			error "The type of the value should be string but is " + type; 
+		}
+	}
+	
+	bool get_initial_value_bool(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+		
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "bool" {
+			return bool(value);
+		}
+		else {
+			error "The type of the value should be bool but is " + type; 
+		}
+	}
+	
+	action get_initial_value(string descr) { //Retrieves the inital value for the variable with name "name".
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+		
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
 		if type = "bool"  {
 			return bool(value);
 		}
@@ -272,21 +333,21 @@ global {
 
 
 	int nb_units <- get_nb_units(); // number of households
-	int global_neighboring_distance <- int(get_inital_value("global_neighboring_distance"));
+	int global_neighboring_distance <- get_initial_value_int("global_neighboring_distance"); 
 	string new_buildings_parameter <- "none"; // determines the speed of completion of new_buildings
-	bool new_buildings_order_random <- bool(get_inital_value("new_buildings_order_random")); // TODO future work will determine a specific order of construction of new_buildings
+	bool new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	float energy_saving_rate <- float(get_inital_value("energy_saving_rate")); // generaliuzed energy-saving of modernized buildings in percent
-  	float change_factor <- float(get_inital_value("change_factor")); // Energy-Saving of households with change = true
-  	float change_threshold <- float(get_inital_value("change_threshold")); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- float(get_inital_value("landlord_prop")); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
-  	float MFH_connection_threshold <- float(get_inital_value("MFH_connection_threshold")); // share of MFH households with decision invest=true that is needed to connect building to heat_network
-  	float feedback_factor <- float(get_inital_value("feedback_factor")); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
-  	bool B_feedback <- bool(get_inital_value("B_feedback")); // Feedback of a decision on other perceived behavioral control values on-off
+	float energy_saving_rate <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	float change_factor <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
+  	float change_threshold <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	float MFH_connection_threshold <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
+  	float feedback_factor <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	bool B_feedback <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
 
-	bool view_toggle <- bool(get_inital_value("view_toggle")); // Parameter to toggle the 3D-View.
-	bool keep_seed <- bool(get_inital_value("keep_seed")); // When true, the simulation seed will not change.
+	bool view_toggle <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
+	bool keep_seed <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
 	string timestamp <- "";
 
 	int refurbished_buildings_year; // sum of buildings refurbished this year
@@ -294,14 +355,14 @@ global {
 	float modernization_rate; // yearly rate of modernization
 
 
-	float share_families <- float(get_inital_value("share_families")); // share of families in whole neighborhood
-	float share_socialgroup_families <- float(get_inital_value("share_socialgroup_families")); // share of families that are part of a social group
-	float share_socialgroup_nonfamilies <- float(get_inital_value("share_socialgroup_nonfamilies")); // share of households that are not families but part of a social group
+	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
+	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
 
-	float private_communication <- float(get_inital_value("private_communication")); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+	float private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
 
-	string influence_type <- get_inital_value("influence_type");
-	bool communication_memory <- bool(get_inital_value("communication_memory"));
+	string influence_type <- get_initial_value_string("influence_type");
+	bool communication_memory <- get_initial_value_bool("communication_memory");
 
 	list<species<households>> income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map<species<households>,float> share_income_map <- create_map(income_groups_list, list(share_income));
@@ -375,6 +436,8 @@ global {
 	}
 
 	init {
+
+		
 	write rnd(1.0);
 	if (timestamp = "") // only delete files in general output folder if using GUI
 	{
@@ -497,7 +560,7 @@ global {
 
 
 // Age -> distributes the share of age-groups among the generic-species household
-
+					
 		ask (int(share_age_buildings_existing[0] * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
 			age <- rnd (21, 40);
 			let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units))); // calculates share of families in neighborhood for households with age 21-40
