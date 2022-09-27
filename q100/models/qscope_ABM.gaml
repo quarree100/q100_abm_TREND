@@ -539,8 +539,9 @@ global {
 						// do decision_feedback_B ---> validation ---> should be implemented?
 					}
 				}
-				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0) {
-					connection_date <- current_date plus_years int(qscope_interchange_matrix[5,row_interchange]);
+				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0)  // ATTENTION: Wert kommt als "False" oder (int2020-2045 rein.. ist "False" zulässig?
+				{
+					connection_date <- int(qscope_interchange_matrix[5,row_interchange]);
 				}
 				if (qscope_interchange_matrix[6,row_interchange] = "True") {
 					mod_status <- "s";
