@@ -436,23 +436,23 @@ global {
 	}
 
 	init {
-	int global_neighboring_distance <- get_initial_value_int("global_neighboring_distance"); 
-	bool new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
-	float energy_saving_rate <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
-  	float change_factor <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
-  	float change_threshold <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
-  	float MFH_connection_threshold <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
-  	float feedback_factor <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
-  	bool B_feedback <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
-	bool view_toggle <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
-	bool keep_seed <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
-	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
-	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
-	float share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
-	float private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
-	string influence_type <- get_initial_value_string("influence_type");
-	bool communication_memory <- get_initial_value_bool("communication_memory");
+	global_neighboring_distance <- get_initial_value_int("global_neighboring_distance"); 
+	new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
+	energy_saving_rate <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	change_factor <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
+  	change_threshold <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	landlord_prop <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	MFH_connection_threshold <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
+  	feedback_factor <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	B_feedback <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
+	view_toggle <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
+	keep_seed <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
+	share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
+	share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
+	share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
+	private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+	influence_type <- get_initial_value_string("influence_type");
+	communication_memory <- get_initial_value_bool("communication_memory");
 	
 	write rnd(1.0);
 	if (timestamp = "") // only delete files in general output folder if using GUI
