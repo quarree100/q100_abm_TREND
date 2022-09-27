@@ -436,8 +436,24 @@ global {
 	}
 
 	init {
-
-		
+	int global_neighboring_distance <- get_initial_value_int("global_neighboring_distance"); 
+	bool new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
+	float energy_saving_rate <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	float change_factor <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
+  	float change_threshold <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	float MFH_connection_threshold <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
+  	float feedback_factor <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	bool B_feedback <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
+	bool view_toggle <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
+	bool keep_seed <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
+	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
+	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
+	float private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+	string influence_type <- get_initial_value_string("influence_type");
+	bool communication_memory <- get_initial_value_bool("communication_memory");
+	
 	write rnd(1.0);
 	if (timestamp = "") // only delete files in general output folder if using GUI
 	{
@@ -1903,10 +1919,10 @@ experiment agent_decision_making type: gui{
  	parameter "Feedback of decision on perceived behavioral control" var: B_feedback category: "Decision making";
 
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
-	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
-	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
+	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";
+	parameter "Memory" var: communication_memory category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "none" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
-	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings";
+	parameter "Random Order of new Buildings" var: new_buildings_order_random category: "Buildings";
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
@@ -1921,7 +1937,7 @@ experiment agent_decision_making type: gui{
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
 
   	parameter "Seed" var: seed <- seed category: "Simulation";
-  	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
+  	parameter "Keep seed" var: keep_seed category: "Simulation";
   	parameter "timestamp" var: timestamp <- "";
 
   	font my_font <- font("Arial", 12, #bold);
