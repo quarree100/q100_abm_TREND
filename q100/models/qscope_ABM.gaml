@@ -23,14 +23,14 @@ global {
 
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
-	
-	
+
+
 
 	string model_runtime_string <- string(get_initial_value("model_runtime_string"));
 	reflex end_simulation when: (current_date.year = model_runtime()) and (current_date.month = 1) and (current_date.day = 1){
     	do pause;
     }
-    
+
 	int model_runtime {
 		if model_runtime_string = "2020-2030" {
 			return 2030;
@@ -42,7 +42,7 @@ global {
 			return 2045;
 		}
 	}
-	
+
 
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
@@ -239,13 +239,73 @@ global {
 	float c_change_max;
 	float c_switch_max;
 
-	action get_initial_value(string descr) { //Retrieves the inital value for the variable with name "name".
-	
+	int get_initial_value_int(string descr) {
 		list<string> names <- column_at(initial_values, 3);
 		int row <- index_of(names, descr);
-		write [descr, row];
+
 		string type <- initial_values[1, row];
 		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "int" {
+			return int(value);
+		}
+		else {
+			error "The type of the value should be int but is " + type;
+		}
+	}
+
+	float get_initial_value_float(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "float" {
+			return float(value);
+		}
+		else {
+			error "The type of the value should be float but is " + type;
+		}
+	}
+
+	string get_initial_value_string(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "string" {
+			return string(value);
+		}
+		else {
+			error "The type of the value should be string but is " + type;
+		}
+	}
+
+	bool get_initial_value_bool(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "bool" {
+			return bool(value);
+		}
+		else {
+			error "The type of the value should be bool but is " + type;
+		}
+	}
+
+	action get_initial_value(string descr) { //Retrieves the inital value for the variable with name "name".
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
 		if type = "bool"  {
 			return bool(value);
 		}
@@ -258,8 +318,8 @@ global {
 		else if type = "string" {
 			return value;
 		}
-		
-		
+
+
 	}
 
 	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
@@ -292,23 +352,21 @@ global {
 
 
 	int nb_units <- get_nb_units(); // number of households
-
-	int global_neighboring_distance <- int(get_initial_value("global_neighboring_distance"));
+	int global_neighboring_distance <- get_initial_value_int("global_neighboring_distance");
 	string new_buildings_parameter <- "none"; // determines the speed of completion of new_buildings
-	bool new_buildings_order_random <- bool(get_initial_value("new_buildings_order_random")); // TODO future work will determine a specific order of construction of new_buildings
+	bool new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	float energy_saving_rate <- float(get_initial_value("energy_saving_rate")); // generaliuzed energy-saving of modernized buildings in percent
-  	float change_factor <- float(get_initial_value("change_factor")); // Energy-Saving of households with change = true
-  	float change_threshold <- float(get_initial_value("change_threshold")); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- float(get_initial_value("landlord_prop")); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
-  	float MFH_connection_threshold <- float(get_initial_value("MFH_connection_threshold")); // share of MFH households with decision invest=true that is needed to connect building to heat_network
-  	float feedback_factor <- float(get_initial_value("feedback_factor")); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
-  	bool B_feedback <- bool(get_initial_value("B_feedback")); // Feedback of a decision on other perceived behavioral control values on-off
+	float energy_saving_rate <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	float change_factor <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
+  	float change_threshold <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	float MFH_connection_threshold <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
+  	float feedback_factor <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	bool B_feedback <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
 
-	bool view_toggle <- bool(get_initial_value("view_toggle")); // Parameter to toggle the 3D-View.
-	bool keep_seed <- bool(get_initial_value("keep_seed")); // When true, the simulation seed will not change.
-
+	bool view_toggle <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
+	bool keep_seed <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
 	string timestamp <- "";
 
 	int refurbished_buildings_year; // sum of buildings refurbished this year
@@ -316,15 +374,14 @@ global {
 	float modernization_rate; // yearly rate of modernization
 
 
-	float share_families <- float(get_initial_value("share_families")); // share of families in whole neighborhood
-	float share_socialgroup_families <- float(get_initial_value("share_socialgroup_families")); // share of families that are part of a social group
-	float share_socialgroup_nonfamilies <- float(get_initial_value("share_socialgroup_nonfamilies")); // share of households that are not families but part of a social group
+	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
+	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
 
-	float private_communication <- float(get_initial_value("private_communication")); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+	float private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
 
-	string influence_type <- string(get_initial_value("influence_type"));
-	bool communication_memory <- bool(get_initial_value("communication_memory"));
-
+	string influence_type <- get_initial_value_string("influence_type");
+	bool communication_memory <- get_initial_value_bool("communication_memory");
 
 	list<species<households>> income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map<species<households>,float> share_income_map <- create_map(income_groups_list, list(share_income));
@@ -398,6 +455,23 @@ global {
 	}
 
 	init {
+	global_neighboring_distance <- get_initial_value_int("global_neighboring_distance");
+	new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
+	energy_saving_rate <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	change_factor <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
+  	change_threshold <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	landlord_prop <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	MFH_connection_threshold <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
+  	feedback_factor <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	B_feedback <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
+	view_toggle <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
+	keep_seed <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
+	share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
+	share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
+	share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
+	private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+	influence_type <- get_initial_value_string("influence_type");
+	communication_memory <- get_initial_value_bool("communication_memory");
 
 	write rnd(1.0);
 	write qscope_interchange_matrix;
@@ -451,15 +525,15 @@ global {
 			ask (building where (each.id = qscope_interchange)) {
 				qscope_interchange_flag <- true;
 
-				
+
 				if (int(qscope_interchange_matrix[5,row_interchange]) = -1) {
-					
+
 					energy_source <- qscope_interchange_matrix[3,row_interchange];
-					
+
 				}
 				else if (int(qscope_interchange_matrix[5,row_interchange]) = 0) {
 					energy_source <- "q100";
-					
+
 					ask self.get_tenants() {
 						// do decision_feedback_attitude;
 						// do decision_feedback_B ---> validation ---> should be implemented?
@@ -1009,7 +1083,7 @@ species building {
 			self.invest_counter <- self.invest_counter - 1;
 		}
 	}
-	
+
 	reflex connect_q100 {
 		if current_date = connection_date {
 			self.energy_source <- "q100";
@@ -1058,7 +1132,7 @@ species building {
 			}
 		}
 	}
-	
+
 	reflex monthly_updates_expenses { //to validate! TODO
 		if (current_date.day = 2) {
 			building_expenses_heat <- 0.0;
@@ -1883,10 +1957,10 @@ experiment agent_decision_making type: gui{
  	parameter "Feedback of decision on perceived behavioral control" var: B_feedback category: "Decision making";
 
  	parameter "Neighboring distance" var: global_neighboring_distance min: 0 max: 5 category: "Communication";
-	parameter "Influence-Type" var: influence_type <- "one-side" among: ["one-side", "both_sides"] category: "Communication";
-	parameter "Memory" var: communication_memory <- true among: [true, false] category: "Communication";
+	parameter "Influence-Type" var: influence_type among: ["one-side", "both_sides"] category: "Communication";
+	parameter "Memory" var: communication_memory category: "Communication";
 	parameter "New Buildings" var: new_buildings_parameter <- "none" among: ["at_once", "continuously", "linear2030", "none"] category: "Buildings";
-	parameter "Random Order of new Buildings" var: new_buildings_order_random <- true category: "Buildings";
+	parameter "Random Order of new Buildings" var: new_buildings_order_random category: "Buildings";
  	parameter "Modernization Energy Saving" var: energy_saving_rate category: "Buildings" min: 0.0 max: 1.0 step: 0.05;
  	parameter "Shapefile for buildings:" var: shape_file_buildings category: "GIS";
  	parameter "Building types source" var: attributes_source <- "Kataster_A" among: ["Kataster_A", "Kataster_T"] category: "GIS";
@@ -1901,7 +1975,7 @@ experiment agent_decision_making type: gui{
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
 
   	parameter "Seed" var: seed <- seed category: "Simulation";
-  	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
+  	parameter "Keep seed" var: keep_seed category: "Simulation";
   	parameter "timestamp" var: timestamp <- "";
   	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
 
@@ -1949,11 +2023,11 @@ experiment agent_decision_making type: gui{
 			}
 		}
 	}
-	
+
 	reflex save_results_energy_prices_building {
 		string export_file;
 		if current_date.day = 3 {
-		
+
 			ask building where (each.qscope_interchange_flag = true) {
 				export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_" + id + ".csv";
 				save [cycle, current_date, id, building_expenses_heat, building_expenses_power]
@@ -2186,9 +2260,9 @@ experiment agent_decision_making_3d type: gui{
   	parameter "Q100 Emissions scenario" var: q100_emissions_scenario <- "Constant_50g / kWh" among: ["Constant_50g / kWh", "Declining_Steps", "Declining_Linear", "Constant_ Zero emissions"] category: "Technical data";
 
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
-  	
+
   	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
-  	
+
 
 
   	font my_font <- font("Arial", 12, #bold);
@@ -2322,5 +2396,5 @@ experiment debug type:gui {
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
   	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
-  	
+
 }
