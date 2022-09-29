@@ -526,22 +526,15 @@ global {
 				qscope_interchange_flag <- true;
 
 
-				if (int(qscope_interchange_matrix[5,row_interchange]) = -1) {
+				if (int(qscope_interchange_matrix[5,row_interchange]) = 0) {
 
 					energy_source <- qscope_interchange_matrix[3,row_interchange];
 
 				}
-				else if (int(qscope_interchange_matrix[5,row_interchange]) = 0) {
-					energy_source <- "q100";
 
-					ask self.get_tenants() {
-						// do decision_feedback_attitude;
-						// do decision_feedback_B ---> validation ---> should be implemented?
-					}
-				}
 				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0)  // ATTENTION: Wert kommt als "False" oder (int2020-2045 rein.. ist "False" zulässig?
 				{
-					connection_date <- int(qscope_interchange_matrix[5,row_interchange]);
+					connection_year <- int(qscope_interchange_matrix[5,row_interchange]);
 				}
 				if (qscope_interchange_matrix[6,row_interchange] = "True") {
 					mod_status <- "s";
@@ -1012,7 +1005,7 @@ species building {
 	float spec_heat_consumption;
 	float spec_power_consumption;
 	string energy_source;
-	date connection_date;
+	int connection_year;
 	rgb color <- #gray;
 	geometry line;
 	string id;
@@ -1086,7 +1079,7 @@ species building {
 	}
 
 	reflex connect_q100 {
-		if current_date = connection_date {
+		if current_date.year = connection_year {
 			self.energy_source <- "q100";
 		}
 	}
