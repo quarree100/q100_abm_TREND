@@ -473,6 +473,7 @@ global {
 	private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
 	influence_type <- get_initial_value_string("influence_type");
 	communication_memory <- get_initial_value_bool("communication_memory");
+	model_runtime_string <- string(get_initial_value("model_runtime_string"));
 
 	write rnd(1.0);
 	write qscope_interchange_matrix;
@@ -534,10 +535,11 @@ global {
 
 				}
 
-				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0)  // ATTENTION: Wert kommt als "False" oder (int2020-2045 rein.. ist "False" zulässig?
+				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0)  
 				{
 					connection_year <- int(qscope_interchange_matrix[5,row_interchange]);
 				}
+				
 				if (qscope_interchange_matrix[6,row_interchange] = "True") {
 					mod_status <- "s";
 					self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
@@ -546,8 +548,7 @@ global {
 				if (qscope_interchange_matrix[7,row_interchange] = "True") {
 					ask self.get_tenants() {
 						change <- true;
-						// do decision_feedback_attitude;
-						// do decision_feedback_B ---> validation ---> should be implemented?
+						
 					}
 				}
 			}
@@ -947,11 +948,11 @@ global {
 
 	reflex step_households {
 		list<households> household_list <- (agents of_generic_species households);
-//		ask household_list {
-//			do communicate_daily;
-//			do communicate_weekly;
-//			do communicate_occasional;
-//		}
+		ask household_list {
+			do communicate_daily;
+			do communicate_weekly;
+			do communicate_occasional;
+		}
 		if (current_date.day = 1) {
 			ask household_list {
 				do calculate_c;
@@ -959,8 +960,10 @@ global {
 		}
 		do update_max_values;
 		if (current_date.day = 1) {
+			ask household_list where (each.house.qscope_interchange_flag = false) {
+				do decision_making;
+			}
 			ask household_list {
-				// do decision_making;
 				do consume_energy;
 			}
 		}
@@ -1821,45 +1824,45 @@ species households {
 	}
 
 
-//	reflex move_out {
-//		if (current_date.month = 12) and (current_date.day = 15) {
-//
-//			//initiation of moving-out-procedure by age
-//			age <- age + 1;
-//			length_of_residence <- length_of_residence + 1;
-//			let current_agent <- self;
-//			if age >= 100 {
-//				ask neighbors_of(network, self) {
-//					do update_social_contacts(current_agent);
-//				}
-//				remove self from: network;
-//				ask self.house{
-//					do remove_tenant;
-//				}
-//				do die;
-//			}
-//
-//			//initiation of moving-out-procedure by average probability
-//			int current_age_group <- int(floor(age / 20)) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
-//			float moving_prob  <- 1 / average_lor_inclusive[1, current_age_group];
-//			if flip(moving_prob) {
-//				households my_temporary_network <- households(neighbors_of(network, self));
-//				if my_temporary_network != nil {
-//					ask my_temporary_network {
-//						do update_social_contacts(current_agent);
-//					}
-//				}
-//				remove self from: network;
-//				ask self.house {
-//					do remove_tenant;
-//				}
-//				do die;
-//
-//			}
-//
-//		}
-//
-//	}
+	reflex move_out {
+		if (current_date.month = 12) and (current_date.day = 15) and (self.house.qscope_interchange_flag =false) {
+
+			//initiation of moving-out-procedure by age
+			age <- age + 1;
+			length_of_residence <- length_of_residence + 1;
+			let current_agent <- self;
+			if age >= 100 {
+				ask neighbors_of(network, self) {
+					do update_social_contacts(current_agent);
+				}
+				remove self from: network;
+				ask self.house{
+					do remove_tenant;
+				}
+				do die;
+			}
+
+			//initiation of moving-out-procedure by average probability
+			int current_age_group <- int(floor(age / 20)) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
+			float moving_prob  <- 1 / average_lor_inclusive[1, current_age_group];
+			if flip(moving_prob) {
+				households my_temporary_network <- households(neighbors_of(network, self));
+				if my_temporary_network != nil {
+					ask my_temporary_network {
+						do update_social_contacts(current_agent);
+					}
+				}
+				remove self from: network;
+				ask self.house {
+					do remove_tenant;
+				}
+				do die;
+
+			}
+
+		}
+
+	}
 
 	reflex retire { //emp-status of the household moves to "pensioner" when they reach age 64.
 		if (self.age >= 64) and (self.employment != "pensioner") {
