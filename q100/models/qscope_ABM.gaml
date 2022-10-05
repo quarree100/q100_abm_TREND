@@ -373,6 +373,7 @@ global {
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
 	float modernization_rate; // yearly rate of modernization
 
+	list list_of_power_suppliers <- ["id", "power_supplier"]; // exports list of power suppliers for debug purposes
 
 	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
 	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
@@ -478,6 +479,7 @@ global {
 
 	if (timestamp = "") // only delete files in general output folder if using GUI
 	{
+		bool delete_csv_export_emissions <- delete_file("../data/outputs/output/buildings_power_suppliers.csv");
     	bool delete_csv_export_emissions <- delete_file("../data/outputs/output/emissions/");
     	bool delete_csv_export_energy_prices <- delete_file("../data/outputs/output/energy_prices/");
     	bool delete_csv_export_connections <- delete_file("../data/outputs/output/connections/");
@@ -1862,6 +1864,14 @@ species households {
 	reflex retire { //emp-status of the household moves to "pensioner" when they reach age 64.
 		if (self.age >= 64) and (self.employment != "pensioner") {
 			self.employment <- "pensioner";
+		}
+	}
+
+	reflex print_power_supplier{
+		if (cycle = 0){
+		write string(self.house.id) + "," + self.power_supplier;
+		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
+		save [string(self.house.id), self.power_supplier] to: export_file type: csv rewrite: false;
 		}
 	}
 
