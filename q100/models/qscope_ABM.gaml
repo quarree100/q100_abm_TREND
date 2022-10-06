@@ -1825,7 +1825,7 @@ species households {
 
 
 	reflex move_out {
-		if (current_date.month = 12) and (current_date.day = 15) and (self.house.qscope_interchange_flag =false) {
+		if (current_date.month = 12) and (current_date.day = 15) and (self.house.qscope_interchange_flag = false) {
 
 			//initiation of moving-out-procedure by age
 			age <- age + 1;
