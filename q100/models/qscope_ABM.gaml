@@ -78,7 +78,8 @@ global {
 	matrix<float> share_ownership_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
 
 	list<float> savings_rates <- list<float>(list(csv_file("../includes/csv-data_socio/2022-07-01/sparquote_einkommen.csv", ",", float)));
-
+	list<int> income_distribution_germany <- list<int>(csv_file("../includes/csv-data_socio/2022-07-01/einkommensdezile_obergrenzen.csv"));
+	
 	matrix<float> share_age_buildings_existing <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
 	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups including people who never moved
 	matrix<float> average_lor_exclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups excluding people who never moved
@@ -441,13 +442,13 @@ global {
 
 	}
 
-	action distribute_budget(list household_list) { // assigns each household in the input list a budget based on their income and their age.
-		list<households> all_households <- list<households>(get_all_instances(households));
-		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
-		int n <- length(all_households);
+	action distribute_budget(list<households> household_list) { // assigns each household in the input list a budget based on their income and their age.
+//		list<households> all_households <- list<households>(get_all_instances(households));
+//		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
+//		int n <- length(all_households);
 		loop h over: household_list {
-				int i <- int(floor(index_of(all_households, h) / n * 10)); // Calculates income decile of the current household.
-				ask h as households{
+				int i <- index_of(collect(income_distribution_germany, (h.income <= each)), true); // Calculates income decile of the current household.
+				ask h{
 					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
 				}
 			}
@@ -734,7 +735,7 @@ global {
 		}
 
 
-		do distribute_budget(get_all_instances(households));
+		do distribute_budget(agents of_generic_species households);
 
 
 		ask agents of_generic_species households {
@@ -1814,10 +1815,10 @@ species households {
 
 
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
-		float budget_calc <- income * income_change_rate * alpha - e_current;
-		if (current_date.day = 1) and (budget_calc > 0) {
-			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
-		}
+		int i <- index_of(collect(income_distribution_germany, (self.income <= each)), true); // Calculates income decile of the current household.
+		self.budget <- self.budget + self.income * savings_rates[i]; // Adds monthly savings to the budget.
+				
+			
 	}
 
 
