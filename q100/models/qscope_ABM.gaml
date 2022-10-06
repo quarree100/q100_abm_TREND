@@ -334,7 +334,12 @@ global {
 		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
 	}
 
-
+	action print_power_supplier{
+		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
+		ask agents of_generic_species households {
+			save [house.id, power_supplier] to: export_file type: "csv" rewrite: false;
+		}
+	}
 
 	float q100_price_capex <- q100_concept_prices_emissions [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
@@ -479,7 +484,7 @@ global {
 
 	if (timestamp = "") // only delete files in general output folder if using GUI
 	{
-		bool delete_csv_export_emissions <- delete_file("../data/outputs/output/buildings_power_suppliers.csv");
+		bool delete_csv_export_power_supplier <- delete_file("../data/outputs/output/buildings_power_suppliers.csv");
     	bool delete_csv_export_emissions <- delete_file("../data/outputs/output/emissions/");
     	bool delete_csv_export_energy_prices <- delete_file("../data/outputs/output/energy_prices/");
     	bool delete_csv_export_connections <- delete_file("../data/outputs/output/connections/");
@@ -741,7 +746,7 @@ global {
 			do consume_energy;
 		}
 		do update_max_values;
-
+		do print_power_supplier;
 	}
 
 
@@ -1867,13 +1872,7 @@ species households {
 		}
 	}
 
-	reflex print_power_supplier{
-		if (cycle = 0){
-		write string(self.house.id) + "," + self.power_supplier;
-		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
-		save [string(self.house.id), self.power_supplier] to: export_file type: csv rewrite: false;
-		}
-	}
+
 
 	aspect by_energy {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
