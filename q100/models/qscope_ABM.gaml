@@ -533,22 +533,22 @@ global {
 				qscope_interchange_flag <- true;
 
 
-				if (int(qscope_interchange_matrix[5,row_interchange]) = 0) {
+				if (int(qscope_interchange_matrix[4,row_interchange]) = 0) {
 
 					energy_source <- qscope_interchange_matrix[3,row_interchange];
 
 				}
 
-				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0)  // ATTENTION: Wert kommt als "False" oder (int2020-2045 rein.. ist "False" zulässig?
+				else if (int(qscope_interchange_matrix[4,row_interchange]) > 0)  // ATTENTION: Wert kommt als "False" oder (int2020-2045 rein.. ist "False" zulässig?
 				{
-					connection_year <- int(qscope_interchange_matrix[5,row_interchange]);
+					connection_year <- int(qscope_interchange_matrix[4,row_interchange]);
 				}
-				if (qscope_interchange_matrix[6,row_interchange] = "True") {
+				if (qscope_interchange_matrix[5,row_interchange] = "True") {
 					mod_status <- "s";
 					self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 				}
 
-				if (qscope_interchange_matrix[7,row_interchange] = "True") {
+				if (qscope_interchange_matrix[6,row_interchange] = "True") {
 					ask self.get_tenants() {
 						change <- true;
 						// do decision_feedback_attitude;
