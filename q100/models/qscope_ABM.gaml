@@ -78,13 +78,14 @@ global {
 	matrix<float> share_ownership_income <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-ownership_income_V1.csv", ",", float, true)); // distribution of ownership status of households in neighborhood sorted by income
 
 	list<float> savings_rates <- list<float>(list(csv_file("../includes/csv-data_socio/2022-07-01/sparquote_einkommen.csv", ",", float)));
-
+	list<int> income_distribution_germany <- list<int>(csv_file("../includes/csv-data_socio/2022-07-01/einkommensdezile_obergrenzen.csv"));
+	
 	matrix<float> share_age_buildings_existing <- matrix<float>(csv_file("../includes/csv-data_socio/2021-11-18_V1/share-age_existing_V2.csv", ",", float, true)); // distribution of groups of age in neighborhood
 	matrix<float> average_lor_inclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_inkl_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups including people who never moved
 	matrix<float> average_lor_exclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups excluding people who never moved
 
 
-	matrix<float> agora_45 <- matrix<float>(csv_file("../includes/csv-data_technical/agora2045_modell_rates.csv", ",", float, true));
+	matrix<float> agora_45 <- matrix<float>(csv_file("../includes/csv-data_technical/agora_linear-regression.csv", ",", float, true));
 	matrix<float> alphas <- matrix<float>(csv_file("../includes/csv-data_technical/alpha.csv", ",", float, true));
 	matrix<float> carbon_prices <- matrix<float>(csv_file("../includes/csv-data_technical/carbon-prices.csv", ",", float, true));
 	matrix<float> energy_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
@@ -217,13 +218,13 @@ global {
 	}
 
 
-	float income_change_rate <- agora_45 [11, 0];
+	float income_change_rate <- agora_45 [3, 0];
 
-	float power_consumption_change_rate <- agora_45 [13, 0];
-	float heat_consumption_new_EFH_change_rate <- agora_45 [14, 0];
-	float heat_consumption_new_MFH_change_rate <- agora_45 [15, 0];
-	float heat_consumption_exist_EFH_change_rate <- agora_45 [16, 0];
-	float heat_consumption_exist_MFH_change_rate <- agora_45 [17, 0];
+	float power_consumption_change_rate <- agora_45 [4, 0];
+	float heat_consumption_new_EFH_change_rate <- 1.0;
+	float heat_consumption_new_MFH_change_rate <- 1.0;
+	float heat_consumption_exist_EFH_change_rate <- 1.0;
+	float heat_consumption_exist_MFH_change_rate <- 1.0;
 
 
 	//	DATA FOR DECISION MAKING INVEST
@@ -334,7 +335,12 @@ global {
 		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
 	}
 
-
+	action print_power_supplier{
+		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
+		ask agents of_generic_species households {
+			save [house.id, power_supplier] to: export_file type: "csv" rewrite: false;
+		}
+	}
 
 	float q100_price_capex <- q100_concept_prices_emissions [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
@@ -441,13 +447,13 @@ global {
 
 	}
 
-	action distribute_budget(list household_list) { // assigns each household in the input list a budget based on their income and their age.
-		list<households> all_households <- list<households>(get_all_instances(households));
-		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
-		int n <- length(all_households);
+	action distribute_budget(list<households> household_list) { // assigns each household in the input list a budget based on their income and their age.
+//		list<households> all_households <- list<households>(get_all_instances(households));
+//		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
+//		int n <- length(all_households);
 		loop h over: household_list {
-				int i <- int(floor(index_of(all_households, h) / n * 10)); // Calculates income decile of the current household.
-				ask h as households{
+				int i <- index_of(collect(income_distribution_germany, (h.income <= each)), true); // Calculates income decile of the current household.
+				ask h{
 					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
 				}
 			}
@@ -480,7 +486,7 @@ global {
 
 	if (timestamp = "") // only delete files in general output folder if using GUI
 	{
-		bool delete_csv_export_emissions <- delete_file("../data/outputs/output/buildings_power_suppliers.csv");
+		bool delete_csv_export_power_supplier <- delete_file("../data/outputs/output/buildings_power_suppliers.csv");
     	bool delete_csv_export_emissions <- delete_file("../data/outputs/output/emissions/");
     	bool delete_csv_export_energy_prices <- delete_file("../data/outputs/output/energy_prices/");
     	bool delete_csv_export_connections <- delete_file("../data/outputs/output/connections/");
@@ -529,27 +535,37 @@ global {
 				qscope_interchange_flag <- true;
 
 
-				if (int(qscope_interchange_matrix[5,row_interchange]) = 0) {
+				if (int(qscope_interchange_matrix[4,row_interchange]) = 0) {
 
 					energy_source <- qscope_interchange_matrix[3,row_interchange];
 
 				}
 
+
 				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0)  
+
 				{
-					connection_year <- int(qscope_interchange_matrix[5,row_interchange]);
+					connection_year <- int(qscope_interchange_matrix[4,row_interchange]);
 				}
-				
-				if (qscope_interchange_matrix[6,row_interchange] = "True") {
+
+				if (qscope_interchange_matrix[5,row_interchange] = "True") {
+
 					mod_status <- "s";
 					self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 				}
 
-				if (qscope_interchange_matrix[7,row_interchange] = "True") {
-					ask self.get_tenants() {
-						change <- true;
-						
-					}
+
+				if (qscope_interchange_matrix[6,row_interchange] = "True") {
+					self.change_tenants <- true;
+
+
+//					ask self.get_tenants() {
+//						write self.name + "I change";
+//						change <- true;
+//						// do decision_feedback_attitude;
+//						// do decision_feedback_B ---> validation ---> should be implemented?
+//					}
+
 				}
 			}
 			row_interchange <- row_interchange + 1;
@@ -735,14 +751,14 @@ global {
 		}
 
 
-		do distribute_budget(get_all_instances(households));
+		do distribute_budget(agents of_generic_species households);
 
 
 		ask agents of_generic_species households {
 			do consume_energy;
 		}
 		do update_max_values;
-
+		do print_power_supplier;
 	}
 
 
@@ -921,12 +937,12 @@ global {
 			power_emissions <- energy_prices_emissions [12, current_date.year - 2020];
 			q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), current_date.year - 2020];
 
-			income_change_rate <- income_change_rate * agora_45 [11, current_date.year - 2020];
-			power_consumption_change_rate <- power_consumption_change_rate * agora_45 [13, current_date.year - 2020];
-			heat_consumption_new_EFH_change_rate <- heat_consumption_new_EFH_change_rate * agora_45 [14, current_date.year - 2020];
-			heat_consumption_new_MFH_change_rate <- heat_consumption_new_MFH_change_rate * agora_45 [15, current_date.year - 2020];
-			heat_consumption_exist_EFH_change_rate <- heat_consumption_exist_EFH_change_rate * agora_45 [16, current_date.year - 2020];
-			heat_consumption_exist_MFH_change_rate <- heat_consumption_exist_MFH_change_rate * agora_45 [17, current_date.year - 2020];
+			income_change_rate <- income_change_rate * agora_45 [3, current_date.year - 2020];
+			power_consumption_change_rate <- power_consumption_change_rate * agora_45 [4, current_date.year - 2020];
+//			heat_consumption_new_EFH_change_rate <- heat_consumption_new_EFH_change_rate * agora_45 [14, current_date.year - 2020];
+//			heat_consumption_new_MFH_change_rate <- heat_consumption_new_MFH_change_rate * agora_45 [15, current_date.year - 2020];
+//			heat_consumption_exist_EFH_change_rate <- heat_consumption_exist_EFH_change_rate * agora_45 [16, current_date.year - 2020];
+//			heat_consumption_exist_MFH_change_rate <- heat_consumption_exist_MFH_change_rate * agora_45 [17, current_date.year - 2020];
 
 		}
 
@@ -1014,6 +1030,7 @@ species building {
 	rgb color <- #gray;
 	geometry line;
 	string id;
+	bool change_tenants;
 
 
 	int invest_counter;
@@ -1045,6 +1062,9 @@ species building {
 	float building_emissions;
 	float building_expenses_heat;
 	float building_expenses_power;
+	float building_household_emissions;
+	float building_household_expenses_heat;
+	float building_household_expenses_power;
 
 
 
@@ -1127,7 +1147,10 @@ species building {
 		if (current_date.day = 2) {
 			building_emissions <- 0.0;
 			ask self.get_tenants() {
-				house.building_emissions <- house.building_emissions + self.my_energy_emissions;
+				house.building_emissions <- (house.building_emissions + self.my_energy_emissions);
+			}
+			if building_emissions > 0 {
+				building_household_emissions <- building_emissions / units;	
 			}
 		}
 	}
@@ -1138,11 +1161,17 @@ species building {
 			ask self.get_tenants() {
 				house.building_expenses_heat <- house.building_expenses_heat + self.my_heat_expenses;
 			}
+			if building_expenses_heat > 0 {
+				building_household_expenses_heat <- building_expenses_heat / units;
+			}
 		}
 		if (current_date.day = 2) {
 			building_expenses_power <- 0.0;
 			ask self.get_tenants() {
 				house.building_expenses_power <- house.building_expenses_power + self.my_power_expenses;
+			}
+			if building_expenses_power > 0 {
+				building_household_expenses_power <- building_expenses_power / units;
 			}
 		}
 	}
@@ -1252,6 +1281,7 @@ species households {
 	action find_house {
 		self.house <- any (building where ((each.vacant) and (each.type != "NWG")));
 		self.location <- self.house.add_tenant();
+		self.change <- self.house.change_tenants;
 
 	}
 
@@ -1817,10 +1847,10 @@ species households {
 
 
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
-		float budget_calc <- income * income_change_rate * alpha - e_current;
-		if (current_date.day = 1) and (budget_calc > 0) {
-			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
-		}
+		int i <- index_of(collect(income_distribution_germany, (self.income <= each)), true); // Calculates income decile of the current household.
+		self.budget <- self.budget + self.income * savings_rates[i]; // Adds monthly savings to the budget.
+				
+			
 	}
 
 
@@ -1870,13 +1900,7 @@ species households {
 		}
 	}
 
-	reflex print_power_supplier{
-		if (cycle = 0){
-		write string(self.house.id) + "," + self.power_supplier;
-		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
-		save [string(self.house.id), self.power_supplier] to: export_file type: csv rewrite: false;
-		}
-	}
+
 
 	aspect by_energy {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
@@ -1993,7 +2017,7 @@ experiment agent_decision_making type: gui{
 //csv_export for frontend test
 
 	reflex save_num_connections {
-		float value <- (length(building where (each.mod_status = "s")) / length(building) * 100);
+		float value <- length(building where ((each.mod_status = "s") and (each.built))) / length(building where (each.built)) * 100;
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
 		save [cycle, current_date, value]
 		to: export_file type: csv rewrite: false;
@@ -2017,7 +2041,7 @@ experiment agent_decision_making type: gui{
 
 			ask building where (each.qscope_interchange_flag = true) {
 				export_file <- (timestamp = "") ? "../data/outputs/output/emissions/CO2_emissions_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/emissions/CO2_emissions_" + id + ".csv";
-				save [cycle, current_date, id, building_emissions]
+				save [cycle, current_date, id, building_household_emissions]
 				to: export_file type: csv rewrite: false header: true;
 			}
 
@@ -2037,7 +2061,7 @@ experiment agent_decision_making type: gui{
 
 			ask building where (each.qscope_interchange_flag = true) {
 				export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_" + id + ".csv";
-				save [cycle, current_date, id, building_expenses_heat, building_expenses_power]
+				save [cycle, current_date, id, building_household_expenses_power, building_household_expenses_heat]
 				to: export_file type: csv rewrite: false header: true;
 			}
 		}
