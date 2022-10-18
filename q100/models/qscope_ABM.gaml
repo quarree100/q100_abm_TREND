@@ -1134,7 +1134,9 @@ species building {
 			ask self.get_tenants() {
 				house.building_emissions <- (house.building_emissions + self.my_energy_emissions);
 			}
-			float building_household_emissions <- building_emissions / units;
+			if building_emissions > 0 {
+				building_household_emissions <- building_emissions / units;	
+			}
 		}
 	}
 
@@ -1144,14 +1146,18 @@ species building {
 			ask self.get_tenants() {
 				house.building_expenses_heat <- house.building_expenses_heat + self.my_heat_expenses;
 			}
-			float building_household_expenses_heat <- building_expenses_heat / units;
+			if building_expenses_heat > 0 {
+				building_household_expenses_heat <- building_expenses_heat / units;
+			}
 		}
 		if (current_date.day = 2) {
 			building_expenses_power <- 0.0;
 			ask self.get_tenants() {
 				house.building_expenses_power <- house.building_expenses_power + self.my_power_expenses;
 			}
-			float building_household_expenses_power <- building_expenses_power / units;
+			if building_expenses_power > 0 {
+				building_household_expenses_power <- building_expenses_power / units;
+			}
 		}
 	}
 
