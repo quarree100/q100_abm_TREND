@@ -549,11 +549,15 @@ global {
 				}
 
 				if (qscope_interchange_matrix[6,row_interchange] = "True") {
-					ask self.get_tenants() {
-						change <- true;
-						// do decision_feedback_attitude;
-						// do decision_feedback_B ---> validation ---> should be implemented?
-					}
+					self.change_tenants <- true;
+
+
+//					ask self.get_tenants() {
+//						write self.name + "I change";
+//						change <- true;
+//						// do decision_feedback_attitude;
+//						// do decision_feedback_B ---> validation ---> should be implemented?
+//					}
 				}
 			}
 			row_interchange <- row_interchange + 1;
@@ -1016,6 +1020,7 @@ species building {
 	rgb color <- #gray;
 	geometry line;
 	string id;
+	bool change_tenants;
 
 
 	int invest_counter;
@@ -1254,6 +1259,7 @@ species households {
 	action find_house {
 		self.house <- any (building where ((each.vacant) and (each.type != "NWG")));
 		self.location <- self.house.add_tenant();
+		self.change <- self.house.change_tenants;
 
 	}
 
@@ -1989,7 +1995,7 @@ experiment agent_decision_making type: gui{
 //csv_export for frontend test
 
 	reflex save_num_connections {
-		float value <- (length(building where (each.mod_status = "s")) / length(building) * 100);
+		float value <- length(building where ((each.mod_status = "s") and (each.built))) / length(building where (each.built)) * 100;
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
 		save [cycle, current_date, value]
 		to: export_file type: csv rewrite: false;
