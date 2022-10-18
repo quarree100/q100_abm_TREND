@@ -1053,6 +1053,9 @@ species building {
 	float building_emissions;
 	float building_expenses_heat;
 	float building_expenses_power;
+	float building_household_emissions;
+	float building_household_expenses_heat;
+	float building_household_expenses_power;
 
 
 
@@ -1135,7 +1138,10 @@ species building {
 		if (current_date.day = 2) {
 			building_emissions <- 0.0;
 			ask self.get_tenants() {
-				house.building_emissions <- house.building_emissions + self.my_energy_emissions;
+				house.building_emissions <- (house.building_emissions + self.my_energy_emissions);
+			}
+			if building_emissions > 0 {
+				building_household_emissions <- building_emissions / units;	
 			}
 		}
 	}
@@ -1146,11 +1152,17 @@ species building {
 			ask self.get_tenants() {
 				house.building_expenses_heat <- house.building_expenses_heat + self.my_heat_expenses;
 			}
+			if building_expenses_heat > 0 {
+				building_household_expenses_heat <- building_expenses_heat / units;
+			}
 		}
 		if (current_date.day = 2) {
 			building_expenses_power <- 0.0;
 			ask self.get_tenants() {
 				house.building_expenses_power <- house.building_expenses_power + self.my_power_expenses;
+			}
+			if building_expenses_power > 0 {
+				building_household_expenses_power <- building_expenses_power / units;
 			}
 		}
 	}
@@ -2020,7 +2032,7 @@ experiment agent_decision_making type: gui{
 
 			ask building where (each.qscope_interchange_flag = true) {
 				export_file <- (timestamp = "") ? "../data/outputs/output/emissions/CO2_emissions_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/emissions/CO2_emissions_" + id + ".csv";
-				save [cycle, current_date, id, building_emissions]
+				save [cycle, current_date, id, building_household_emissions]
 				to: export_file type: csv rewrite: false header: true;
 			}
 
@@ -2040,7 +2052,7 @@ experiment agent_decision_making type: gui{
 
 			ask building where (each.qscope_interchange_flag = true) {
 				export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_" + id + ".csv";
-				save [cycle, current_date, id, building_expenses_heat, building_expenses_power]
+				save [cycle, current_date, id, building_household_expenses_power, building_household_expenses_heat]
 				to: export_file type: csv rewrite: false header: true;
 			}
 		}
