@@ -85,7 +85,7 @@ global {
 	matrix<float> average_lor_exclusive <- matrix<float>(csv_file("../includes/csv-data_socio/2021-12-15/wohndauer_nach_alter_ohne_geburtsort.csv", ",", float, true)); //average length of residence for different age-groups excluding people who never moved
 
 
-	matrix<float> agora_45 <- matrix<float>(csv_file("../includes/csv-data_technical/agora2045_modell_rates.csv", ",", float, true));
+	matrix<float> agora_45 <- matrix<float>(csv_file("../includes/csv-data_technical/agora_linear-regression.csv", ",", float, true));
 	matrix<float> alphas <- matrix<float>(csv_file("../includes/csv-data_technical/alpha.csv", ",", float, true));
 	matrix<float> carbon_prices <- matrix<float>(csv_file("../includes/csv-data_technical/carbon-prices.csv", ",", float, true));
 	matrix<float> energy_prices_emissions <- matrix<float>(csv_file("../includes/csv-data_technical/energy_prices-emissions.csv", ",", float, true));
@@ -218,13 +218,13 @@ global {
 	}
 
 
-	float income_change_rate <- agora_45 [11, 0];
+	float income_change_rate <- agora_45 [3, 0];
 
-	float power_consumption_change_rate <- agora_45 [13, 0];
-	float heat_consumption_new_EFH_change_rate <- agora_45 [14, 0];
-	float heat_consumption_new_MFH_change_rate <- agora_45 [15, 0];
-	float heat_consumption_exist_EFH_change_rate <- agora_45 [16, 0];
-	float heat_consumption_exist_MFH_change_rate <- agora_45 [17, 0];
+	float power_consumption_change_rate <- agora_45 [4, 0];
+	float heat_consumption_new_EFH_change_rate <- 1.0;
+	float heat_consumption_new_MFH_change_rate <- 1.0;
+	float heat_consumption_exist_EFH_change_rate <- 1.0;
+	float heat_consumption_exist_MFH_change_rate <- 1.0;
 
 
 	//	DATA FOR DECISION MAKING INVEST
@@ -930,12 +930,12 @@ global {
 			power_emissions <- energy_prices_emissions [12, current_date.year - 2020];
 			q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), current_date.year - 2020];
 
-			income_change_rate <- income_change_rate * agora_45 [11, current_date.year - 2020];
-			power_consumption_change_rate <- power_consumption_change_rate * agora_45 [13, current_date.year - 2020];
-			heat_consumption_new_EFH_change_rate <- heat_consumption_new_EFH_change_rate * agora_45 [14, current_date.year - 2020];
-			heat_consumption_new_MFH_change_rate <- heat_consumption_new_MFH_change_rate * agora_45 [15, current_date.year - 2020];
-			heat_consumption_exist_EFH_change_rate <- heat_consumption_exist_EFH_change_rate * agora_45 [16, current_date.year - 2020];
-			heat_consumption_exist_MFH_change_rate <- heat_consumption_exist_MFH_change_rate * agora_45 [17, current_date.year - 2020];
+			income_change_rate <- income_change_rate * agora_45 [3, current_date.year - 2020];
+			power_consumption_change_rate <- power_consumption_change_rate * agora_45 [4, current_date.year - 2020];
+//			heat_consumption_new_EFH_change_rate <- heat_consumption_new_EFH_change_rate * agora_45 [14, current_date.year - 2020];
+//			heat_consumption_new_MFH_change_rate <- heat_consumption_new_MFH_change_rate * agora_45 [15, current_date.year - 2020];
+//			heat_consumption_exist_EFH_change_rate <- heat_consumption_exist_EFH_change_rate * agora_45 [16, current_date.year - 2020];
+//			heat_consumption_exist_MFH_change_rate <- heat_consumption_exist_MFH_change_rate * agora_45 [17, current_date.year - 2020];
 
 		}
 
