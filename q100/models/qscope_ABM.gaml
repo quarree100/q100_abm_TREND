@@ -542,7 +542,7 @@ global {
 				}
 
 
-				else if (int(qscope_interchange_matrix[5,row_interchange]) > 0)  
+				else if (int(qscope_interchange_matrix[4,row_interchange]) > 0)  
 
 				{
 					connection_year <- int(qscope_interchange_matrix[4,row_interchange]);
