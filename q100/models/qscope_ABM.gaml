@@ -1778,7 +1778,7 @@ species households {
 		else if (self.house.type = "MFH") and (self.house.mod_status = "u") {
 			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_MFH_change_rate / 12;
 		}
-		else if (self.house.type = "EFH") and (self.house.mod_status = "s") {
+		else if (self.house.type = "MFH") and (self.house.mod_status = "s") {
 			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_new_MFH_change_rate / 12;
 		}
 		my_power_consumption <- my_floor_area * self.house.spec_power_consumption * power_consumption_change_rate / 12; 
