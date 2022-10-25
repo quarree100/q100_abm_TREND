@@ -1690,8 +1690,9 @@ species households {
 
 		do calculate_consumption;
 		do calculate_emissions;
-		do calculate_heat_expenses;
 		do calculate_power_expenses;
+		do calculate_heat_expenses;
+		
 
 		e_current <- my_heat_expenses + my_power_expenses;
 
@@ -1777,10 +1778,10 @@ species households {
 		else if (self.house.type = "MFH") and (self.house.mod_status = "u") {
 			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_MFH_change_rate / 12;
 		}
-		else if (self.house.type = "EFH") and (self.house.mod_status = "s") {
+		else if (self.house.type = "MFH") and (self.house.mod_status = "s") {
 			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_new_MFH_change_rate / 12;
 		}
-		my_power_consumption <- my_floor_area * self.house.spec_power_consumption * power_consumption_change_rate / 12; // tatsaechlich kwh/qm spez stromverbrauch?
+		my_power_consumption <- my_floor_area * self.house.spec_power_consumption * power_consumption_change_rate / 12; 
 
 		// implementation of "change" factor on energy consumption
 		if (change = true) {
@@ -1796,8 +1797,11 @@ species households {
 		else if (self.house.energy_source = "Öl") {
 			my_heat_expenses <- my_heat_consumption * oil_price / 100;
 		}
-		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
+		else if (self.house.energy_source = "q100") { 
 			my_heat_expenses <- my_heat_consumption * q100_price_opex / 100;
+		}
+		else if (self.house.energy_source = "Strom") {
+			my_heat_expenses <- my_heat_consumption * (my_power_expenses / my_power_consumption);
 		}
 		if carbon_price_on_off {
 			my_heat_expenses <- my_heat_expenses + my_heat_emissions * carbon_price;
@@ -1823,8 +1827,11 @@ species households {
 		else if (self.house.energy_source = "Öl") {
 			my_heat_emissions <- my_heat_consumption * oil_emissions;
 		}
-		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
+		else if (self.house.energy_source = "q100") { 
 			my_heat_emissions <- my_heat_consumption * q100_emissions;
+		}
+		else if (self.house.energy_source = "Strom") {
+			my_heat_emissions <- my_heat_consumption * (my_power_emissions / my_power_consumption);
 		}
 
 
