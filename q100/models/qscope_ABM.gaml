@@ -1847,9 +1847,10 @@ species households {
 
 
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
-		int i <- index_of(collect(income_distribution_germany, (self.income <= each)), true); // Calculates income decile of the current household.
-		self.budget <- self.budget + self.income * savings_rates[i]; // Adds monthly savings to the budget.
-				
+		if current_date.day = 1 {
+			int i <- index_of(collect(income_distribution_germany, (self.income <= each)), true); // Calculates income decile of the current household.
+			self.budget <- self.budget + self.income * savings_rates[i] / 100; // Adds monthly savings to the budget.	
+		}
 			
 	}
 
@@ -1862,7 +1863,7 @@ species households {
 			length_of_residence <- length_of_residence + 1;
 			let current_agent <- self;
 			if age >= 100 {
-				ask neighbors_of(network, self) {
+				ask list<households>(neighbors_of(network, self)) {
 					do update_social_contacts(current_agent);
 				}
 				remove self from: network;
