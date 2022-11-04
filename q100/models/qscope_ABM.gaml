@@ -532,40 +532,30 @@ global {
 		int row_interchange <- 0;
 		loop qscope_interchange over: qscope_interchange_matrix column_at 0 { // integrates individually made changes on qscope by users for buildings of the GAMA model
 			ask (building where (each.id = qscope_interchange)) {
-				qscope_interchange_flag <- true;
+				qscope_interchange_flag <- bool(int(qscope_interchange_matrix[7,row_interchange])+1); // Column 7 of the interchange matrix hast values between -1 and 2. Only the value -1 will result in the value False.
 
-
-				if (int(qscope_interchange_matrix[4,row_interchange]) = 0) {
-
-					energy_source <- qscope_interchange_matrix[3,row_interchange];
-
-				}
-
-
-				else if (int(qscope_interchange_matrix[4,row_interchange]) > 0)  
-
-				{
+				if (int(qscope_interchange_matrix[4,row_interchange]) >= 2020)  {
 					connection_year <- int(qscope_interchange_matrix[4,row_interchange]);
 				}
-
-				if (qscope_interchange_matrix[5,row_interchange] = "True") {
-
-					mod_status <- "s";
-					self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
-				}
-
-
-				if (qscope_interchange_matrix[6,row_interchange] = "True") {
-					self.change_tenants <- true;
-
-
-//					ask self.get_tenants() {
-//						write self.name + "I change";
-//						change <- true;
-//						// do decision_feedback_attitude;
-//						// do decision_feedback_B ---> validation ---> should be implemented?
-//					}
-
+				if qscope_interchange_flag { // only change these values when group is >= 0.
+					if (int(qscope_interchange_matrix[5,row_interchange]) > 0) {
+						refurb_year <- int(qscope_interchange_matrix[5,row_interchange]);
+					}
+	
+	
+					if (qscope_interchange_matrix[6,row_interchange] = "True") {
+						self.change_tenants <- true;
+	
+	
+	//					ask self.get_tenants() {
+	//						write self.name + "I change";
+	//						change <- true;
+	//						// do decision_feedback_attitude;
+	//						// do decision_feedback_B ---> validation ---> should be implemented?
+	//					}
+	
+					}
+				
 				}
 			}
 			row_interchange <- row_interchange + 1;
@@ -1027,6 +1017,7 @@ species building {
 	float spec_power_consumption;
 	string energy_source;
 	int connection_year;
+	int refurb_year;
 	rgb color <- #gray;
 	geometry line;
 	string id;
@@ -1035,7 +1026,7 @@ species building {
 
 	int invest_counter;
 
-	action invoke_investment { // Gets called when the tenants decide to invest in a refurbishment of the house. The invest_counter is set depending on the selected payment scenario.
+	action invoke_investment { // Gets called when the tenants decide to invest in a connection to the heat grid. The invest_counter is set depending on the selected payment scenario.
 		if self.mod_status = "s" {}
 		else {
 			self.mod_status <- "s";
@@ -1079,13 +1070,16 @@ species building {
 	action remove_tenant {
 		self.tenants <- self.tenants - 1;
 		self.vacant <- true;
-		do modernize;
+		do modernize(true);
 	}
 
-	action modernize {
+	action modernize(bool connect_q100) {
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
-			self.energy_source <- "q100";
+			if connect_q100 {
+				self.energy_source <- "q100";
+				
+			}
 			refurbished_buildings_year <- refurbished_buildings_year + 1;
 			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 		}
@@ -1109,6 +1103,11 @@ species building {
 		}
 	}
 
+	reflex refurbish {
+		if current_date.year = refurb_year {
+			do modernize(false);
+		}
+	}
 
 	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
 		list neighbors;
@@ -1744,11 +1743,12 @@ species households {
 			if delta_on_off {
 				self.delta <- self.B_c / 7;
 				U_c <- (1 + self.delta) * (alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max) + self.delta * (A + N + B_c_7);
+				
 			}
 			else {
 				U_c <- alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max + (A + N + B_c_7);
 			}
-
+			U_c <- int(self.EEH >= change_threshold) * U_c; // set U_c to 0 if EEH < change_threshold
 		}
 
 		if power_supplier = "green" {
@@ -2025,9 +2025,11 @@ experiment agent_decision_making type: gui{
 //csv_export for frontend test
 
 	reflex save_num_connections {
+
 		float value <- length(building where ((each.energy_source = "q100") and (each.built))) / length(building where (each.built)) * 100;
+    int value_absolute <- length(building where ((each.mod_status = "s") and (each.built)));
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
-		save [cycle, current_date, value]
+		save [cycle, current_date, value, value_absolute]
 		to: export_file type: csv rewrite: false;
 	}
 
@@ -2117,7 +2119,7 @@ experiment agent_decision_making type: gui{
 				draw "Date" at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
 				draw "Transformation level" at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
-				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
+				int value <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
 				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
 				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
@@ -2332,7 +2334,7 @@ experiment agent_decision_making_3d type: gui{
 				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
 				draw string ("Transformation level") at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
-				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
+				int value <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
 				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
 				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
