@@ -532,40 +532,30 @@ global {
 		int row_interchange <- 0;
 		loop qscope_interchange over: qscope_interchange_matrix column_at 0 { // integrates individually made changes on qscope by users for buildings of the GAMA model
 			ask (building where (each.id = qscope_interchange)) {
-				qscope_interchange_flag <- true;
+				qscope_interchange_flag <- bool(int(qscope_interchange_matrix[7,row_interchange])+1); // Column 7 of the interchange matrix hast values between -1 and 2. Only the value -1 will result in the value False.
 
-
-				if (int(qscope_interchange_matrix[4,row_interchange]) = 0) {
-
-					energy_source <- qscope_interchange_matrix[3,row_interchange];
-
-				}
-
-
-				else if (int(qscope_interchange_matrix[4,row_interchange]) > 0)  
-
-				{
+				if (int(qscope_interchange_matrix[4,row_interchange]) >= 2020)  {
 					connection_year <- int(qscope_interchange_matrix[4,row_interchange]);
 				}
-
-
+				if qscope_interchange_flag { // only change these values when group is >= 0.
+					if (int(qscope_interchange_matrix[5,row_interchange]) > 0) {
+						refurb_year <- int(qscope_interchange_matrix[5,row_interchange]);
+					}
+	
+	
+					if (qscope_interchange_matrix[6,row_interchange] = "True") {
+						self.change_tenants <- true;
+	
+	
+	//					ask self.get_tenants() {
+	//						write self.name + "I change";
+	//						change <- true;
+	//						// do decision_feedback_attitude;
+	//						// do decision_feedback_B ---> validation ---> should be implemented?
+	//					}
+	
+					}
 				
-				if (int(qscope_interchange_matrix[5,row_interchange]) > 0) {
-					refurb_year <- int(qscope_interchange_matrix[5,row_interchange]);
-				}
-
-
-				if (qscope_interchange_matrix[6,row_interchange] = "True") {
-					self.change_tenants <- true;
-
-
-//					ask self.get_tenants() {
-//						write self.name + "I change";
-//						change <- true;
-//						// do decision_feedback_attitude;
-//						// do decision_feedback_B ---> validation ---> should be implemented?
-//					}
-
 				}
 			}
 			row_interchange <- row_interchange + 1;
