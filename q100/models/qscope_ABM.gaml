@@ -548,10 +548,10 @@ global {
 					connection_year <- int(qscope_interchange_matrix[4,row_interchange]);
 				}
 
-				if (qscope_interchange_matrix[5,row_interchange] = "True") {
 
-					mod_status <- "s";
-					self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
+				
+				if (int(qscope_interchange_matrix[5,row_interchange]) > 0) {
+					refurb_year <- int(qscope_interchange_matrix[5,row_interchange]);
 				}
 
 
@@ -1027,6 +1027,7 @@ species building {
 	float spec_power_consumption;
 	string energy_source;
 	int connection_year;
+	int refurb_year;
 	rgb color <- #gray;
 	geometry line;
 	string id;
@@ -1035,7 +1036,7 @@ species building {
 
 	int invest_counter;
 
-	action invoke_investment { // Gets called when the tenants decide to invest in a refurbishment of the house. The invest_counter is set depending on the selected payment scenario.
+	action invoke_investment { // Gets called when the tenants decide to invest in a connection to the heat grid. The invest_counter is set depending on the selected payment scenario.
 		if self.mod_status = "s" {}
 		else {
 			self.mod_status <- "s";
@@ -1079,13 +1080,16 @@ species building {
 	action remove_tenant {
 		self.tenants <- self.tenants - 1;
 		self.vacant <- true;
-		do modernize;
+		do modernize(true);
 	}
 
-	action modernize {
+	action modernize(bool connect_q100) {
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
-			self.energy_source <- "q100";
+			if connect_q100 {
+				self.energy_source <- "q100";
+				
+			}
 			refurbished_buildings_year <- refurbished_buildings_year + 1;
 			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 		}
@@ -1109,6 +1113,11 @@ species building {
 		}
 	}
 
+	reflex refurbish {
+		if current_date.year = refurb_year {
+			do modernize(false);
+		}
+	}
 
 	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
 		list neighbors;
@@ -1744,11 +1753,12 @@ species households {
 			if delta_on_off {
 				self.delta <- self.B_c / 7;
 				U_c <- (1 + self.delta) * (alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max) + self.delta * (A + N + B_c_7);
+				
 			}
 			else {
 				U_c <- alpha * e_change / e_change_max + (1 - alpha) * c_change / c_change_max + (A + N + B_c_7);
 			}
-
+			U_c <- int(self.EEH >= change_threshold) * U_c; // set U_c to 0 if EEH < change_threshold
 		}
 
 		if power_supplier = "green" {
@@ -2025,9 +2035,10 @@ experiment agent_decision_making type: gui{
 //csv_export for frontend test
 
 	reflex save_num_connections {
-		float value <- length(building where ((each.mod_status = "s") and (each.built))) / length(building where (each.built)) * 100;
+		float percentage <- length(building where ((each.mod_status = "s") and (each.built))) / length(building where (each.built)) * 100;
+		int value <- length(building where ((each.mod_status = "s") and (each.built)));
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
-		save [cycle, current_date, value]
+		save [cycle, current_date, percentage, value]
 		to: export_file type: csv rewrite: false;
 	}
 
