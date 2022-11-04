@@ -2025,7 +2025,7 @@ experiment agent_decision_making type: gui{
 //csv_export for frontend test
 
 	reflex save_num_connections {
-		float value <- length(building where ((each.mod_status = "s") and (each.built))) / length(building where (each.built)) * 100;
+		float value <- length(building where ((each.energy_source = "q100") and (each.built))) / length(building where (each.built)) * 100;
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
 		save [cycle, current_date, value]
 		to: export_file type: csv rewrite: false;
