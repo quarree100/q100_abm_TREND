@@ -2025,10 +2025,11 @@ experiment agent_decision_making type: gui{
 //csv_export for frontend test
 
 	reflex save_num_connections {
-		float percentage <- length(building where ((each.mod_status = "s") and (each.built))) / length(building where (each.built)) * 100;
-		int value <- length(building where ((each.mod_status = "s") and (each.built)));
+
+		float value <- length(building where ((each.energy_source = "q100") and (each.built))) / length(building where (each.built)) * 100;
+    int value_absolute <- length(building where ((each.mod_status = "s") and (each.built)));
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
-		save [cycle, current_date, percentage, value]
+		save [cycle, current_date, value, value_absolute]
 		to: export_file type: csv rewrite: false;
 	}
 
@@ -2118,7 +2119,7 @@ experiment agent_decision_making type: gui{
 				draw "Date" at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
 				draw "Transformation level" at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
-				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
+				int value <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
 				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
 				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
@@ -2333,7 +2334,7 @@ experiment agent_decision_making_3d type: gui{
 				draw string ("Date") at: {5#px, 5#px} anchor: #top_left color: #black font: my_font;
 				draw string (current_date) at: {5#px, 17#px} anchor: #top_left color: #black font: my_font;
 				draw string ("Transformation level") at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
-				int percentage <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
+				int value <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
 				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
 				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
