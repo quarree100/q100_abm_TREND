@@ -508,7 +508,6 @@ global {
 
 		}
 
-
 		create building from: shape_file_new_buildings with: [id::string(read("Kataster_C")), type::string(read(attributes_source)), units::int(read("Kataster_W")), street::string(read("Kataster_S")), net_floor_area::int(read("Kataster_6")), spec_heat_consumption::float(read("Kataster13")), spec_power_consumption::float(read("Kataster15"))] { // create agents according to shapefile metadata
 			vacant <- false;
 			built <- false;
@@ -2121,7 +2120,7 @@ experiment agent_decision_making type: gui{
 				draw "Transformation level" at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
 				int value <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
-				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
+				draw string ("" + string(value) + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
 				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
 				draw string ("EFH") at: { 20#px, 74#px} color: #black font: my_font anchor: #left_center;
 				draw square(10#px) at: { 10#px, 94#px } color: #lightblue border: #white ;
@@ -2336,7 +2335,7 @@ experiment agent_decision_making_3d type: gui{
 				draw string ("Transformation level") at: {5#px,38#px} anchor: #top_left color: #black font: my_font;
 				int value <- int(length(building where (each.mod_status = "s")) / length(building) * 100);
 				draw line([{5,5} + {0#px, 62#px}, {5,5}+{139#px, 62#px}]) color: #black;
-				draw string ("" + percentage + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
+				draw string ("" + string(value) + " %") at: {5#px,50#px} anchor: #top_left color: #black font: my_font;
 				draw square(10#px) at: { 10#px, 74#px } color: #blue border: #white ;
 				draw string ("EFH") at: { 20#px, 74#px} color: #black font: my_font anchor: #left_center;
 				draw square(10#px) at: { 10#px, 94#px } color: #lightblue border: #white ;
