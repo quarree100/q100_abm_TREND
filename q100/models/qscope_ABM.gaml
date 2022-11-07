@@ -1083,6 +1083,18 @@ species building {
 			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 		}
 	}
+	
+	action force_modernize(bool connect_q100) {
+		if  (self.mod_status = "u") {
+				self.mod_status <- "s";
+				if connect_q100 {
+					self.energy_source <- "q100";
+				
+			}
+			refurbished_buildings_year <- refurbished_buildings_year + 1;
+			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
+		}
+	}
 
 
 	reflex investment_costs { // When self.invest_counter is set to a value > 0, the tenants of the building will be charged with the costs of the home refurbishment.
@@ -1104,7 +1116,7 @@ species building {
 
 	reflex refurbish {
 		if current_date.year = refurb_year {
-			do modernize(false);
+			do force_modernize(false);
 		}
 	}
 
