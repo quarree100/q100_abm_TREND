@@ -662,13 +662,13 @@ global {
 
 // Power Supplier -> distributes the power supplier among households
 
-		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold) { //see documentation for references of supplier distribution; EEH is chosen by value above the median // change_threshold als Bedingung passend?
-		 	power_supplier <- "green";
-		}
+//		ask (0.1 * nb_units) among agents of_generic_species households where (each.EEH > change_threshold) { //see documentation for references of supplier distribution; EEH is chosen by value above the median // change_threshold als Bedingung passend?
+//		 	power_supplier <- "green";
+//		}
 
-		ask (0.08 * nb_units) among agents of_generic_species households where (each.power_supplier = nil) {
-		 	power_supplier <- "mixed";
-		}
+//		ask (0.08 * nb_units) among agents of_generic_species households where (each.power_supplier = nil) {
+//		 	power_supplier <- "mixed";
+//		}
 
 		ask agents of_generic_species households where (each.power_supplier = nil) {
 			power_supplier <- "conventional";
@@ -802,15 +802,15 @@ global {
 					ownership <- "tenant";
 				}
 
-				if (EEH > 4.5 and flip(0.1)) {
-					power_supplier <- "green";
-				}
-				else if flip(0.08) {
-					power_supplier <- "mixed";
-				}
-				else {
+//				if (EEH > 4.5 and flip(0.1)) {
+//					power_supplier <- "green";
+//				}
+//				else if flip(0.08) {
+//					power_supplier <- "mixed";
+//				}
+//				else {
 					power_supplier <- "conventional";
-				}
+//				}
 				my_floor_area <- int(self.house.net_floor_area / self.house.units);
 
 				if self.house.energy_source = "q100" {
@@ -1725,7 +1725,10 @@ species households {
 		float hypo_q100_carbon_exp <- my_heat_consumption * q100_emissions * carbon_price * int(carbon_price_on_off);
 		e_invest <- (my_heat_consumption * q100_price_opex / 100) + hypo_q100_carbon_exp + my_power_expenses;
 		e_change <- my_heat_expenses * change_factor + my_power_expenses * change_factor;
-		if power_supplier = "mixed" {
+		if power_supplier = "conventional" {
+			e_switch <- my_power_consumption * (power_price) / 100 + my_heat_expenses;
+		}
+		else if power_supplier = "mixed" {
 			e_switch <- my_power_consumption * (power_price + 10) / 100 + my_heat_expenses;
 		}
 	}
