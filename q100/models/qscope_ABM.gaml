@@ -1154,14 +1154,14 @@ species building {
 	}
 
 	reflex monthly_updates_emissions { //to validate! TODO
-		if (current_date.day = 2) {
+		if (current_date.day = 2) and (self.units > 0){
 			building_emissions <- 0.0;
 			ask self.get_tenants() {
 				house.building_emissions <- (house.building_emissions + self.my_energy_emissions);
 			}
-			if building_emissions > 0 {
-				building_household_emissions <- building_emissions / units;	
-			}
+			
+			building_household_emissions <- building_emissions / units;	
+			
 		}
 	}
 
