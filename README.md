@@ -6,7 +6,7 @@ Agent-Based-Modeled Behavior Transformation in QUARREE100
 ```
 project qScope
 └───cspy
-│   └───MIT CityScoPy Token Tag Decoder (modified by dunland)
+│   └───modified MIT CityScoPy Token Tag Decoder
 └───data
 |   └───outputs
 |      └───output_[timestamp]
@@ -36,11 +36,12 @@ project qScope
 ```
 
 where:
-- cspy: https://github.com/dunland/cspy
+- cspy: https://github.com/quarree100/cspy
 - data: has to be linked from Seafile server
 - GAMA: https://github.com/quarree100/q100_abm
 - qScope_infoscreen: https://github.com/quarree100/qScope_infoscreen
 - qScope_frontend: https://github.com/quarree100/qScope_frontend
+
 
 ## using GAMA with GitHub
 
