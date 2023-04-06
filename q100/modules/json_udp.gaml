@@ -10,14 +10,14 @@ model json_udp
 global {
 	string client_ip <- "localhost";
 	int client_port <- 8081;
-	string save_path <- "../jstring.json";
+	string save_path <- "../jstring_building.json";
 	
 	
 	init {
 		create udp_sender number: 1 with: [save_json::false, interval::100] {
 			do connect to: client_ip protocol: "udp_emitter" port: client_port;
-		    
-		}	
+			
+		}
 	}
 }
 
@@ -25,8 +25,8 @@ species udp_sender skills: [network] {
 	bool save_json <- true;
 	int interval <- 100;
 	list<string> numeric_attrs;
-	list<string> text_attrs;
-	string indicated_species;
+	list<string> text_attrs <- [];
+	string indicated_species <- "None";
 	
 	string construct_json_object {
 		/**
@@ -34,18 +34,18 @@ species udp_sender skills: [network] {
 		 * The string is saved to ../jstring.json and sent to localhost via udp.
 		 */ 
 		
-		string json_string <- "{'step' : " + cycle;
+		string json_string <- "{\"step\" : " + cycle;
 		
-		if !bool(indicated_species) {
+		if (indicated_species = "None") {
 			json_string <- json_string + "}";
 			return json_string;
 		}
 		
-		json_string <- json_string + "\"agents\": [";
+		json_string <- json_string + ", \"agents\": [";
 		bool first <- true;
 		ask agents of_generic_species(species(indicated_species)){
 			string my_string <- "{";
-			loop a over: text_attrs{
+			loop a over: myself.text_attrs{
 				if my_string = "{" {
 					my_string <- my_string + "\"" + a + "\": " + "\"" + self[a] + "\"";
 				}
@@ -53,7 +53,7 @@ species udp_sender skills: [network] {
 					my_string <- my_string + ", " + "\"" + a + "\": " + "\"" + self[a] + "\"";
 				}
 			}
-			loop a over: numeric_attrs{
+			loop a over: myself.numeric_attrs{
 				if my_string = "{" {
 					my_string <- my_string + "\"" + a + "\": " + self[a];
 				}
@@ -72,7 +72,7 @@ species udp_sender skills: [network] {
 		}
 		json_string <- json_string + " ] }";
 		if save_json {
-			save json_string to: save_path rewrite: true;
+			save json_string to: save_path rewrite: false;
 		}
 		
 		return json_string;
