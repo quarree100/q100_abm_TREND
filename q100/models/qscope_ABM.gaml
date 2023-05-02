@@ -1,14 +1,14 @@
 /*
-* Name: qScope_ABM
+* Name: TREND model
 *
 * Authors: lennartwinkeler, davidunland, philipolaleye
-* Institution: University of Bremen, Department of Resilient Energy Systems
-* Date: 2022-03-18
-* Description: agent-based model within the project quarree100 - work group 2
+* Institution: University of Bremen, Department for Resilient Energy Systems
+* Date: 2023-05-02
+* Description: ABM which aims to connect and process the complexity of techno-economic and socio-technical processes - Case: Neighborhood of Ruesdorfer Kamp, Heide, Schleswig-Holstein, Germany. Project QUARREE100.
 *
 * Obejctives:
-* (1) simulating household pro environmental decision-making in built-up neighborhoods to develop an understanding of sociotechnical dynamics of energy transitions;
-* (2) implementing the simulation in a CityScope framework for increasing the project's participation process and investigating stakeholder interaction & empowerment
+* (1) Simulating household pro environmental decision-making in built-up neighborhoods to develop an understanding of sociotechnical dynamics of energy transitions;
+* (2) Implementing the simulation in a CityScope framework for increasing the project's participation process and investigating stakeholder interaction & empowerment.
 *
 *
 */
@@ -19,8 +19,6 @@ import "../modules/json_udp.gaml"
 
 global {
 
-	// bool show_heatingnetwork <- true;
-
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
 	reflex end_simulation when: (current_date.year = 2045) and (current_date.month = 12) and (current_date.day = 31){
@@ -29,9 +27,8 @@ global {
 
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
-	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]; 
 
-	// load shapefiles
 	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
 	file shape_file_typologiezonen <- file("../includes/Shapefiles/Typologiezonen.shp");
 	file nahwaerme <- file("../includes/Shapefiles/Nahwaermenetz.shp");
@@ -274,7 +271,7 @@ global {
 	int nb_units <- get_nb_units(); // number of households
 	int global_neighboring_distance <- get_inital_value("global_neighboring_distance");
 	string new_buildings_parameter; // determines the speed of completion of new_buildings
-	bool new_buildings_order_random <- get_inital_value("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
+	bool new_buildings_order_random <- get_inital_value("new_buildings_order_random"); // construction of new_buildings in random order
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
 	float energy_saving_rate <- get_inital_value("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
@@ -1006,7 +1003,7 @@ species building {
 		}
 	}
 
-	reflex monthly_updates_emissions { //to validate! TODO
+	reflex monthly_updates_emissions { 
 		if (current_date.day = 2) {
 			building_emissions <- 0;
 			ask self.get_tenants() {
@@ -1015,7 +1012,7 @@ species building {
 		}
 	}
 	
-	reflex monthly_updates_expenses { //to validate! TODO
+	reflex monthly_updates_expenses { 
 		if (current_date.day = 2) {
 			building_expenses_heat <- 0;
 			ask self.get_tenants() {
@@ -1060,7 +1057,7 @@ species households {
 	float B_c_7; // Perceived-Behavioral-Control Change divided by 7
 	float B_s_7; // Perceived-Behavioral-Control Switch divided by 7
 
-	float EEH; // Energy Efficient Habits TODO
+	float EEH; // Energy Efficient Habits
 
 	float U; // Utility value that is selected in decision phase
 	float U_current;
@@ -1070,19 +1067,19 @@ species households {
 
 
 	int income; // households income/month
-	float budget <- 0.0; // TODO every household starts with zero savings?
+	float budget <- 0.0; // TREND-v1 starts 
 	string id_group; // identification which quartile within the income group the agent belongs to
 
 
-	float c_current; // TODO composite goods
+	float c_current; // composite goods
 	float c_invest;
 	float c_change;
 	float c_switch;
-	float e_current; // TODO total energy expenses a household has to pay for energy supply - heat & power
+	float e_current; // total energy expenses a household has to pay for energy supply - heat & power
 	float e_invest;
 	float e_change;
 	float e_switch;
-	bool change <- false; // init value needs to be set for household with fitting settings TODO
+	bool change <- false; // init value needs to be set for household with fitting settings
 	bool invest <- false;
 	string power_supplier;
 	float delta;
@@ -1114,7 +1111,7 @@ species households {
 	int network_contacts_spatial_direct; // available amount of contacts within an households network - direct neighbors
 	int network_contacts_spatial_street; // available amount of contacts within an households network - contacts in the same street
 	int network_contacts_spatial_neighborhood; // available amount of contacts within an households network - contacts in the same neighborhood
-	int network_contacts_spatial_beyond; // available amount of contacts within an households network - contacts beyond the system's environment TODO - not yet implemented - no influence beyond the system boundaries
+	int network_contacts_spatial_beyond; // available amount of contacts within an households network - contacts beyond the system's environment - not yet implemented - currently no influence beyond the system boundaries
 
 	bool family; // represents young families - higher possibility of being part of a socialgroup
 	bool network_socialgroup; // households are part of a social group - accelerates the networking behavior; e.g. football club
@@ -1573,7 +1570,7 @@ species households {
 	}
 
 	action calculate_utility {
-		U_current <- alpha * e_current / e_current_max + (1 - alpha) * c_current / c_current_max + (A + N + int(B_do_nothing)); // urspruenglich Utility Vergleich U(t-1) mit U(t), allerdings wirft das Frage auf, was U(t0) ist - daher zunächst jeweils Berechnung einer "nichts-tun-Utility" -> vgl Niamir TODO
+		U_current <- alpha * e_current / e_current_max + (1 - alpha) * c_current / c_current_max + (A + N + int(B_do_nothing));
 
 		if (invest = true) or (self.house.energy_source = "q100") {
 			U_i <- 0;
@@ -1649,7 +1646,7 @@ species households {
 		else if (self.house.energy_source = "Öl") {
 			my_heat_expenses <- my_heat_consumption * oil_price / 100;
 		}
-		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
+		else if (self.house.energy_source = "q100") {
 			my_heat_expenses <- my_heat_consumption * q100_price_opex / 100;
 		}
 		if carbon_price_on_off {
@@ -1659,7 +1656,7 @@ species households {
 
 	action calculate_power_expenses {
 		if (power_supplier = "green") {
-			my_power_expenses <- my_power_consumption * (power_price + 10) / 100; // es stellt sich die Frage, ob Ökostrom immer teurer bleibt; bzw. es ein "höherklassiges" Angebot geben wird;; ggf Szenario einrichten mit 30 % und 10 ct
+			my_power_expenses <- my_power_consumption * (power_price + 10) / 100;
 		}
 		else {
 			my_power_expenses <- my_power_consumption * power_price / 100;
@@ -1676,7 +1673,7 @@ species households {
 		else if (self.house.energy_source = "Öl") {
 			my_heat_emissions <- my_heat_consumption * oil_emissions;
 		}
-		else if (self.house.energy_source = "q100") { // TODO !! neben q100 sind im Kataster die Werte "nil" & "strom"; wie damit umgehen?
+		else if (self.house.energy_source = "q100") { 
 			my_heat_emissions <- my_heat_consumption * q100_emissions;
 		}
 
@@ -1702,7 +1699,7 @@ species households {
 	reflex calculate_energy_budget { // households save budget from the difference between energy expenses and available budget
 		float budget_calc <- income * income_change_rate * alpha - e_current;
 		if (current_date.day = 1) and (budget_calc > 0) {
-			budget <- budget + budget_calc; // TODO issue: hh with small income randomly located in houses with big consumption -> will never save budget
+			budget <- budget + budget_calc; 
 		}
 	}
 
@@ -1756,8 +1753,7 @@ species households {
 	aspect by_energy {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
-		if (self.house.energy_source = "q100") or (self.house.mod_status = "s") { // sanierte gebaeude ebenfalls anschluss an q100? -> Stand Basismodell Ja TODO
-		// wenn invest entscheidung getroffen wird, nimmt diese einfluss auf parameter "energy_source" einfluss //  Unterscheidung Mieter/Vermieter
+		if (self.house.energy_source = "q100") or (self.house.mod_status = "s") { 
 			nahwaermenetz netz <- closest_to(nahwaermenetz, self);
 			list conn <- closest_points_with(netz, self);
 			draw polyline(conn) color: #red width: 2;
@@ -1873,17 +1869,17 @@ experiment agent_decision_making type: gui{
 		to: export_file type: csv rewrite: false;
 	}
 
-// export energy costs:
+// csv_export energy costs:
 
 	reflex save_energy_costs {
 		if (current_date.month = 1) and (current_date.day = 1) {
 				string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_total.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_total.csv";
 
-			save [cycle, current_date, power_price, oil_price, gas_price, q100_price_opex] // TODO exportiert derzeit "nur" die Werte, welche an anderer Stelle importiert werden; koennte erweitert werden durch zB "monatliche Ausgaben eines Durchschnitts-Haushalts fuer Energie"
+			save [cycle, current_date, power_price, oil_price, gas_price, q100_price_opex] 
 			to: export_file type: csv rewrite: false  header: true;
 		}
 	}
-//csv_export for output test - line graph infoscreen /////////////////////////////// TODO Thema Datenschutz -> eigentlich nur durchschnittswerte exportieren; flag-export wofuer noetig?
+//csv_export for emissions
 
 	reflex save_results_co2_graph {
 		string export_file;
@@ -2047,7 +2043,7 @@ experiment agent_decision_making type: gui{
 		}
 
 
-		display "Monthly Emissions"{ // TODO
+		display "Monthly Emissions"{
 			chart "Emissions per month within the neighborhood"
 			type: series
 			x_label: "Month"
@@ -2067,7 +2063,7 @@ experiment agent_decision_making type: gui{
 			}
 		}
 
-		display "Emissions cumulative" { // TODO
+		display "Emissions cumulative" { 
 			chart "Cumulative emissions of the neighborhood"
 			type: series
 			x_label: "Month"
@@ -2079,7 +2075,7 @@ experiment agent_decision_making type: gui{
 				;
 			}
 		}
-		display "Average Emissions Cumulative" { // TODO
+		display "Average Emissions Cumulative" {
 			chart "Average cumulative emissions of the neighborhood"
 			type: series
 			x_label: "Month"
@@ -2231,7 +2227,7 @@ experiment agent_decision_making_3d type: gui{
 			}
 		}
 
-		display "Monthly Emissions" refresh: (current_date.day = 1){ // TODO
+		display "Monthly Emissions" refresh: (current_date.day = 1){
 			chart "Emissions per month within the neighborhood" type: series {
 				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
 				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat;
@@ -2240,7 +2236,7 @@ experiment agent_decision_making_3d type: gui{
 			}
 		}
 
-		display "Emissions cumulative" { // TODO
+		display "Emissions cumulative" { 
 			chart "Cumulative emissions of the neighborhood" type: series {
 
 				data "Accumulated energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_accu;
