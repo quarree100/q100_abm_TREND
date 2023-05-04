@@ -26,27 +26,15 @@ global {
 
 
 
-	string model_runtime_string <- string(get_initial_value("model_runtime_string"));
-	reflex end_simulation when: (current_date.year = model_runtime()) and (current_date.month = 1) and (current_date.day = 1){
+	int model_runtime_int <- 0;// <- get_initial_value_int("model_runtime_int");
+	reflex end_simulation when: (current_date.year = model_runtime_int) and (current_date.month = 1) and (current_date.day = 1){
     	do pause;
     }
-
-	int model_runtime {
-		if model_runtime_string = "2020-2030" {
-			return 2030;
-		}
-		else if model_runtime_string = "2020-2040" {
-			return 2040;
-		}
-		else {
-			return 2045;
-		}
-	}
 
 
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
-	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 	// load shapefiles
 	file shape_file_buildings <- file("../includes/Shapefiles/bestandsgebaeude_export.shp");
@@ -114,7 +102,7 @@ global {
 			return 4;
 		}
 		else {
-			return 0;
+			error "No valid alpha-scenario";
 		}
 	}
 
@@ -356,39 +344,40 @@ global {
 		}
 	}
 
-
+	int temp_int <- get_initial_value_int("global_neighboring_distance");
 	int nb_units <- get_nb_units(); // number of households
-	int global_neighboring_distance <- get_initial_value_int("global_neighboring_distance");
+	int global_neighboring_distance;// <- get_initial_value_int("global_neighboring_distance");
 	string new_buildings_parameter <- "none"; // determines the speed of completion of new_buildings
-	bool new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
+	bool new_buildings_order_random <- false;// <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	float energy_saving_rate <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
-  	float change_factor <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
-  	float change_threshold <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
-  	float MFH_connection_threshold <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
-  	float feedback_factor <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
-  	bool B_feedback <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
+	float energy_saving_rate <- 0.0;// <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	float change_factor <- 0.0;// <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
+  	float change_threshold<- 0.0;// <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- 0.0;// <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	float MFH_connection_threshold <- 0.0;// <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
+  	float feedback_factor <- 0.0;// <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	bool B_feedback <- false;// <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
 
-	bool view_toggle <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
-	bool keep_seed <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
+	bool view_toggle <- false;// <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
+	bool keep_seed <- false;// <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
 	string timestamp <- "";
 
 	int refurbished_buildings_year; // sum of buildings refurbished this year
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
 	float modernization_rate; // yearly rate of modernization
 
-	list list_of_power_suppliers <- ["id", "power_supplier"]; // exports list of power suppliers for debug purposes
 
-	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
-	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
-	float share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
 
-	float private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+	float share_families <- 0.0;// <- get_initial_value_float("share_families"); // share of families in whole neighborhood
+	float share_socialgroup_families <- 0.0;// <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- 0.0;// <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
 
-	string influence_type <- get_initial_value_string("influence_type");
-	bool communication_memory <- get_initial_value_bool("communication_memory");
+	float private_communication;
+	//private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+
+	string influence_type <- "";// <- get_initial_value_string("influence_type");
+	bool communication_memory <- false;// <- get_initial_value_bool("communication_memory");
 
 	list<species<households>> income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map<species<households>,float> share_income_map <- create_map(income_groups_list, list(share_income));
@@ -398,11 +387,11 @@ global {
 	map<species<households>,float> share_owner_map <- create_map(income_groups_list, shares_owner_list);
 
 
-	list<float> shares_student_list <- [share_employment_income[1,0], share_employment_income[2,0], share_employment_income[3,0], share_employment_income[4,0], share_employment_income[5,0], share_employment_income[6,0]];
-	list<float> shares_employed_list <- [share_employment_income[1,1], share_employment_income[2,1], share_employment_income[3,1], share_employment_income[4,1], share_employment_income[5,1], share_employment_income[6,1]];
-	list<float> shares_selfemployed_list <- [share_employment_income[1,2], share_employment_income[2,2], share_employment_income[3,2], share_employment_income[4,2], share_employment_income[5,2], share_employment_income[6,2]];
-	list<float> shares_unemployed_list <- [share_employment_income[1,3], share_employment_income[2,3], share_employment_income[3,3], share_employment_income[4,3], share_employment_income[5,3], share_employment_income[6,3]];
-	list<float> shares_pensioner_list <- [share_employment_income[1,4], share_employment_income[2,4], share_employment_income[3,4], share_employment_income[4,4], share_employment_income[5,4], share_employment_income[6,4]];
+	list<float> shares_student_list <- copy_between(row_at(share_employment_income, 0), 1, 7);
+	list<float> shares_employed_list <-  copy_between(row_at(share_employment_income, 1), 1, 7);
+	list<float> shares_selfemployed_list <-  copy_between(row_at(share_employment_income, 2), 1, 7);
+	list<float> shares_unemployed_list <-  copy_between(row_at(share_employment_income, 3), 1, 7);
+	list<float> shares_pensioner_list <-  copy_between(row_at(share_employment_income, 4), 1, 7);
 
 	map<species<households>,float> share_student <- create_map(income_groups_list, shares_student_list);
 	map<species<households>,float> share_employed <- create_map(income_groups_list, shares_employed_list);
@@ -479,10 +468,9 @@ global {
 	private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
 	influence_type <- get_initial_value_string("influence_type");
 	communication_memory <- get_initial_value_bool("communication_memory");
-	model_runtime_string <- string(get_initial_value("model_runtime_string"));
+	model_runtime_int <- get_initial_value_int("model_runtime_int");
 
-	write rnd(1.0);
-	write qscope_interchange_matrix;
+
 
 	if (timestamp = "") // only delete files in general output folder if using GUI
 	{
@@ -566,7 +554,7 @@ global {
 		create nahwaermenetz from: nahwaerme;
 
 		loop income_group over: income_groups_list { // creates households of the different income-groups according to the given share in *share_income_map*
-			let letters <- ["a", "b", "c", "d"];
+			list<string> letters <- ["a", "b", "c", "d"];
 			loop i over: range(0,3) { // 4 subgroups a created for each income_group to represent the distribution of the given variables
 				create income_group number: share_income_map[income_group] * nb_units * 0.25 {
 					float decision_500_1000_CEEK_min <- decision_map[income_group][1,i];
@@ -609,7 +597,7 @@ global {
 
 		ask (int(share_age_buildings_existing[0] * nb_units)) among (agents of_generic_species households where (!bool(each.age))) {
 			age <- rnd (21, 40);
-			let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units))); // calculates share of families in neighborhood for households with age 21-40
+			float share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units))); // calculates share of families in neighborhood for households with age 21-40
 			if flip(share_families_21_40) {
 				family <- true;
 			}
@@ -687,7 +675,7 @@ global {
 
 		map<string,matrix<int>> network_map <- create_map(employment_status_list, [network_student, network_employed, network_selfemployed, network_unemployed, network_pensioner]);
 		list<string> temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
-		list<string>  spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
+		list<string> spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
 		loop emp_status over: employment_status_list { //iterate over the different employment states
 			list<households> tmp_households <- (agents of_generic_species households) where (each.employment = emp_status); //temporary list of households with the current employment status
 			int nb <- length(tmp_households);
@@ -747,24 +735,24 @@ global {
 			do consume_energy;
 		}
 		do update_max_values;
-		do print_power_supplier;
+
 	}
 
 
 	reflex new_household { //creates new households to keep the total number of households constant.
-		let new_households of: households <- [];
-		let n <- length(agents of_generic_species households);
-		let wheights <- list(share_income);
+		list<households> new_households <- [];
+		int n <- length(agents of_generic_species households);
+		list wheights <- list(share_income);
 		remove 1.0 from: wheights;
-		let employment_status_list of: string <- ["student", "employed", "self_employed", "unemployed", "pensioner"];
+		list<string> employment_status_list <- ["student", "employed", "self_employed", "unemployed", "pensioner"];
 		loop while: n < nb_units {
-			let income_group<- sample(income_groups_list, 1, false, wheights)[0];
-			let i <- rnd(0,3);
+			unknown income_group <- sample(income_groups_list, 1, false, wheights)[0];
+			int i <- rnd(0,3);
 			create income_group number: 1 {
 				add self to: new_households;
 				do find_house;
 				age <- rnd(21, 40);
-				let share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units)));
+				float share_families_21_40 <- ((share_families * nb_units) / (int(share_age_buildings_existing[0] * nb_units)));
 				family <- flip(share_families_21_40);
 				float decision_500_1000_CEEK_min <- decision_map[income_group][1,i];
 				float decision_500_1000_CEEK_1st <- decision_map[income_group][1,i+1];
@@ -825,12 +813,12 @@ global {
 		list<string> temporal_network_attributes <- households.attributes where (each contains "network_contacts_temporal"); // list of all temporal network variables
 		list<string> spatial_network_attributes <- households.attributes where (each contains "network_contacts_spatial"); // list of all spatial network variables
 		loop emp_status over: employment_status_list { //iterate over the different employment states
-			let tmp_households <- new_households of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
-			let nb <- length(tmp_households);
+			list<households> tmp_households <- new_households of_generic_species households where (each.employment = emp_status); //temporary list of households with the current employment status
+			int nb <- length(tmp_households);
 			//write [nb, 0.25 * nb];
 			matrix<int> network_matrix <- network_map[emp_status]; //corresponding matrix of network values
 			loop attr over: temporal_network_attributes { //loop over the different temporal network variables of each household
-				let index <- index_of(temporal_network_attributes, attr);
+				int index <- index_of(temporal_network_attributes, attr);
 				list tmp_households_grouped <- list<list<households>>(random_groups(tmp_households, 4));
 				loop i over: range(0, 3) { // loop to split the households in 4 quartiles
 					ask (tmp_households_grouped[i]) {
@@ -874,9 +862,7 @@ global {
 		}
 
 		do distribute_budget(new_households);
-		if sum_of(new_households of_generic_species households, length(each.social_contacts)) > 0 {
 
-		}
 
 	}
 
@@ -1316,7 +1302,7 @@ species households {
 			remove old_contact from: self.social_contacts_neighborhood;
 			social_contacts_neighborhood <- social_contacts_neighborhood + (1 among agents of_generic_species households where(each.employment = self.employment));
 		}
-		let new_social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood) - social_contacts;
+		list<households> new_social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood) - social_contacts;
 		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
 		loop node over: new_social_contacts {
 			network <- network add_edge(self::node);
@@ -1331,9 +1317,10 @@ species households {
 
 
 		if network_contacts_temporal_daily > 0 {
+
 			ask network_contacts_temporal_daily among social_contacts {
-        		let current_edge <- edge_between(network, self::myself);
-        		let flag <- false;
+        		unknown current_edge <- edge_between(network, self::myself);
+        		bool flag <- false;
         		if communication_memory {
         			if weight_of(network, current_edge) != cycle{
         				network <- with_weights(network, [current_edge::cycle]);
@@ -1400,8 +1387,8 @@ species households {
 		if network_contacts_temporal_weekly > 0 {
 			if cycle mod 7 = 0 {
 				ask network_contacts_temporal_weekly among social_contacts {
-        			let flag <- false;
-        			let current_edge <- edge_between(network, self::myself);
+        			bool flag <- false;
+        			unknown current_edge <- edge_between(network, self::myself);
 	        		if communication_memory {
 	        			if weight_of(network, current_edge) != cycle{
 	        				network <- with_weights(network, [current_edge::cycle]);
@@ -1502,8 +1489,8 @@ species households {
 			if (current_date.day = 1) {
 
 				ask network_contacts_temporal_occasional among social_contacts {
-       		 		let flag <- false;
-       		 		let current_edge <- edge_between(network, self::myself);
+       		 		bool flag <- false;
+       		 		unknown current_edge <- edge_between(network, self::myself);
 	        		if communication_memory {
 	        			if weight_of(network, current_edge) != cycle{
 	        				network <- with_weights(network, [current_edge::cycle]);
@@ -1882,7 +1869,7 @@ species households {
 			//initiation of moving-out-procedure by age
 			age <- age + 1;
 			length_of_residence <- length_of_residence + 1;
-			let current_agent <- self;
+			households current_agent <- self;
 			if age >= 100 {
 				ask list<households>(neighbors_of(network, self)) {
 					do update_social_contacts(current_agent);
@@ -1898,7 +1885,7 @@ species households {
 			int current_age_group <- int(floor(age / 20)) - 1; // age-groups are represented with integers. Each group spans 20 years with 0 => [20,39], 1 => [40,59] ...
 			float moving_prob  <- 1 / average_lor_inclusive[1, current_age_group];
 			if flip(moving_prob) {
-				households my_temporary_network <- households(neighbors_of(network, self));
+				list<households> my_temporary_network <- neighbors_of(network, self);
 				if my_temporary_network != nil {
 					ask my_temporary_network {
 						do update_social_contacts(current_agent);
@@ -2030,7 +2017,7 @@ experiment agent_decision_making type: gui{
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed category: "Simulation";
   	parameter "timestamp" var: timestamp <- "";
-  	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
+  	parameter "Model runtime (final year)" var: model_runtime_int among: [2030, 2040, 2045] category: "Simulation";
 
   	font my_font <- font("Arial", 12, #bold);
 
@@ -2189,13 +2176,13 @@ experiment agent_decision_making type: gui{
 			}
 		}
 
-		display "Modernization" {
+		display "Modernization" type: java2D{
 			chart "Rate of Modernization"
 			type: series
 			//y_range: {0,0.03}
 			style: line
 			x_label: "Year"
-			x_serie: [current_date.year]
+			x_serie: current_date.year
 			x_serie_labels: string(current_date.year)
 			y_label: "Rate of Modernization"
 			{
@@ -2221,12 +2208,12 @@ experiment agent_decision_making type: gui{
 		}
 
 
-		display "Monthly Emissions"{ // TODO
+		display "Monthly Emissions" type: java2D{ // TODO
 			chart "Emissions per month within the neighborhood"
 			type: series
 			x_label: "Month"
 			y_label: "g of CO2 eq"
-			x_serie: [technical_data_calculator[0].month_counter]
+			x_serie: technical_data_calculator[0].month_counter
 			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
 			{
 				data "Total energy emissions of neighborhood per month"
@@ -2241,24 +2228,24 @@ experiment agent_decision_making type: gui{
 			}
 		}
 
-		display "Emissions cumulative" { // TODO
+		display "Emissions cumulative" type: java2D { // TODO
 			chart "Cumulative emissions of the neighborhood"
 			type: series
 			x_label: "Month"
 			y_label: "g of CO2 eq"
-			x_serie: [technical_data_calculator[0].month_counter]
+			x_serie: technical_data_calculator[0].month_counter
 			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] {
 				data "Total energy emissions of neighborhood per year"
 				value: technical_data_calculator[0].emissions_neighborhood_accu
 				;
 			}
 		}
-		display "Average Emissions Cumulative" { // TODO
+		display "Average Emissions Cumulative" type: java2D{ // TODO
 			chart "Average cumulative emissions of the neighborhood"
 			type: series
 			x_label: "Month"
 			y_label: "g of CO2 eq"
-			x_serie: [technical_data_calculator[0].month_counter]
+			x_serie: technical_data_calculator[0].month_counter
 			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] {
 				data "Accumulated Average energy emissions of a household"
 				value: technical_data_calculator[0].emissions_household_average_accu
@@ -2267,10 +2254,10 @@ experiment agent_decision_making type: gui{
 			}
 		}
 
-		display "Average Emissions"{
+		display "Average Emissions" type: java2D{
 			chart "Average Emissions per Household"
 			type: series
-			x_serie: [technical_data_calculator[0].month_counter]
+			x_serie: technical_data_calculator[0].month_counter
 			x_label: "Month"
 			y_label: "g of CO2 eq"
 			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
@@ -2289,7 +2276,7 @@ experiment agent_decision_making type: gui{
 experiment agent_decision_making_3d type: gui{
 
 
- 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
+ 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making" init: private_communication;
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
  	parameter "Use delta in utility calculation" var: delta_on_off category: "Decision making";
@@ -2316,7 +2303,7 @@ experiment agent_decision_making_3d type: gui{
 
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
 
-  	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
+  	parameter "Model runtime (final year)" var: model_runtime_int among: [2030, 2040, 2045] category: "Simulation";
 
 
 
@@ -2429,6 +2416,7 @@ experiment agent_decision_making_3d type: gui{
 }
 
 experiment debug type:gui {
+	
 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
@@ -2450,6 +2438,23 @@ experiment debug type:gui {
   	parameter "Carbon price for households?" var: carbon_price_on_off <- false category: "Technical data";
   	parameter "Seed" var: seed <- seed category: "Simulation";
   	parameter "Keep seed" var: keep_seed <- false category: "Simulation";
-  	parameter "Model runtime" var: model_runtime_string among: ["2020-2030", "2020-2040", "2020-2045"] category: "Simulation";
+  	parameter "Model runtime (final year)" var: model_runtime_int among: [2030, 2040, 2045] category: "Simulation";
+	output {
+		
+		display graph_layout {
+			
+			graphics "graph" {
+				loop e over: network.edges {
+					draw geometry(e) color: #black;
+				}
 
+				loop v over: network.vertices {
+					draw circle(0.5) at: geometry(v).location color: #red border: #black;
+				}
+
+			}
+
+		}
+
+	}
 }
