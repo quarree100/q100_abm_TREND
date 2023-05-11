@@ -26,7 +26,7 @@ global {
 
 
 
-	int model_runtime_int <- 0;// <- get_initial_value_int("model_runtime_int");
+	int model_runtime_int <- get_initial_value_int("model_runtime_int");
 	reflex end_simulation when: (current_date.year = model_runtime_int) and (current_date.month = 1) and (current_date.day = 1){
     	do pause;
     }
@@ -326,7 +326,7 @@ global {
 	action print_power_supplier{
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
 		ask agents of_generic_species households {
-			save [house.id, power_supplier] to: export_file type: "csv" rewrite: false;
+			save [house.id, power_supplier] to: export_file format: "csv" rewrite: false;
 		}
 	}
 
@@ -344,23 +344,22 @@ global {
 		}
 	}
 
-	int temp_int <- get_initial_value_int("global_neighboring_distance");
 	int nb_units <- get_nb_units(); // number of households
-	int global_neighboring_distance;// <- get_initial_value_int("global_neighboring_distance");
+	int global_neighboring_distance <- get_initial_value_int("global_neighboring_distance");
 	string new_buildings_parameter <- "none"; // determines the speed of completion of new_buildings
-	bool new_buildings_order_random <- false;// <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
+	bool new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
 
 	bool new_buildings_flag <- true; // flag to disable new_buildings reflex, when no more buildings are available
-	float energy_saving_rate <- 0.0;// <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
-  	float change_factor <- 0.0;// <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
-  	float change_threshold<- 0.0;// <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
-  	float landlord_prop <- 0.0;// <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
-  	float MFH_connection_threshold <- 0.0;// <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
-  	float feedback_factor <- 0.0;// <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
-  	bool B_feedback <- false;// <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
+	float energy_saving_rate <- get_initial_value_float("energy_saving_rate"); // generaliuzed energy-saving of modernized buildings in percent
+  	float change_factor <- get_initial_value_float("change_factor"); // Energy-Saving of households with change = true
+  	float change_threshold <- get_initial_value_float("change_threshold"); // minimum value for EEH to decide for decision "change" -> based on above average values of agent's EEH variable
+  	float landlord_prop <- get_initial_value_float("landlord_prop"); // chance to convince landlord of building to connect to q100_heat_network after invest_decision was made - strong need of validation due to lack of data / literature
+  	float MFH_connection_threshold <- get_initial_value_float("MFH_connection_threshold"); // share of MFH households with decision invest=true that is needed to connect building to heat_network
+  	float feedback_factor <- get_initial_value_float("feedback_factor"); // influence factor of feedback after a decision is made or household moved into a building with q100-connection
+  	bool B_feedback <- get_initial_value_bool("B_feedback"); // Feedback of a decision on other perceived behavioral control values on-off
 
-	bool view_toggle <- false;// <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
-	bool keep_seed <- false;// <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
+	bool view_toggle <- get_initial_value_bool("view_toggle"); // Parameter to toggle the 3D-View.
+	bool keep_seed <- get_initial_value_bool("keep_seed"); // When true, the simulation seed will not change.
 	string timestamp <- "";
 
 	int refurbished_buildings_year; // sum of buildings refurbished this year
@@ -369,15 +368,14 @@ global {
 
 
 
-	float share_families <- 0.0;// <- get_initial_value_float("share_families"); // share of families in whole neighborhood
-	float share_socialgroup_families <- 0.0;// <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
-	float share_socialgroup_nonfamilies <- 0.0;// <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
+	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
+	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
+	float share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
 
-	float private_communication;
-	//private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
+	float private_communication <- get_initial_value_float("private_communication"); // influence on psychological data while private communication; value used in communication action, accessable in monitor; must be experimented, since high influence
 
-	string influence_type <- "";// <- get_initial_value_string("influence_type");
-	bool communication_memory <- false;// <- get_initial_value_bool("communication_memory");
+	string influence_type <- get_initial_value_string("influence_type");
+	bool communication_memory <- get_initial_value_bool("communication_memory");
 
 	list<species<households>> income_groups_list <- [households_500_1000, households_1000_1500, households_1500_2000, households_2000_3000, households_3000_4000, households_4000etc];
 	map<species<households>,float> share_income_map <- create_map(income_groups_list, list(share_income));
@@ -959,6 +957,7 @@ global {
 			}
 		}
 	}
+
 }
 
 
@@ -1129,10 +1128,10 @@ species building {
 
 	}
 	aspect threedim {
-		float height <- (floor(self.units / 10) + 1) * 10;
+		int height <- (floor(self.units / 10) + 1) * 10;
 
 		if self.type = "NWG" {
-			height <- 20.0;
+			height <- 20;
 		}
 		if built {
 			draw shape color: color depth: height;
@@ -1985,8 +1984,67 @@ species edge_vis {
 	// grid vegetation_cell width: 50 height: 50 neighbors: 4 {} -> Bei derzeitiger Vorstellung wird kein grid benoetigt; ggf mit qScope-Tisch-dev abgleichen
 
 experiment agent_decision_making type: gui{
+	
+	int get_initial_value_int(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
 
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "int" {
+			return int(value);
+		}
+		else {
+			error "The type of the value should be int but is " + type;
+		}
+	}
 
+	float get_initial_value_float(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "float" {
+			return float(value);
+		}
+		else {
+			error "The type of the value should be float but is " + type;
+		}
+	}
+
+	string get_initial_value_string(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "string" {
+			return string(value);
+		}
+		else {
+			error "The type of the value should be string but is " + type;
+		}
+	}
+
+	bool get_initial_value_bool(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "bool" {
+			return bool(value);
+		}
+		else {
+			error "The type of the value should be bool but is " + type;
+		}
+	}
+	
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
@@ -2031,7 +2089,7 @@ experiment agent_decision_making type: gui{
     int value_absolute <- length(building where ((each.mod_status = "s") and (each.built)));
 		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/connections/connections_export.csv" : "../data/outputs/output/connections/connections_export.csv";
 		save [cycle, current_date, value, value_absolute]
-		to: export_file type: csv rewrite: false;
+		to: export_file format: csv rewrite: false;
 	}
 
 // export energy costs:
@@ -2041,7 +2099,7 @@ experiment agent_decision_making type: gui{
 				string export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_total.csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_total.csv";
 
 			save [cycle, current_date, power_price, oil_price, gas_price, q100_price_opex] // TODO exportiert derzeit "nur" die Werte, welche an anderer Stelle importiert werden; koennte erweitert werden durch zB "monatliche Ausgaben eines Durchschnitts-Haushalts fuer Energie"
-			to: export_file type: csv rewrite: false  header: true;
+			to: export_file format: csv rewrite: false  header: true;
 		}
 	}
 //csv_export for output test - line graph infoscreen /////////////////////////////// TODO Thema Datenschutz -> eigentlich nur durchschnittswerte exportieren; flag-export wofuer noetig?
@@ -2053,7 +2111,7 @@ experiment agent_decision_making type: gui{
 			ask building where (each.qscope_interchange_flag = true) {
 				export_file <- (timestamp = "") ? "../data/outputs/output/emissions/CO2_emissions_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/emissions/CO2_emissions_" + id + ".csv";
 				save [cycle, current_date, id, building_household_emissions]
-				to: export_file type: csv rewrite: false header: true;
+				to: export_file format: csv rewrite: false header: true;
 			}
 
 			ask technical_data_calculator {
@@ -2061,7 +2119,7 @@ experiment agent_decision_making type: gui{
 
 				save [cycle, current_date, emissions_neighborhood_total, emissions_household_average, emissions_neighborhood_accu, emissions_household_average_accu, modernization_rate]
 
-				to: export_file type: csv rewrite: false header: true; // löschung der datei implementieren
+				to: export_file format: csv rewrite: false header: true; // löschung der datei implementieren
 			}
 		}
 	}
@@ -2073,7 +2131,7 @@ experiment agent_decision_making type: gui{
 			ask building where (each.qscope_interchange_flag = true) {
 				export_file <- (timestamp = "") ? "../data/outputs/output/energy_prices/energy_prices_" + id + ".csv" : "../data/outputs/output_" + timestamp + "/energy_prices/energy_prices_" + id + ".csv";
 				save [cycle, current_date, id, building_household_expenses_power, building_household_expenses_heat]
-				to: export_file type: csv rewrite: false header: true;
+				to: export_file format: csv rewrite: false header: true;
 			}
 		}
 	}
@@ -2167,8 +2225,11 @@ experiment agent_decision_making type: gui{
 			}
 		}
 
-		display "Charts" {
-			chart "Average of decision-variables" type: series {
+		display "Charts" type: java2D {
+			chart "Average of decision-variables" type: series 
+			x_label: "Day"
+			x_serie_labels: cycle
+			{
 				data "CEEA" value: sum_of(agents of_generic_species households, each.A_e) / length(agents of_generic_species households);
 				data "EDA" value: sum_of(agents of_generic_species households, each.A_d) / length(agents of_generic_species households);
 
@@ -2176,14 +2237,13 @@ experiment agent_decision_making type: gui{
 			}
 		}
 
-		display "Modernization" type: java2D{
+		display "Modernization" type: java2D refresh: (current_date - 1#day).year != current_date.year { 
 			chart "Rate of Modernization"
 			type: series
 			//y_range: {0,0.03}
 			style: line
 			x_label: "Year"
-			x_serie: current_date.year
-			x_serie_labels: string(current_date.year)
+			x_serie_labels: range(2019,2050)
 			y_label: "Rate of Modernization"
 			{
 				data "Rate of Modernization"
@@ -2208,13 +2268,14 @@ experiment agent_decision_making type: gui{
 		}
 
 
-		display "Monthly Emissions" type: java2D{ // TODO
+		display "Monthly Emissions" type: java2D refresh: current_date.day = 1{ // TODO
 			chart "Emissions per month within the neighborhood"
 			type: series
 			x_label: "Month"
 			y_label: "g of CO2 eq"
-			x_serie: technical_data_calculator[0].month_counter
-			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
+			//x_serie: technical_data_calculator[0].month_counter
+			x_serie_labels: months[current_date.month - 1]
+			x_tick_line_visible: false
 			{
 				data "Total energy emissions of neighborhood per month"
 				value: technical_data_calculator[0].emissions_neighborhood_total;
@@ -2228,25 +2289,29 @@ experiment agent_decision_making type: gui{
 			}
 		}
 
-		display "Emissions cumulative" type: java2D { // TODO
+
+
+		display "Emissions cumulative" type: java2D refresh: current_date.day = 1{ // TODO
 			chart "Cumulative emissions of the neighborhood"
 			type: series
 			x_label: "Month"
 			y_label: "g of CO2 eq"
-			x_serie: technical_data_calculator[0].month_counter
-			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] {
+			//x_serie: technical_data_calculator[0].month_counter
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
+			x_tick_line_visible: false {
 				data "Total energy emissions of neighborhood per year"
 				value: technical_data_calculator[0].emissions_neighborhood_accu
 				;
 			}
 		}
-		display "Average Emissions Cumulative" type: java2D{ // TODO
+		display "Average Emissions Cumulative" type: java2D refresh: current_date.day = 1{ // TODO
 			chart "Average cumulative emissions of the neighborhood"
 			type: series
 			x_label: "Month"
 			y_label: "g of CO2 eq"
-			x_serie: technical_data_calculator[0].month_counter
-			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] {
+			//x_serie: technical_data_calculator[0].month_counter
+			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)] 
+			x_tick_line_visible: false{
 				data "Accumulated Average energy emissions of a household"
 				value: technical_data_calculator[0].emissions_household_average_accu
 				;
@@ -2254,13 +2319,14 @@ experiment agent_decision_making type: gui{
 			}
 		}
 
-		display "Average Emissions" type: java2D{
+		display "Average Emissions" type: java2D refresh: current_date.day = 1 {
 			chart "Average Emissions per Household"
 			type: series
-			x_serie: technical_data_calculator[0].month_counter
+			//x_serie: technical_data_calculator[0].month_counter
 			x_label: "Month"
 			y_label: "g of CO2 eq"
 			x_serie_labels: months[((technical_data_calculator[0].month_counter - 1) mod 12)]
+			x_tick_line_visible: false
 			{
 				data "Average energy emissions of a household"
 				value: technical_data_calculator[0].emissions_household_average;
@@ -2275,7 +2341,66 @@ experiment agent_decision_making type: gui{
 
 experiment agent_decision_making_3d type: gui{
 
+	int get_initial_value_int(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
 
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "int" {
+			return int(value);
+		}
+		else {
+			error "The type of the value should be int but is " + type;
+		}
+	}
+
+	float get_initial_value_float(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "float" {
+			return float(value);
+		}
+		else {
+			error "The type of the value should be float but is " + type;
+		}
+	}
+
+	string get_initial_value_string(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "string" {
+			return string(value);
+		}
+		else {
+			error "The type of the value should be string but is " + type;
+		}
+	}
+
+	bool get_initial_value_bool(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "bool" {
+			return bool(value);
+		}
+		else {
+			error "The type of the value should be bool but is " + type;
+		}
+	}
+	
  	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making" init: private_communication;
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
  	parameter "Chance to convince landlord for connection of Q100 heat network" var: landlord_prop category: "Decision making";
@@ -2378,7 +2503,7 @@ experiment agent_decision_making_3d type: gui{
 			}
 		}
 
-		display "Charts" {
+		display "Charts" type: java2D{
 			chart "Average of decision-variables" type: series {
 				data "CEEA" value: sum_of(agents of_generic_species households, each.A_e) / length(agents of_generic_species households);
 				data "EDA" value: sum_of(agents of_generic_species households, each.A_d) / length(agents of_generic_species households);
@@ -2386,7 +2511,7 @@ experiment agent_decision_making_3d type: gui{
 			}
 		}
 
-		display "Modernization" {
+		display "Modernization" type: java2D{
 			chart "Rate of Modernization" type: xy y_range: {0,0.03} style: line{
 				data "Rate of Modernization" value: {current_date.year, modernization_rate};
 				data "1% Refurbishment Rate" value: {current_date.year, 0.01};
@@ -2395,7 +2520,7 @@ experiment agent_decision_making_3d type: gui{
 			}
 		}
 
-		display "Monthly Emissions" refresh: (current_date.day = 1){ // TODO
+		display "Monthly Emissions" refresh: (current_date.day = 1) type:java2D{ // TODO
 			chart "Emissions per month within the neighborhood" type: series {
 				data "Total energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_total;
 				data "Total heat emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_heat;
@@ -2404,7 +2529,7 @@ experiment agent_decision_making_3d type: gui{
 			}
 		}
 
-		display "Emissions cumulative" { // TODO
+		display "Emissions cumulative" type: java2D{ // TODO
 			chart "Cumulative emissions of the neighborhood" type: series {
 
 				data "Accumulated energy emissions of neighborhood per year" value: technical_data_calculator[0].emissions_neighborhood_accu;
@@ -2416,6 +2541,66 @@ experiment agent_decision_making_3d type: gui{
 }
 
 experiment debug type:gui {
+	
+	int get_initial_value_int(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "int" {
+			return int(value);
+		}
+		else {
+			error "The type of the value should be int but is " + type;
+		}
+	}
+
+	float get_initial_value_float(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "float" {
+			return float(value);
+		}
+		else {
+			error "The type of the value should be float but is " + type;
+		}
+	}
+
+	string get_initial_value_string(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "string" {
+			return string(value);
+		}
+		else {
+			error "The type of the value should be string but is " + type;
+		}
+	}
+
+	bool get_initial_value_bool(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "bool" {
+			return bool(value);
+		}
+		else {
+			error "The type of the value should be bool but is " + type;
+		}
+	}
 	
 	parameter "Influence of private communication" var: private_communication min: 0.0 max: 1.0 category: "Decision making";
  	parameter "Energy Efficient Habits Threshold for Change Decision" var: change_threshold category: "Decision making";
