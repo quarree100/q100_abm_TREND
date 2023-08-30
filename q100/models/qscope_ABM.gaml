@@ -22,14 +22,8 @@ global {
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
 
-
-
 	int model_runtime_int <- get_initial_value_int("model_runtime_int");
-	reflex end_simulation when: (current_date.year = model_runtime_int) and (current_date.month = 1) and (current_date.day = 1){
-    	do pause;
-    }
-
-
+	
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
 	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -79,29 +73,8 @@ global {
 	string buildings_file <- (timestamp = "") ? "../data/outputs/output/buildings_clusters.csv" : "../data/outputs/output_" + timestamp + "/buildings_clusters_" + timestamp + ".csv";
 	matrix<string> qscope_interchange_matrix <- matrix<string>(csv_file(buildings_file, ",", string, true));
 
-
-
-
 	float alpha <- alphas [alpha_column(), 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
-
-	int alpha_column {
-		if alpha_scenario = "Static_mean" {
-			return 1;
-		}
-		else if alpha_scenario = "Dynamic_moderate" {
-			return 2;
-		}
-		else if alpha_scenario = "Dynamic_high" {
-			return 3;
-		}
-		else if alpha_scenario = "Static_high" {
-			return 4;
-		}
-		else {
-			error "No valid alpha-scenario";
-		}
-	}
 
 	bool carbon_price_on_off <- false;
 
@@ -111,98 +84,23 @@ global {
 
 	string carbon_price_scenario;
 
-	int carbon_price_column {
-		if  carbon_price_scenario = "A - Conservative" {
-			return 1;
-		}
-		else if carbon_price_scenario = "B - Moderate" {
-			return 2;
-		}
-		else if carbon_price_scenario = "C1 - Progressive" {
-			return 3;
-		}
-		else if carbon_price_scenario = "C2 - Progressive" {
-			return 4;
-		}
-		else if carbon_price_scenario = "C3 - Progressive" {
-			return 5;
-		}
-
-	}
-
 	float gas_price <- energy_prices_emissions [gas_price_column(), 0];
 	string energy_price_scenario;
-	int gas_price_column {
-		if  energy_price_scenario = "Prices_Project start" {
-			return 1;
-		}
-		else if energy_price_scenario = "Prices_2021" {
-			return 2;
-		}
-		else if energy_price_scenario = "Prices_2022 1st half" {
-			return 3;
-		}
-	}
-
+	
 	float oil_price <- energy_prices_emissions [oil_price_column(), 0];
-	int oil_price_column {
-		if  energy_price_scenario = "Prices_Project start" {
-			return 5;
-		}
-		else if energy_price_scenario = "Prices_2021" {
-			return 6;
-		}
-		else if energy_price_scenario = "Prices_2022 1st half" {
-			return 7;
-		}
-	}
-
+	
 	float power_price <- energy_prices_emissions [power_price_column(), 0];
-	int power_price_column {
-		if  energy_price_scenario = "Prices_Project start" {
-			return 9;
-		}
-		else if energy_price_scenario = "Prices_2021" {
-			return 10;
-		}
-		else if energy_price_scenario = "Prices_2022 1st half" {
-			return 11;
-		}
-	}
-
+	
 	float q100_price_opex <- q100_concept_prices_emissions [q100_price_opex_column(), 0];
 	string q100_price_opex_scenario;
-	int q100_price_opex_column {
-		if  q100_price_opex_scenario = "12 ct / kWh (static)" {
-			return 1;
-		}
-		else if q100_price_opex_scenario = "9-15 ct / kWh (dynamic)" {
-			return 2;
-		}
-	}
-
+	
 	float gas_emissions <- energy_prices_emissions [4, 0];
 	float oil_emissions <- energy_prices_emissions [8, 0];
 	float power_emissions <- energy_prices_emissions [12, 0];
 
 	float q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), 0];
 	string q100_emissions_scenario;
-	int q100_emissions_column {
-		if  q100_emissions_scenario = "Constant_50g_/_kWh" {
-			return 6;
-		}
-		else if q100_emissions_scenario = "Declining_Steps" {
-			return 7;
-		}
-		else if q100_emissions_scenario = "Declining_Linear" {
-			return 8;
-		}
-		else if q100_emissions_scenario = "Constant_Zero_emissions" {
-			return 9;
-		}
-	}
-
-
+	
 	float income_change_rate <- agora_45 [3, 0];
 
 	float power_consumption_change_rate <- agora_45 [4, 0];
@@ -225,122 +123,9 @@ global {
 	float c_change_max;
 	float c_switch_max;
 
-	int get_initial_value_int(string descr) {
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "int" {
-			return int(value);
-		}
-		else {
-			error "The type of the value should be int but is " + type;
-		}
-	}
-
-	float get_initial_value_float(string descr) {
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "float" {
-			return float(value);
-		}
-		else {
-			error "The type of the value should be float but is " + type;
-		}
-	}
-
-	string get_initial_value_string(string descr) {
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "string" {
-			return string(value);
-		}
-		else {
-			error "The type of the value should be string but is " + type;
-		}
-	}
-
-	bool get_initial_value_bool(string descr) {
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "bool" {
-			return bool(value);
-		}
-		else {
-			error "The type of the value should be bool but is " + type;
-		}
-	}
-
-	action get_initial_value(string descr) { //Retrieves the inital value for the variable with name "name".
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "bool"  {
-			return bool(value);
-		}
-		else if type = "int" {
-			return int(value);
-		}
-		else if type = "float" {
-			return float(value);
-		}
-		else if type = "string" {
-			return value;
-		}
-
-
-	}
-
-	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
-
-		e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
-		e_invest_max <- max((agents of_generic_species households) accumulate (each.e_invest));
-		e_change_max <- max((agents of_generic_species households) accumulate (each.e_change));
-		e_switch_max <- max((agents of_generic_species households) accumulate (each.e_switch));
-		c_current_max <- max((agents of_generic_species households) accumulate (each.c_current));
-		c_invest_max <- max((agents of_generic_species households) accumulate (each.c_invest));
-		c_change_max <- max((agents of_generic_species households) accumulate (each.c_change));
-		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
-	}
-
-	action print_power_supplier{
-		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
-		ask agents of_generic_species households {
-			save [house.id, power_supplier] to: export_file format: "csv" rewrite: false;
-		}
-	}
-
 	float q100_price_capex <- q100_concept_prices_emissions [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
-	int q100_price_capex_column {
-		if  q100_price_capex_scenario = "1 payment" {
-			return 3;
-		}
-		else if q100_price_capex_scenario = "2 payments" {
-			return 4;
-		}
-		else if q100_price_capex_scenario = "5 payments" {
-			return 5;
-		}
-	}
-
+	
 	int nb_units <- get_nb_units(); // number of households
 	int global_neighboring_distance <- get_initial_value_int("global_neighboring_distance");
 	string new_buildings_parameter <- "none"; // determines the speed of completion of new_buildings
@@ -363,8 +148,6 @@ global {
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
 	float modernization_rate; // yearly rate of modernization
 
-
-
 	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
 	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
 	float share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
@@ -381,7 +164,6 @@ global {
 	list<float> shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
 	map<species<households>,float> share_owner_map <- create_map(income_groups_list, shares_owner_list);
 
-
 	list<float> shares_student_list <- copy_between(row_at(share_employment_income, 0), 1, 7);
 	list<float> shares_employed_list <-  copy_between(row_at(share_employment_income, 1), 1, 7);
 	list<float> shares_selfemployed_list <-  copy_between(row_at(share_employment_income, 2), 1, 7);
@@ -394,57 +176,8 @@ global {
 	map<species<households>,float> share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
 	map<species<households>,float> share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
 
-	int get_nb_units { //Calculates the number of available units based on the Kataster-data.
-		int sum <- 0;
-		loop bldg over: (building where (each.built)) {
-			if (bldg.type != "NWG") {
-				sum <- sum + bldg.units;
-			}
-		}
-		return sum;
-	}
-
-	list<agent> get_all_instances(species<agent> spec) {
-        return spec.population + spec.subspecies accumulate (get_all_instances(each));
-    }
-
-
-	list<list> random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
-		int len <- length(input);
-		if len = 0 {
-			return range(n - 1) accumulate [[]];
-		}
-		else if len = 1 {
-			list<list> output <- range(n - 2) accumulate [[]];
-			add input to: output;
-			return shuffle(output);
-		}
-		else {
-			list shuffled_input <- shuffle(input);
-			list inds <- split_in(range(len - 1), n);
-			list<list> output;
-			loop group over: inds {
-				add shuffled_input where (index_of(shuffled_input, each) in group) to: output;
-			}
-			return shuffle(output);
-		}
-
-	}
-
-	action distribute_budget(list<households> household_list) { // assigns each household in the input list a budget based on their income and their age.
-//		list<households> all_households <- list<households>(get_all_instances(households));
-//		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
-//		int n <- length(all_households);
-		loop h over: household_list {
-				int i <- index_of(collect(income_distribution_germany, (h.income <= each)), true); // Calculates income decile of the current household.
-				ask h{
-					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
-				}
-			}
-
-
-	}
-
+	
+// init-section
 	init {
 	global_neighboring_distance <- get_initial_value_int("global_neighboring_distance");
 	new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
@@ -733,7 +466,243 @@ global {
 
 	}
 
+// end of init-section
 
+// utility-functions
+	int alpha_column {
+		if alpha_scenario = "Static_mean" {
+			return 1;
+		}
+		else if alpha_scenario = "Dynamic_moderate" {
+			return 2;
+		}
+		else if alpha_scenario = "Dynamic_high" {
+			return 3;
+		}
+		else if alpha_scenario = "Static_high" {
+			return 4;
+		}
+		else {
+			error "No valid alpha-scenario";
+		}
+	}
+	int carbon_price_column {
+		if  carbon_price_scenario = "A - Conservative" {
+			return 1;
+		}
+		else if carbon_price_scenario = "B - Moderate" {
+			return 2;
+		}
+		else if carbon_price_scenario = "C1 - Progressive" {
+			return 3;
+		}
+		else if carbon_price_scenario = "C2 - Progressive" {
+			return 4;
+		}
+		else if carbon_price_scenario = "C3 - Progressive" {
+			return 5;
+		}
+
+	}
+	int gas_price_column {
+		if  energy_price_scenario = "Prices_Project start" {
+			return 1;
+		}
+		else if energy_price_scenario = "Prices_2021" {
+			return 2;
+		}
+		else if energy_price_scenario = "Prices_2022 1st half" {
+			return 3;
+		}
+	}
+	int oil_price_column {
+		if  energy_price_scenario = "Prices_Project start" {
+			return 5;
+		}
+		else if energy_price_scenario = "Prices_2021" {
+			return 6;
+		}
+		else if energy_price_scenario = "Prices_2022 1st half" {
+			return 7;
+		}
+	}
+	int power_price_column {
+		if  energy_price_scenario = "Prices_Project start" {
+			return 9;
+		}
+		else if energy_price_scenario = "Prices_2021" {
+			return 10;
+		}
+		else if energy_price_scenario = "Prices_2022 1st half" {
+			return 11;
+		}
+	}
+	int q100_price_opex_column {
+		if  q100_price_opex_scenario = "12 ct / kWh (static)" {
+			return 1;
+		}
+		else if q100_price_opex_scenario = "9-15 ct / kWh (dynamic)" {
+			return 2;
+		}
+	}
+	int q100_emissions_column {
+		if  q100_emissions_scenario = "Constant_50g_/_kWh" {
+			return 6;
+		}
+		else if q100_emissions_scenario = "Declining_Steps" {
+			return 7;
+		}
+		else if q100_emissions_scenario = "Declining_Linear" {
+			return 8;
+		}
+		else if q100_emissions_scenario = "Constant_Zero_emissions" {
+			return 9;
+		}
+	}
+	int q100_price_capex_column {
+		if  q100_price_capex_scenario = "1 payment" {
+			return 3;
+		}
+		else if q100_price_capex_scenario = "2 payments" {
+			return 4;
+		}
+		else if q100_price_capex_scenario = "5 payments" {
+			return 5;
+		}
+	}
+	
+	int get_initial_value_int(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "int" {
+			return int(value);
+		}
+		else {
+			error "The type of the value should be int but is " + type;
+		}
+	}
+	float get_initial_value_float(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "float" {
+			return float(value);
+		}
+		else {
+			error "The type of the value should be float but is " + type;
+		}
+	}
+	string get_initial_value_string(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "string" {
+			return value;
+		}
+		else {
+			error "The type of the value should be string but is " + type;
+		}
+	}
+	bool get_initial_value_bool(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "bool" {
+			return bool(value);
+		}
+		else {
+			error "The type of the value should be bool but is " + type;
+		}
+	}
+
+	action print_power_supplier{
+		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
+		ask agents of_generic_species households {
+			save [house.id, power_supplier] to: export_file format: "csv" rewrite: false;
+		}
+	}
+
+	int get_nb_units { //Calculates the number of available units based on the Kataster-data.
+		int sum <- 0;
+		loop bldg over: (building where (each.built)) {
+			if (bldg.type != "NWG") {
+				sum <- sum + bldg.units;
+			}
+		}
+		return sum;
+	}
+
+	list<agent> get_all_instances(species<agent> spec) {
+        return spec.population + spec.subspecies accumulate (get_all_instances(each));
+    }
+
+	list<list> random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
+		int len <- length(input);
+		if len = 0 {
+			return range(n - 1) accumulate [[]];
+		}
+		else if len = 1 {
+			list<list> output <- range(n - 2) accumulate [[]];
+			add input to: output;
+			return shuffle(output);
+		}
+		else {
+			list shuffled_input <- shuffle(input);
+			list inds <- split_in(range(len - 1), n);
+			list<list> output;
+			loop group over: inds {
+				add shuffled_input where (index_of(shuffled_input, each) in group) to: output;
+			}
+			return shuffle(output);
+		}
+
+	}
+
+// actions relevant to the simulation
+	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
+
+		e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
+		e_invest_max <- max((agents of_generic_species households) accumulate (each.e_invest));
+		e_change_max <- max((agents of_generic_species households) accumulate (each.e_change));
+		e_switch_max <- max((agents of_generic_species households) accumulate (each.e_switch));
+		c_current_max <- max((agents of_generic_species households) accumulate (each.c_current));
+		c_invest_max <- max((agents of_generic_species households) accumulate (each.c_invest));
+		c_change_max <- max((agents of_generic_species households) accumulate (each.c_change));
+		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
+	}
+	
+	action distribute_budget(list<households> household_list) { // assigns each household in the input list a budget based on their income and their age.
+//		list<households> all_households <- list<households>(get_all_instances(households));
+//		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
+//		int n <- length(all_households);
+		loop h over: household_list {
+				int i <- index_of(collect(income_distribution_germany, (h.income <= each)), true); // Calculates income decile of the current household.
+				ask h{
+					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
+				}
+			}
+
+
+	}
+	
+// reflexes
+	reflex end_simulation when: (current_date.year = model_runtime_int) and (current_date.month = 1) and (current_date.day = 1){
+    	do pause;
+    }
+    
 	reflex new_household { //creates new households to keep the total number of households constant.
 		list<households> new_households <- [];
 		int n <- length(agents of_generic_species households);
@@ -893,8 +862,6 @@ global {
 
 	}
 
-
-
 	reflex annual_updates_technical_data {
 		if (current_date.month = 1) and (current_date.day = 1) {
 
@@ -931,7 +898,6 @@ global {
 		}
 	}
 
-
 	reflex step_households {
 		list<households> household_list <- (agents of_generic_species households);
 		ask household_list {
@@ -954,6 +920,8 @@ global {
 			}
 		}
 	}
+	
+	
 
 }
 
@@ -1003,10 +971,30 @@ species building {
 	geometry line;
 	string id;
 	bool change_tenants;
-
-
 	int invest_counter;
+	bool qscope_interchange_flag <- false;
+	float building_emissions;
+	float building_expenses_heat;
+	float building_expenses_power;
+	float building_household_emissions;
+	float building_household_expenses_heat;
+	float building_household_expenses_power;
+	
+	// utility-funtions
+	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
+		list neighbors;
+		ask closest_to(building, self, global_neighboring_distance) {
+			neighbors <- self.get_tenants() + neighbors;
+		}
+		return neighbors;
+	}
 
+	list<households> get_tenants { // returns a list of all households that are living in the building.
+		return inside(agents of_generic_species(households), self);
+	}
+	
+	// actions
+	
 	action invoke_investment { // Gets called when the tenants decide to invest in a connection to the heat grid. The invest_counter is set depending on the selected payment scenario.
 		if self.mod_status = "s" {}
 		else {
@@ -1028,18 +1016,6 @@ species building {
 		}
 	}
 
-
-
-	bool qscope_interchange_flag <- false;
-	float building_emissions;
-	float building_expenses_heat;
-	float building_expenses_power;
-	float building_household_emissions;
-	float building_household_expenses_heat;
-	float building_household_expenses_power;
-
-
-
 	action add_tenant {
 		self.tenants <- self.tenants + 1;
 		if self.tenants = self.units {
@@ -1048,6 +1024,7 @@ species building {
 
 		return any_location_in(self);
 	}
+	
 	action remove_tenant {
 		self.tenants <- self.tenants - 1;
 		self.vacant <- true;
@@ -1078,7 +1055,7 @@ species building {
 		}
 	}
 
-
+	// reflexes
 	reflex investment_costs { // When self.invest_counter is set to a value > 0, the tenants of the building will be charged with the costs of the home refurbishment.
 		if self.invest_counter > 0 and current_date.month = mod_date.month and current_date.day = mod_date.day {
 			ask self.get_tenants() {
@@ -1101,40 +1078,7 @@ species building {
 			do force_modernize(false);
 		}
 	}
-
-	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
-		list neighbors;
-		ask closest_to(building, self, global_neighboring_distance) {
-			neighbors <- self.get_tenants() + neighbors;
-		}
-		return neighbors;
-	}
-
-	list<households> get_tenants { // returns a list of all households that are living in the building.
-		return inside(agents of_generic_species(households), self);
-	}
-
-
-
-
-	aspect base {
-		if built {
-			draw shape color: color;
-
-		}
-
-	}
-	aspect threedim {
-		int height <- (floor(self.units / 10) + 1) * 10;
-
-		if self.type = "NWG" {
-			height <- 20;
-		}
-		if built {
-			draw shape color: color depth: height;
-		}
-	}
-
+	
 	reflex monthly_updates_emissions { 
 		if (current_date.day = 2) and (self.units > 0){
 			building_emissions <- 0.0;
@@ -1167,7 +1111,27 @@ species building {
 			}
 		}
 	}
+	
+	// aspects
+	aspect base {
+		if built {
+			draw shape color: color;
 
+		}
+
+	}
+	
+	aspect threedim {
+		int height <- (floor(self.units / 10) + 1) * 10;
+
+		if self.type = "NWG" {
+			height <- 20;
+		}
+		if built {
+			draw shape color: color depth: height;
+		}
+	}
+	
 }
 
 
@@ -1181,7 +1145,6 @@ species nahwaermenetz{
 
 
 species households {
-
 
 	float A_k; // Climate-Energy-Environment Knowledge
 	float A_e; // Climate-Energy-Environment Awareness
@@ -1267,9 +1230,7 @@ species households {
 	list<households> social_contacts_neighborhood;
 	list<households> social_contacts;
 
-
-
-
+	// actions
 	action find_house {
 		self.house <- any (building where ((each.vacant) and (each.type != "NWG")));
 		self.location <- self.house.add_tenant();
@@ -1304,10 +1265,6 @@ species households {
 			network <- network add_edge(self::node);
 		}
 	}
-
-
-
-
 
 	action communicate_daily {
 
@@ -1376,7 +1333,6 @@ species households {
 
         }
 	}
-
 
 	action communicate_weekly { // includes communication with social groups -> increasing factor
 
@@ -1479,7 +1435,6 @@ species households {
         }
 	}
 
-
 	action communicate_occasional {
 		if network_contacts_temporal_occasional > 0 {
 			if (current_date.day = 1) {
@@ -1547,9 +1502,6 @@ species households {
         }
 	}
 
-
-
-
 	action calculate_c { // calculation of c is used for decision making
 
 		do calculate_hypo_e;
@@ -1559,7 +1511,6 @@ species households {
 		c_change <- income - (e_change);
 		c_switch <- income - (e_switch);
 	}
-
 
 	action decision_making {
 
@@ -1678,7 +1629,6 @@ species households {
 		}
 	}
 
-
 	action consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
 
 		do calculate_consumption;
@@ -1690,7 +1640,6 @@ species households {
 		e_current <- my_heat_expenses + my_power_expenses;
 
 	}
-
 
 	action update_decision_thresholds {
 		/* calculate household's current
@@ -1761,8 +1710,6 @@ species households {
 			}
 		}
 	}
-
-
 
 	action calculate_consumption { // consumption divided by building type
 
@@ -1847,9 +1794,7 @@ species households {
 		my_energy_emissions <- my_heat_emissions + my_power_emissions;
 	}
 
-
-
-
+	// reflexes
 	reflex calculate_energy_budget { // households save money calculated from average distributions in Germany sorted by income.
 		if current_date.day = 1 {
 			int i <- index_of(collect(income_distribution_germany, (self.income <= each)), true); // Calculates income decile of the current household.
@@ -1857,7 +1802,6 @@ species households {
 		}
 			
 	}
-
 
 	reflex move_out {
 		if (current_date.month = 12) and (current_date.day = 15) and (self.house.qscope_interchange_flag = false) {
@@ -1905,8 +1849,7 @@ species households {
 		}
 	}
 
-
-
+	// aspects
 	aspect by_energy {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
@@ -1917,7 +1860,6 @@ species households {
 		}
 
 	}
-
 
 }
 
