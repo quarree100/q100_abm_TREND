@@ -1,4 +1,6 @@
 *.DS_Store
+*.built_in_models_1694069329057
+*.gama_application_workspace
 
 ./**/.cache
 ./**/.metadata
