@@ -22,14 +22,8 @@ global {
 	float step <- 1 #day;
 	date starting_date <- date([2020,1,1,0,0,0]);
 
-
-
 	int model_runtime_int <- get_initial_value_int("model_runtime_int");
-	reflex end_simulation when: (current_date.year = model_runtime_int) and (current_date.month = 1) and (current_date.day = 1){
-    	do pause;
-    }
-
-
+	
 	graph network <- graph([]);
 	geometry shape <- envelope(shape_file_typologiezonen);
 	list<string> months <- ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -79,29 +73,8 @@ global {
 	string buildings_file <- (timestamp = "") ? "../data/outputs/output/buildings_clusters.csv" : "../data/outputs/output_" + timestamp + "/buildings_clusters_" + timestamp + ".csv";
 	matrix<string> qscope_interchange_matrix <- matrix<string>(csv_file(buildings_file, ",", string, true));
 
-
-
-
 	float alpha <- alphas [alpha_column(), 0]; // share of a household's expenditures that are spent on energy - the rest are composite goods
 	string alpha_scenario;
-
-	int alpha_column {
-		if alpha_scenario = "Static_mean" {
-			return 1;
-		}
-		else if alpha_scenario = "Dynamic_moderate" {
-			return 2;
-		}
-		else if alpha_scenario = "Dynamic_high" {
-			return 3;
-		}
-		else if alpha_scenario = "Static_high" {
-			return 4;
-		}
-		else {
-			error "No valid alpha-scenario";
-		}
-	}
 
 	bool carbon_price_on_off <- false;
 
@@ -111,98 +84,23 @@ global {
 
 	string carbon_price_scenario;
 
-	int carbon_price_column {
-		if  carbon_price_scenario = "A - Conservative" {
-			return 1;
-		}
-		else if carbon_price_scenario = "B - Moderate" {
-			return 2;
-		}
-		else if carbon_price_scenario = "C1 - Progressive" {
-			return 3;
-		}
-		else if carbon_price_scenario = "C2 - Progressive" {
-			return 4;
-		}
-		else if carbon_price_scenario = "C3 - Progressive" {
-			return 5;
-		}
-
-	}
-
 	float gas_price <- energy_prices_emissions [gas_price_column(), 0];
 	string energy_price_scenario;
-	int gas_price_column {
-		if  energy_price_scenario = "Prices_Project start" {
-			return 1;
-		}
-		else if energy_price_scenario = "Prices_2021" {
-			return 2;
-		}
-		else if energy_price_scenario = "Prices_2022 1st half" {
-			return 3;
-		}
-	}
-
+	
 	float oil_price <- energy_prices_emissions [oil_price_column(), 0];
-	int oil_price_column {
-		if  energy_price_scenario = "Prices_Project start" {
-			return 5;
-		}
-		else if energy_price_scenario = "Prices_2021" {
-			return 6;
-		}
-		else if energy_price_scenario = "Prices_2022 1st half" {
-			return 7;
-		}
-	}
-
+	
 	float power_price <- energy_prices_emissions [power_price_column(), 0];
-	int power_price_column {
-		if  energy_price_scenario = "Prices_Project start" {
-			return 9;
-		}
-		else if energy_price_scenario = "Prices_2021" {
-			return 10;
-		}
-		else if energy_price_scenario = "Prices_2022 1st half" {
-			return 11;
-		}
-	}
-
+	
 	float q100_price_opex <- q100_concept_prices_emissions [q100_price_opex_column(), 0];
 	string q100_price_opex_scenario;
-	int q100_price_opex_column {
-		if  q100_price_opex_scenario = "12 ct / kWh (static)" {
-			return 1;
-		}
-		else if q100_price_opex_scenario = "9-15 ct / kWh (dynamic)" {
-			return 2;
-		}
-	}
-
+	
 	float gas_emissions <- energy_prices_emissions [4, 0];
 	float oil_emissions <- energy_prices_emissions [8, 0];
 	float power_emissions <- energy_prices_emissions [12, 0];
 
 	float q100_emissions <- q100_concept_prices_emissions [q100_emissions_column(), 0];
 	string q100_emissions_scenario;
-	int q100_emissions_column {
-		if  q100_emissions_scenario = "Constant_50g_/_kWh" {
-			return 6;
-		}
-		else if q100_emissions_scenario = "Declining_Steps" {
-			return 7;
-		}
-		else if q100_emissions_scenario = "Declining_Linear" {
-			return 8;
-		}
-		else if q100_emissions_scenario = "Constant_Zero_emissions" {
-			return 9;
-		}
-	}
-
-
+	
 	float income_change_rate <- agora_45 [3, 0];
 
 	float power_consumption_change_rate <- agora_45 [4, 0];
@@ -225,122 +123,9 @@ global {
 	float c_change_max;
 	float c_switch_max;
 
-	int get_initial_value_int(string descr) {
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "int" {
-			return int(value);
-		}
-		else {
-			error "The type of the value should be int but is " + type;
-		}
-	}
-
-	float get_initial_value_float(string descr) {
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "float" {
-			return float(value);
-		}
-		else {
-			error "The type of the value should be float but is " + type;
-		}
-	}
-
-	string get_initial_value_string(string descr) {
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "string" {
-			return string(value);
-		}
-		else {
-			error "The type of the value should be string but is " + type;
-		}
-	}
-
-	bool get_initial_value_bool(string descr) {
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "bool" {
-			return bool(value);
-		}
-		else {
-			error "The type of the value should be bool but is " + type;
-		}
-	}
-
-	action get_initial_value(string descr) { //Retrieves the inital value for the variable with name "name".
-		list<string> names <- column_at(initial_values, 3);
-		int row <- index_of(names, descr);
-
-		string type <- initial_values[1, row];
-		string value <- initial_values[2, row];
-		write [descr, row, type, value];
-		if type = "bool"  {
-			return bool(value);
-		}
-		else if type = "int" {
-			return int(value);
-		}
-		else if type = "float" {
-			return float(value);
-		}
-		else if type = "string" {
-			return value;
-		}
-
-
-	}
-
-	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
-
-		e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
-		e_invest_max <- max((agents of_generic_species households) accumulate (each.e_invest));
-		e_change_max <- max((agents of_generic_species households) accumulate (each.e_change));
-		e_switch_max <- max((agents of_generic_species households) accumulate (each.e_switch));
-		c_current_max <- max((agents of_generic_species households) accumulate (each.c_current));
-		c_invest_max <- max((agents of_generic_species households) accumulate (each.c_invest));
-		c_change_max <- max((agents of_generic_species households) accumulate (each.c_change));
-		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
-	}
-
-	action print_power_supplier{
-		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
-		ask agents of_generic_species households {
-			save [house.id, power_supplier] to: export_file format: "csv" rewrite: false;
-		}
-	}
-
 	float q100_price_capex <- q100_concept_prices_emissions [q100_price_capex_column(), 0];
 	string q100_price_capex_scenario;
-	int q100_price_capex_column {
-		if  q100_price_capex_scenario = "1 payment" {
-			return 3;
-		}
-		else if q100_price_capex_scenario = "2 payments" {
-			return 4;
-		}
-		else if q100_price_capex_scenario = "5 payments" {
-			return 5;
-		}
-	}
-
+	
 	int nb_units <- get_nb_units(); // number of households
 	int global_neighboring_distance <- get_initial_value_int("global_neighboring_distance");
 	string new_buildings_parameter <- "none"; // determines the speed of completion of new_buildings
@@ -363,8 +148,6 @@ global {
 	int unrefurbished_buildings_year; // sum of unrefurbished buildings at the beginning of the year
 	float modernization_rate; // yearly rate of modernization
 
-
-
 	float share_families <- get_initial_value_float("share_families"); // share of families in whole neighborhood
 	float share_socialgroup_families <- get_initial_value_float("share_socialgroup_families"); // share of families that are part of a social group
 	float share_socialgroup_nonfamilies <- get_initial_value_float("share_socialgroup_nonfamilies"); // share of households that are not families but part of a social group
@@ -381,7 +164,6 @@ global {
 	list<float> shares_owner_list <- [share_ownership_income[1,0], share_ownership_income[2,0], share_ownership_income[3,0], share_ownership_income[4,0], share_ownership_income[5,0], share_ownership_income[6,0]];
 	map<species<households>,float> share_owner_map <- create_map(income_groups_list, shares_owner_list);
 
-
 	list<float> shares_student_list <- copy_between(row_at(share_employment_income, 0), 1, 7);
 	list<float> shares_employed_list <-  copy_between(row_at(share_employment_income, 1), 1, 7);
 	list<float> shares_selfemployed_list <-  copy_between(row_at(share_employment_income, 2), 1, 7);
@@ -394,57 +176,8 @@ global {
 	map<species<households>,float> share_unemployed <- create_map(income_groups_list, shares_unemployed_list);
 	map<species<households>,float> share_pensioner <- create_map(income_groups_list, shares_pensioner_list);
 
-	int get_nb_units { //Calculates the number of available units based on the Kataster-data.
-		int sum <- 0;
-		loop bldg over: (building where (each.built)) {
-			if (bldg.type != "NWG") {
-				sum <- sum + bldg.units;
-			}
-		}
-		return sum;
-	}
-
-	list<agent> get_all_instances(species<agent> spec) {
-        return spec.population + spec.subspecies accumulate (get_all_instances(each));
-    }
-
-
-	list<list> random_groups(list input, int n) { // Randomly distributes the elements of the input-list in n lists of similar size.
-		int len <- length(input);
-		if len = 0 {
-			return range(n - 1) accumulate [[]];
-		}
-		else if len = 1 {
-			list<list> output <- range(n - 2) accumulate [[]];
-			add input to: output;
-			return shuffle(output);
-		}
-		else {
-			list shuffled_input <- shuffle(input);
-			list inds <- split_in(range(len - 1), n);
-			list<list> output;
-			loop group over: inds {
-				add shuffled_input where (index_of(shuffled_input, each) in group) to: output;
-			}
-			return shuffle(output);
-		}
-
-	}
-
-	action distribute_budget(list<households> household_list) { // assigns each household in the input list a budget based on their income and their age.
-//		list<households> all_households <- list<households>(get_all_instances(households));
-//		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
-//		int n <- length(all_households);
-		loop h over: household_list {
-				int i <- index_of(collect(income_distribution_germany, (h.income <= each)), true); // Calculates income decile of the current household.
-				ask h{
-					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
-				}
-			}
-
-
-	}
-
+	
+// init-section
 	init {
 	global_neighboring_distance <- get_initial_value_int("global_neighboring_distance");
 	new_buildings_order_random <- get_initial_value_bool("new_buildings_order_random"); // TODO future work will determine a specific order of construction of new_buildings
@@ -514,7 +247,7 @@ global {
 		int row_interchange <- 0;
 		loop qscope_interchange over: qscope_interchange_matrix column_at 0 { // integrates individually made changes on qscope by users for buildings of the GAMA model
 			ask (building where (each.id = qscope_interchange)) {
-				qscope_interchange_flag <- bool(int(qscope_interchange_matrix[7,row_interchange])+1); // Column 7 of the interchange matrix hast values between -1 and 2. Only the value -1 will result in the value False.
+				qscope_interchange_flag <- bool(int(qscope_interchange_matrix[7,row_interchange])+1); // Column 7 of the interchange matrix has values between -1 and 2. Only the value -1 will result in the value False.
 
 				if (int(qscope_interchange_matrix[4,row_interchange]) >= 2020)  {
 					connection_year <- int(qscope_interchange_matrix[4,row_interchange]);
@@ -733,7 +466,253 @@ global {
 
 	}
 
+// end of init-section
 
+// utility-functions
+	// The yearly development of alpha is stored in a matrix. Thsi function returns the column-number for each scenario.
+	int alpha_column { 
+		if alpha_scenario = "Static_mean" {
+			return 1;
+		}
+		else if alpha_scenario = "Dynamic_moderate" {
+			return 2;
+		}
+		else if alpha_scenario = "Dynamic_high" {
+			return 3;
+		}
+		else if alpha_scenario = "Static_high" {
+			return 4;
+		}
+		else {
+			error "No valid alpha-scenario";
+		}
+	}
+	// The yearly development of the carbon-price is stored in a matrix. Thsi function returns the column-number for each scenario.
+	int carbon_price_column { 
+		if  carbon_price_scenario = "A - Conservative" {
+			return 1;
+		}
+		else if carbon_price_scenario = "B - Moderate" {
+			return 2;
+		}
+		else if carbon_price_scenario = "C1 - Progressive" {
+			return 3;
+		}
+		else if carbon_price_scenario = "C2 - Progressive" {
+			return 4;
+		}
+		else if carbon_price_scenario = "C3 - Progressive" {
+			return 5;
+		}
+
+	}
+	// The yearly development of the gas price is stored in a matrix. Thsi function returns the column-number for each scenario.
+	int gas_price_column { 
+		if  energy_price_scenario = "Prices_Project start" {
+			return 1;
+		}
+		else if energy_price_scenario = "Prices_2021" {
+			return 2;
+		}
+		else if energy_price_scenario = "Prices_2022 1st half" {
+			return 3;
+		}
+	}
+	// The yearly development of the oil price is stored in a matrix. Thsi function returns the column-number for each scenario.
+	int oil_price_column { 
+		if  energy_price_scenario = "Prices_Project start" {
+			return 5;
+		}
+		else if energy_price_scenario = "Prices_2021" {
+			return 6;
+		}
+		else if energy_price_scenario = "Prices_2022 1st half" {
+			return 7;
+		}
+	}
+	// The yearly development of power price is stored in a matrix. Thsi function returns the column-number for each scenario.
+	int power_price_column { 
+		if  energy_price_scenario = "Prices_Project start" {
+			return 9;
+		}
+		else if energy_price_scenario = "Prices_2021" {
+			return 10;
+		}
+		else if energy_price_scenario = "Prices_2022 1st half" {
+			return 11;
+		}
+	}
+	// The yearly development of the opex-price for the q100 heat-grid is stored in a matrix. Thsi function returns the column-number for each scenario.
+	int q100_price_opex_column { 
+		if  q100_price_opex_scenario = "12 ct / kWh (static)" {
+			return 1;
+		}
+		else if q100_price_opex_scenario = "9-15 ct / kWh (dynamic)" {
+			return 2;
+		}
+	}
+	// The yearly development of the emissions of the q100 heat-grid is stored in a matrix. Thsi function returns the column-number for each scenario.
+	int q100_emissions_column { 
+		if  q100_emissions_scenario = "Constant_50g_/_kWh" {
+			return 6;
+		}
+		else if q100_emissions_scenario = "Declining_Steps" {
+			return 7;
+		}
+		else if q100_emissions_scenario = "Declining_Linear" {
+			return 8;
+		}
+		else if q100_emissions_scenario = "Constant_Zero_emissions" {
+			return 9;
+		}
+	}
+	// The yearly development of capex-price for the q100 heat-grid is stored in a matrix. Thsi function returns the column-number for each scenario.
+	int q100_price_capex_column { 
+		if  q100_price_capex_scenario = "1 payment" {
+			return 3;
+		}
+		else if q100_price_capex_scenario = "2 payments" {
+			return 4;
+		}
+		else if q100_price_capex_scenario = "5 payments" {
+			return 5;
+		}
+	}
+	// Some initial parameters of the simulation are stored in a csv-file which is read into the matrix 'initial_values' with a key-, a type- and a value-column.
+	// The following functions are used to retrieve these values by name. Each data-type has it's own function.
+	int get_initial_value_int(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "int" {
+			return int(value);
+		}
+		else {
+			error "The type of the value should be int but is " + type;
+		}
+	}
+	float get_initial_value_float(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "float" {
+			return float(value);
+		}
+		else {
+			error "The type of the value should be float but is " + type;
+		}
+	}
+	string get_initial_value_string(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "string" {
+			return value;
+		}
+		else {
+			error "The type of the value should be string but is " + type;
+		}
+	}
+	bool get_initial_value_bool(string descr) {
+		list<string> names <- column_at(initial_values, 3);
+		int row <- index_of(names, descr);
+
+		string type <- initial_values[1, row];
+		string value <- initial_values[2, row];
+		write [descr, row, type, value];
+		if type = "bool" {
+			return bool(value);
+		}
+		else {
+			error "The type of the value should be bool but is " + type;
+		}
+	}
+	// Writes the current power supplier of each household to a csv-file.
+	action print_power_supplier{
+		string export_file <- (timestamp != "") ? "../data/outputs/output_" + timestamp + "/buildings_power_suppliers.csv" : "../data/outputs/output/buildings_power_suppliers.csv";
+		ask agents of_generic_species households {
+			save [house.id, power_supplier] to: export_file format: "csv" rewrite: false;
+		}
+	}
+	//Calculates the number of currently built units.
+	int get_nb_units { 
+		int sum <- 0;
+		loop bldg over: (building where (each.built)) {
+			if (bldg.type != "NWG") {
+				sum <- sum + bldg.units;
+			}
+		}
+		return sum;
+	}
+	// Returns al list of all instances of the specified species.
+	list<agent> get_all_instances(species<agent> spec) {
+        return spec.population + spec.subspecies accumulate (get_all_instances(each));
+    }
+	// Randomly distributes the k elements of the input-list in n lists of size k/n size.
+	list<list> random_groups(list input, int n) { 
+		int len <- length(input);
+		if len = 0 {
+			return range(n - 1) accumulate [[]];
+		}
+		else if len = 1 {
+			list<list> output <- range(n - 2) accumulate [[]];
+			add input to: output;
+			return shuffle(output);
+		}
+		else {
+			list shuffled_input <- shuffle(input);
+			list inds <- split_in(range(len - 1), n);
+			list<list> output;
+			loop group over: inds {
+				add shuffled_input where (index_of(shuffled_input, each) in group) to: output;
+			}
+			return shuffle(output);
+		}
+
+	}
+
+// actions relevant to the simulation
+	action update_max_values {	// Calculate MAX E AND C VALUES FOR NORMALIZATION //
+
+		e_current_max <- max((agents of_generic_species households) accumulate (each.e_current));
+		e_invest_max <- max((agents of_generic_species households) accumulate (each.e_invest));
+		e_change_max <- max((agents of_generic_species households) accumulate (each.e_change));
+		e_switch_max <- max((agents of_generic_species households) accumulate (each.e_switch));
+		c_current_max <- max((agents of_generic_species households) accumulate (each.c_current));
+		c_invest_max <- max((agents of_generic_species households) accumulate (each.c_invest));
+		c_change_max <- max((agents of_generic_species households) accumulate (each.c_change));
+		c_switch_max <- max((agents of_generic_species households) accumulate (each.c_switch));
+	}
+	
+	action distribute_budget(list<households> household_list) { // assigns each household in the input list a budget based on their income and their age.
+//		list<households> all_households <- list<households>(get_all_instances(households));
+//		all_households <- sort_by(all_households, (each.income)); // list of all households is sorted by income to split them into deciles.
+//		int n <- length(all_households);
+		loop h over: household_list {
+				int i <- index_of(collect(income_distribution_germany, (h.income <= each)), true); // Calculates income decile of the current household.
+				ask h{
+					self.budget <- self.income * 12 * savings_rates[i] / 100 * (self.age - 20); // Calculates households savings. It is assumed that a household starts saving at the age of 20.
+				}
+			}
+
+
+	}
+	
+// reflexes
+	// Pauses the simulation when the year 'model_runtime_int', specified as a parameter,  is reached. 
+	reflex end_simulation when: (current_date.year = model_runtime_int) and (current_date.month = 1) and (current_date.day = 1){
+    	do pause;
+    }
+    
 	reflex new_household { //creates new households to keep the total number of households constant.
 		list<households> new_households <- [];
 		int n <- length(agents of_generic_species households);
@@ -892,9 +871,7 @@ global {
 		}
 
 	}
-
-
-
+	// Updates annual data from external time-series used in the simulation.
 	reflex annual_updates_technical_data {
 		if (current_date.month = 1) and (current_date.day = 1) {
 
@@ -917,21 +894,22 @@ global {
 		}
 
 	}
-
+	// Calculates the building-modernization rate of the past year as the quotient of the number of buildings that got refurbished that
+	// year and the number of unrefurbished buildings at the beginning of the year.
 	reflex calculate_modernization_status{
 		if (current_date.month = 12) and (current_date.day = 31) {
 			modernization_rate <- refurbished_buildings_year / unrefurbished_buildings_year;
 		}
 	}
-
+	// Resets the number of (un)refurbished buildings a the beginning of the year. 
 	reflex reset_modernization_status{
 		if (current_date.month = 1) and (current_date.day = 1) {
 			refurbished_buildings_year <- 0;
 			unrefurbished_buildings_year <- length(building where (each.mod_status = "u"));
 		}
 	}
-
-
+	// Assembles the list of currently existing households and steps them through their daily actions. Some actions
+	// are only called on the first day of each month.
 	reflex step_households {
 		list<households> household_list <- (agents of_generic_species households);
 		ask household_list {
@@ -944,21 +922,25 @@ global {
 				do calculate_c;
 			}
 		}
-		do update_max_values;
+		do update_max_values; // Update the average of the households decision-making values.
 		if (current_date.day = 1) {
 			ask household_list where (each.house.qscope_interchange_flag = false) {
-				do decision_making;
+				do decision_making; // Households only make an decision and consume energy once per month.
 			}
 			ask household_list {
 				do consume_energy;
 			}
 		}
 	}
+	
+	
 
 }
 
 
 species technical_data_calculator {
+	// This species exists to calculate data to be displayed in the model output. Currently only emission-data is calculated once per month.
+	
 	float emissions_neighborhood_heat;
 	float emissions_neighborhood_power;
 	float emissions_neighborhood_total;
@@ -983,7 +965,7 @@ species technical_data_calculator {
 		}
 	}
 }
-
+// This species represents buildings in the neighbourhood.
 species building {
 	string type;
 	int units;
@@ -1003,10 +985,30 @@ species building {
 	geometry line;
 	string id;
 	bool change_tenants;
-
-
 	int invest_counter;
+	bool qscope_interchange_flag <- false;
+	float building_emissions;
+	float building_expenses_heat;
+	float building_expenses_power;
+	float building_household_emissions;
+	float building_household_expenses_heat;
+	float building_household_expenses_power;
+	
+	// utility-funtions
+	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
+		list neighbors;
+		ask closest_to(building, self, global_neighboring_distance) {
+			neighbors <- self.get_tenants() + neighbors;
+		}
+		return neighbors;
+	}
 
+	list<households> get_tenants { // returns a list of all households that are living in the building.
+		return inside(agents of_generic_species(households), self);
+	}
+	
+	// actions
+	
 	action invoke_investment { // Gets called when the tenants decide to invest in a connection to the heat grid. The invest_counter is set depending on the selected payment scenario.
 		if self.mod_status = "s" {}
 		else {
@@ -1027,19 +1029,8 @@ species building {
 			}
 		}
 	}
-
-
-
-	bool qscope_interchange_flag <- false;
-	float building_emissions;
-	float building_expenses_heat;
-	float building_expenses_power;
-	float building_household_emissions;
-	float building_household_expenses_heat;
-	float building_household_expenses_power;
-
-
-
+	// Gets called by households to update the number of of tenants. Returns a location within the boundaries of
+	// the building for the household to position itself.
 	action add_tenant {
 		self.tenants <- self.tenants + 1;
 		if self.tenants = self.units {
@@ -1048,12 +1039,14 @@ species building {
 
 		return any_location_in(self);
 	}
+	// Decreases the number of tenants by 1 and sets itself as vacant. Currently the building also gets modernized when a
+	// tenant gets removed.
 	action remove_tenant {
 		self.tenants <- self.tenants - 1;
 		self.vacant <- true;
 		do modernize(true);
 	}
-
+	// Modernizes the building. Takes one boolean argument 'connect_q100'. When true, the building changes it's energy source to "q100".
 	action modernize(bool connect_q100) {
 		if (self.type = "EFH") and (self.mod_status = "u") {
 			self.mod_status <- "s";
@@ -1065,7 +1058,7 @@ species building {
 			self.spec_heat_consumption <- self.spec_heat_consumption * (energy_saving_rate);
 		}
 	}
-	
+	//TODO why is this here?
 	action force_modernize(bool connect_q100) {
 		if  (self.mod_status = "u") {
 				self.mod_status <- "s";
@@ -1078,7 +1071,7 @@ species building {
 		}
 	}
 
-
+	// reflexes
 	reflex investment_costs { // When self.invest_counter is set to a value > 0, the tenants of the building will be charged with the costs of the home refurbishment.
 		if self.invest_counter > 0 and current_date.month = mod_date.month and current_date.day = mod_date.day {
 			ask self.get_tenants() {
@@ -1089,52 +1082,19 @@ species building {
 			self.invest_counter <- self.invest_counter - 1;
 		}
 	}
-
+	// Automatically changes the energy source to "q100" when 'connection_year' is set to a specific year.
 	reflex connect_q100 {
 		if current_date.year = connection_year {
 			self.energy_source <- "q100";
 		}
 	}
-
+	// Automatically changes the energy source to "q100" when 'refurb_year' is set to a specific year.
 	reflex refurbish {
 		if current_date.year = refurb_year {
 			do force_modernize(false);
 		}
 	}
-
-	list get_neighboring_households { // returns a list of all households living in the n closest buildings, where n is defined by the parameter 'global_neighboring_distance'.
-		list neighbors;
-		ask closest_to(building, self, global_neighboring_distance) {
-			neighbors <- self.get_tenants() + neighbors;
-		}
-		return neighbors;
-	}
-
-	list<households> get_tenants { // returns a list of all households that are living in the building.
-		return inside(agents of_generic_species(households), self);
-	}
-
-
-
-
-	aspect base {
-		if built {
-			draw shape color: color;
-
-		}
-
-	}
-	aspect threedim {
-		int height <- (floor(self.units / 10) + 1) * 10;
-
-		if self.type = "NWG" {
-			height <- 20;
-		}
-		if built {
-			draw shape color: color depth: height;
-		}
-	}
-
+	// Calculates the cumulative emissions of the building
 	reflex monthly_updates_emissions { 
 		if (current_date.day = 2) and (self.units > 0){
 			building_emissions <- 0.0;
@@ -1146,7 +1106,7 @@ species building {
 			
 		}
 	}
-
+	// Calculates the cumulative enegry expenses of the building.
 	reflex monthly_updates_expenses {
 		if (current_date.day = 2) {
 			building_expenses_heat <- 0.0;
@@ -1167,7 +1127,27 @@ species building {
 			}
 		}
 	}
+	
+	// aspects
+	aspect base {
+		if built {
+			draw shape color: color;
 
+		}
+
+	}
+	
+	aspect threedim {
+		int height <- (floor(self.units / 10) + 1) * 10;
+
+		if self.type = "NWG" {
+			height <- 20;
+		}
+		if built {
+			draw shape color: color depth: height;
+		}
+	}
+	
 }
 
 
@@ -1181,7 +1161,6 @@ species nahwaermenetz{
 
 
 species households {
-
 
 	float A_k; // Climate-Energy-Environment Knowledge
 	float A_e; // Climate-Energy-Environment Awareness
@@ -1267,23 +1246,23 @@ species households {
 	list<households> social_contacts_neighborhood;
 	list<households> social_contacts;
 
-
-
-
+	// actions
+	
+	// Called when the household moves. Selects a random building with a vacant unit and moves the household there.
 	action find_house {
 		self.house <- any (building where ((each.vacant) and (each.type != "NWG")));
 		self.location <- self.house.add_tenant();
 		self.change <- self.house.change_tenants;
 
 	}
-
+	// Randomly assigngs the social contacts of the household.
 	action get_social_contacts {
 		social_contacts_direct <- self.network_contacts_spatial_direct among (self.house.get_neighboring_households() + self.house.get_tenants() - self);
 		social_contacts_street <- self.network_contacts_spatial_street among agents of_generic_species households where(each.house.street = self.house.street);
 		social_contacts_neighborhood <- self.network_contacts_spatial_neighborhood among agents of_generic_species households where(each.house.street != self.house.street);
 		social_contacts <- remove_duplicates(social_contacts_direct + social_contacts_street + social_contacts_neighborhood);
 	}
-
+	// Removes the 'old_contact' from the household's list of social contacts and replaces them with another matching household.
 	action update_social_contacts(agent old_contact) { //removes the 'old_contact' from the households list of contacts and adds a new random contact.
 
 		if (old_contact in self.social_contacts_direct) {
@@ -1304,11 +1283,9 @@ species households {
 			network <- network add_edge(self::node);
 		}
 	}
-
-
-
-
-
+	
+	// Lets households communicate with each other. Communication is modeled as an influence some of the households values.
+	// When two households communicate, these values move closer to each other by the value of the parameter 'private_communication'.
 	action communicate_daily {
 
 
@@ -1376,9 +1353,9 @@ species households {
 
         }
 	}
-
-
-	action communicate_weekly { // includes communication with social groups -> increasing factor
+	
+	// See above. Includes communication with social groups -> increasing factor
+	action communicate_weekly {
 
 		if network_contacts_temporal_weekly > 0 {
 			if cycle mod 7 = 0 {
@@ -1478,8 +1455,7 @@ species households {
         	}
         }
 	}
-
-
+	// See above.
 	action communicate_occasional {
 		if network_contacts_temporal_occasional > 0 {
 			if (current_date.day = 1) {
@@ -1546,11 +1522,9 @@ species households {
         	}
         }
 	}
-
-
-
-
-	action calculate_c { // calculation of c is used for decision making
+	
+	// calculation of c is used for decision making
+	action calculate_c { 
 
 		do calculate_hypo_e;
 
@@ -1559,8 +1533,9 @@ species households {
 		c_change <- income - (e_change);
 		c_switch <- income - (e_switch);
 	}
-
-
+	
+	// Process of household's decision making based on an uitility-function. The potential decision with the highes utility is taken,
+	// when certain criteria are met. 
 	action decision_making {
 
 
@@ -1636,16 +1611,17 @@ species households {
 			do decision_feedback_B;
 		}
 	}
-
-	action decision_feedback_attitude { // decision feedback calculation for attitude values
+	// Decision feedback calculation for attitude values.
+	action decision_feedback_attitude { 
 
 		A_k <- A_k * feedback_factor;
 		A_e <- A_e * feedback_factor;
 		A_d <- A_d * feedback_factor;
 
 	}
-
-	action decision_feedback_B { // decision feedback calculation for other values of perceived behavioral control
+	
+	// Decision feedback calculation for other values of perceived behavioral control
+	action decision_feedback_B { 
 
 		if B_feedback {
 
@@ -1677,9 +1653,10 @@ species households {
 			}
 		}
 	}
-
-
-	action consume_energy { // calculation of energy consumption of a household // has to be calculated after c, to represent t-1 // grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
+	
+	// calculation of energy consumption of a household // has to be calculated after c, to represent t-1 
+	 //TODO  grafische Darstellung des Endenergieverbrauchs von Haushalten im Vergleich mit Agora-Wert?
+	action consume_energy { 
 
 		do calculate_consumption;
 		do calculate_emissions;
@@ -1690,7 +1667,6 @@ species households {
 		e_current <- my_heat_expenses + my_power_expenses;
 
 	}
-
 
 	action update_decision_thresholds {
 		/* calculate household's current
@@ -1703,7 +1679,7 @@ species households {
 		B_c_7 <- mean(B_c) / 7;
 		B_s_7 <- mean(B_s) / 7;
 	}
-
+	// Calculates hypothetical energy expenses given the different decisions that can be made.
 	action calculate_hypo_e {
 		float hypo_q100_carbon_exp <- my_heat_consumption * q100_emissions * carbon_price * int(carbon_price_on_off);
 		e_invest <- (my_heat_consumption * q100_price_opex / 100) + hypo_q100_carbon_exp + my_power_expenses;
@@ -1715,7 +1691,9 @@ species households {
 			e_switch <- my_power_consumption * (power_price + 10) / 100 + my_heat_expenses;
 		}
 	}
-
+	
+	// Calculates the utility for the different decisions that a household can make. I a household already took one of the options,
+	// the corresponding utility is set to 0.
 	action calculate_utility {
 		U_current <- alpha * e_current / e_current_max + (1 - alpha) * c_current / c_current_max + (A + N + int(B_do_nothing));
 
@@ -1761,10 +1739,9 @@ species households {
 			}
 		}
 	}
-
-
-
-	action calculate_consumption { // consumption divided by building type
+	
+	// Calculates the household's energy consumption based on the building type and condition. 
+	action calculate_consumption { 
 
 		if (self.house.type = "EFH") and (self.house.mod_status = "u") {
 			my_heat_consumption <- my_floor_area * self.house.spec_heat_consumption * heat_consumption_exist_EFH_change_rate / 12;
@@ -1786,7 +1763,8 @@ species households {
 			my_power_consumption <- my_power_consumption * change_factor;
 		}
 	}
-
+	
+	// Calculates the household's heating expenses based on the calculated energy consumption and the give energy-price.
 	action calculate_heat_expenses {
 		if (self.house.energy_source = "Gas") {
 			my_heat_expenses <- my_heat_consumption * gas_price / 100;
@@ -1804,7 +1782,8 @@ species households {
 			my_heat_expenses <- my_heat_expenses + my_heat_emissions * carbon_price;
 		}
 	}
-
+	
+	// Calculates the household's power expenses based on the power supplier.
 	action calculate_power_expenses {
 		if (power_supplier = "green") {
 			my_power_expenses <- my_power_consumption * (power_price + 10) / 100;
@@ -1816,7 +1795,8 @@ species households {
 			my_power_expenses <- my_power_expenses + my_power_emissions * carbon_price;
 		}
 	}
-
+	
+	// Calculates the household's emissions of CO2 equivalents based on their energy consumption.
 	action calculate_emissions { // emissions in g of CO2 eq
 		if (self.house.energy_source = "Gas") {
 			my_heat_emissions <- my_heat_consumption * gas_emissions;
@@ -1847,9 +1827,9 @@ species households {
 		my_energy_emissions <- my_heat_emissions + my_power_emissions;
 	}
 
-
-
-
+	// reflexes
+	
+	// Updates household's budget each month. The savings rate is tied to the income.
 	reflex calculate_energy_budget { // households save money calculated from average distributions in Germany sorted by income.
 		if current_date.day = 1 {
 			int i <- index_of(collect(income_distribution_germany, (self.income <= each)), true); // Calculates income decile of the current household.
@@ -1857,8 +1837,8 @@ species households {
 		}
 			
 	}
-
-
+	
+	// Households move out of their building either due to their age or randomly.
 	reflex move_out {
 		if (current_date.month = 12) and (current_date.day = 15) and (self.house.qscope_interchange_flag = false) {
 
@@ -1898,15 +1878,14 @@ species households {
 		}
 
 	}
-
-	reflex retire { //emp-status of the household moves to "pensioner" when they reach age 64.
+	// The employment-status of the household changes to "pensioner" when they reach age 64.
+	reflex retire {
 		if (self.age >= 64) and (self.employment != "pensioner") {
 			self.employment <- "pensioner";
 		}
 	}
 
-
-
+	// aspects
 	aspect by_energy {
 		map<string,rgb> power_colors <- ["conventional"::#black, "mixed"::#lightseagreen, "green"::#green];
 		draw circle(2) color: power_colors[power_supplier];
@@ -1917,7 +1896,6 @@ species households {
 		}
 
 	}
-
 
 }
 
